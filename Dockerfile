@@ -4,4 +4,4 @@ RUN apk --no-cache add iptables
 
 COPY bin/kiam /kiam
 
-ENTRYPOINT ["/kiam"]
+CMD ["/kiam"]
