@@ -65,6 +65,7 @@ func (s *Server) listenAddress() string {
 func (s *Server) Serve() error {
 	mux := pat.New()
 	mux.Get("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
+	mux.Get("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
 	mux.Get("/health", http.HandlerFunc(ErrorHandler(s.healthHandler)))
 	mux.Get("/:version/meta-data/iam/security-credentials/:role", http.HandlerFunc(ErrorHandler(s.credentialsHandler)))
 	mux.Get("/:version/meta-data/iam/security-credentials/", http.HandlerFunc(ErrorHandler(s.roleNameHandler)))

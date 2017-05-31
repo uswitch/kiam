@@ -1,0 +1,23 @@
+machine:
+  environment:
+    GOPATH: /home/ubuntu/.go_project
+  services:
+    - docker
+
+dependencies:
+  override:
+    - mkdir -p ~/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}
+    - ln -s ${HOME}/${CIRCLE_PROJECT_REPONAME} ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+    - cd ${HOME}/.go_project/src/github.com/uswitch/kiam && GOPATH=${HOME}/.go_project go build -o bin/kiam cmd/*.go
+
+test:
+  override:
+    - cd ${HOME}/.go_project/src/github.com/uswitch/kiam && GOPATH=${HOME}/.go_project go test -race -bench=.
+
+deployment:
+  hub:
+    branch: master
+    commands:
+      - docker build --rm=false -t uswitch/kiam .
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push uswitch/kiam
