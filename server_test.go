@@ -21,6 +21,7 @@ import (
 	"github.com/uswitch/kiam/pkg/creds"
 	kh "github.com/uswitch/kiam/pkg/http"
 	"github.com/uswitch/kiam/pkg/testutil"
+	"github.com/vmg/backoff"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -42,6 +43,7 @@ func TestReturnsHealthStatus(t *testing.T) {
 	testutil.WithAWS(&testutil.AWSMetadata{InstanceID: "i-12345"}, context.Background(), func(ctx context.Context) {
 		server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 		go server.Serve()
+		waitForServer(defaultConfig(), t)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		defer server.Stop(ctx)
@@ -64,6 +66,7 @@ func TestReturnRoleForPod(t *testing.T) {
 
 	server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPodWithRole("", "", "", "", "foo_role")), nil)
 	go server.Serve()
+	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	defer server.Stop(ctx)
@@ -85,6 +88,7 @@ func TestReturnNotFoundWhenNoPodFound(t *testing.T) {
 
 	server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 	go server.Serve()
+	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	defer server.Stop(ctx)
@@ -103,6 +107,7 @@ func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
 
 	server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 	go server.Serve()
+	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	defer server.Stop(ctx)
@@ -121,6 +126,7 @@ func TestReturnsNotFoundResponseWithEmptyRole(t *testing.T) {
 
 	server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPod("", "", "", "")), nil)
 	go server.Serve()
+	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	defer server.Stop(ctx)
@@ -146,6 +152,7 @@ func TestReturnsCredentials(t *testing.T) {
 	})
 	server := kh.NewWebServer(defaultConfig(), podFinder, issuer)
 	go server.Serve()
+	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	defer server.Stop(ctx)
@@ -162,6 +169,24 @@ func TestReturnsCredentials(t *testing.T) {
 
 	if c.AccessKeyId != "test" {
 		t.Error("expected access key to be set, was", c.AccessKeyId)
+	}
+}
+
+func waitForServer(config *kh.ServerConfig, t *testing.T) {
+	op := func() error {
+		_, status, err := get("/ping")
+		if err != nil {
+			return err
+		}
+		if status != 200 {
+			return fmt.Errorf("unhealthy response")
+		}
+		return nil
+	}
+
+	err := backoff.Retry(op, backoff.NewConstantBackOff(time.Millisecond))
+	if err != nil {
+		t.Fatal("server unavailable in time")
 	}
 }
 
