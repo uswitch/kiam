@@ -29,7 +29,7 @@ $ kiam --role-base-arn=arn:aws:iam::1234567890:role/ --host=my-host-ip
 
 ## Deploying to Kubernetes
 
-Please see `./kiam.daemonset.yaml` for an example of how to deploy as a `DaemonSet` on Kubernetes.
+Please see [`./kiam.daemonset.yaml`](kiam.daemonset.yaml) for an example of how to deploy as a `DaemonSet` on Kubernetes.
 
 ## How it Works
 kiam is split into a few processes:
