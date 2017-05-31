@@ -1,6 +1,9 @@
 # kiam
 kiam runs as an agent on each node in your Kubernetes cluster and allows cluster users to associate IAM roles to Pods.
 
+[![Docker Pulls](https://img.shields.io/docker/pulls/uswitch/kiam.svg)]()
+[![CircleCI](https://img.shields.io/circleci/project/github/uswitch/kiam.svg)]()
+
 ## Overview
 From the [AWS documentation on IAM roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html):
 
