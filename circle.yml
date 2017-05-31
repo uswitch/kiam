@@ -8,7 +8,6 @@ dependencies:
   override:
     - mkdir -p ~/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}
     - ln -s ${HOME}/${CIRCLE_PROJECT_REPONAME} ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
-    - cd ${HOME}/.go_project/src/github.com/uswitch/kiam && GOPATH=${HOME}/.go_project go build -o bin/kiam cmd/*.go
 
 test:
   override:
@@ -18,6 +17,7 @@ deployment:
   hub:
     branch: master
     commands:
+      - docker run -e GOPATH=/gopath --rm -v "$PWD":/gopath/src/github.com/uswitch/kiam -w /gopath/src/github.com/uswitch/kiam golang:1.8-alpine go build -o bin/kiam cmd/*.go
       - docker build --rm=false -t uswitch/kiam .
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push uswitch/kiam
