@@ -21,6 +21,16 @@ metadata:
 
 When your process starts an AWS SDK library will normally use a chain of credential providers (environment variables, instance metadata, config files etc.) to determine which credentials to use. kiam intercepts the metadata requests and uses the [Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) to retrieve temporary role credentials. 
 
+## Running
+
+```
+$ kiam --role-base-arn=arn:aws:iam::1234567890:role/ --host=my-host-ip
+```
+
+## Deploying to Kubernetes
+
+Please see `./kiam.daemonset.yaml` for an example of how to deploy as a `DaemonSet` on Kubernetes.
+
 ## How it Works
 kiam is split into a few processes:
 
@@ -29,7 +39,7 @@ kiam is split into a few processes:
 * Credentials cache. This uses the AWS API to retrieve session credentials and stores them in an in-memory cache.
 * Prefetch. This watches for changes in the Kubernetes cache and warms the Credentials cache for uncompleted Pods. It is also notified when Credentials expire from the credentials cache and determines whether they should be refreshed or discarded.
 
-It is currently intended to be run as a Daemonset- running a kiam process on each node in your cluster.
+It is currently intended to be run as a `DaemonSet`- running a kiam process on each node in your cluster.
 
 ## Thanks to Kube2iam
 We owe a **huge** thanks to the creators and maintainers of [Kube2iam](https://github.com/jtblin/kube2iam) which we ran for many months as we were bootstrapping our clusters.
