@@ -21,15 +21,34 @@ metadata:
 
 When your process starts an AWS SDK library will normally use a chain of credential providers (environment variables, instance metadata, config files etc.) to determine which credentials to use. kiam intercepts the metadata requests and uses the [Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) to retrieve temporary role credentials. 
 
-## Running
-
-```
-$ kiam --role-base-arn=arn:aws:iam::1234567890:role/ --host=my-host-ip
-```
-
 ## Deploying to Kubernetes
 
 Please see [`./kiam.daemonset.yaml`](kiam.daemonset.yaml) for an example of how to deploy as a `DaemonSet` on Kubernetes.
+
+Images are automatically pushed to Docker Hub: [uswitch/kiam](https://hub.docker.com/r/uswitch/kiam). Image releases are tagged with `latest` and their corresponding git tag `v1.0.1`. Master is also built and tagged as `latest-head` and the git sha.
+
+## Usage
+```
+$ kiam --help
+usage: kiam --role-base-arn=ROLE-BASE-ARN --host=HOST [<flags>]
+
+Flags:
+      --help                   Show context-sensitive help (also try --help-long and --help-man).
+      --json-log               Output log in JSON
+  -d, --debug                  Log at Debug level
+      --kubeconfig=KUBECONFIG  Path to kube config
+      --port=3100              HTTP port
+      --sync-interval=2m       Interval to refresh pod state from API server
+      --allow-ip-query         Allow client IP to be specified with ?ip. Development use only.
+      --role-base-arn=ROLE-BASE-ARN  
+                               Base ARN for roles. e.g. arn:aws:iam::123456789:role/
+      --statsd=""              UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125
+      --statsd-interval=10s    Interval to publish to StatsD
+      --iptables               Add IPTables rules
+      --host=HOST              Host IP address.
+      --host-interface="docker0"  
+                               Network interface for pods to configure IPTables.
+```
 
 ## How it Works
 kiam is split into a few processes:
@@ -53,6 +72,16 @@ Other improvements/changes we made were (largely driven out of how we have our s
 
 1. Use structured logging to improve the integration into our ELK setup with pod names, roles, access key ids etc.
 1. Use metrics to track response times, cache hit rates etc.
+
+## Building locally
+If you want to build and run locally you can
+
+```
+$ mkdir -p $GOPATH/src/github.com/uswitch
+$ git clone git@github.com:uswitch/kiam.git $GOPATH/src/github.com/uswitch/kiam
+$ cd $GOPATH/src/github.com/uswitch/kiam
+$ go build -o bin/kiam cmd/*.go
+```
 
 ## License
 
