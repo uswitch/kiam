@@ -18,15 +18,17 @@ deployment:
   hub-latest:
     branch: master
     commands:
-      - docker build --rm=false -t uswitch/kiam:latest-head -t uswitch/kiam:$CIRCLE_SHA1 .
+      - docker build --rm=false -t uswitch/kiam:$CIRCLE_SHA1 .
+      - docker build --rm=false -t uswitch/kiam:latest-head .
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - docker push uswitch/kiam:latest-head
       - docker push uswitch/kiam:$CIRCLE_SHA1
+      - docker push uswitch/kiam:latest-head
 
   hub-release:
     tag: /v[0-9]+(\.[0-9]+)*/
     commands:
-      - docker build --rm=false -t uswitch/kiam:$CIRCLE_TAG -t uswitch/kiam:latest .
+      - docker build --rm=false -t uswitch/kiam:$CIRCLE_TAG .
+      - docker build --rm=false --t uswitch/kiam:latest .
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push uswitch/kiam:$CIRCLE_TAG
       - docker push uswitch/kiam:latest
