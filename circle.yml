@@ -8,16 +8,25 @@ dependencies:
   override:
     - mkdir -p ~/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}
     - ln -s ${HOME}/${CIRCLE_PROJECT_REPONAME} ${HOME}/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+    - docker run -e GOPATH=/gopath --rm -v "$PWD":/gopath/src/github.com/uswitch/kiam -w /gopath/src/github.com/uswitch/kiam golang:1.8-alpine go build -o bin/kiam cmd/*.go
 
 test:
   override:
     - cd ${HOME}/.go_project/src/github.com/uswitch/kiam && GOPATH=${HOME}/.go_project go test -race -bench=.
 
 deployment:
-  hub:
+  hub-latest:
     branch: master
     commands:
-      - docker run -e GOPATH=/gopath --rm -v "$PWD":/gopath/src/github.com/uswitch/kiam -w /gopath/src/github.com/uswitch/kiam golang:1.8-alpine go build -o bin/kiam cmd/*.go
-      - docker build --rm=false -t uswitch/kiam .
+      - docker build --rm=false -t uswitch/kiam:latest-head -t uswitch/kiam:$CIRCLE_SHA1 .
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - docker push uswitch/kiam
+      - docker push uswitch/kiam:latest-head
+      - docker push uswitch/kiam:$CIRCLE_SHA1
+
+  hub-release:
+    tag: /v[0-9]+(\.[0-9]+)*/
+    commands:
+      - docker build --rm=false -t uswitch/kiam:$CIRCLE_TAG -t uswitch/kiam:latest .
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push uswitch/kiam:$CIRCLE_TAG
+      - docker push uswitch/kiam:latest
