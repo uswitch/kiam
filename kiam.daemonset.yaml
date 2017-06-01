@@ -18,7 +18,8 @@ spec:
         - name: kiam
           securityContext:
             privileged: true
-          image: registry.usw.co/cloud/kiam:latest
+          image: uswitch/kiam:latest
+          command: ["/kiam"]
           args:
             - --iptables
             - --host-interface=cali+
