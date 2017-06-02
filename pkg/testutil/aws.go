@@ -16,6 +16,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"github.com/vmg/backoff"
 	"net/http"
 	"sync"
 	"time"
@@ -43,6 +44,21 @@ func (s *stubMetadataService) stop(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
 }
 
+func (s *stubMetadataService) waitForServing() {
+	op := func() error {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/latest/meta-data/instance-id", s.port))
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("invalid status")
+		}
+		return nil
+	}
+
+	backoff.Retry(op, backoff.NewConstantBackOff(10*time.Millisecond))
+}
+
 func newAWS(metadata *AWSMetadata, port int) *stubMetadataService {
 	return &stubMetadataService{port: port, metadata: metadata}
 }
@@ -56,8 +72,7 @@ func WithAWS(metadata *AWSMetadata, ctx context.Context, body func(ctx context.C
 	go aws.serve()
 	defer aws.stop(ctx)
 
-	// wait for api to be active
-	time.Sleep(2 * time.Millisecond)
+	aws.waitForServing()
 
 	body(ctx)
 }

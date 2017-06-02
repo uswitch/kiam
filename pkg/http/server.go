@@ -16,7 +16,7 @@ package http
 import (
 	"context"
 	"fmt"
-	"github.com/bmizerany/pat"
+	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
 	log "github.com/sirupsen/logrus"
@@ -63,16 +63,21 @@ func (s *Server) listenAddress() string {
 }
 
 func (s *Server) Serve() error {
-	mux := pat.New()
-	mux.Get("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
-	mux.Get("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
-	mux.Get("/health", http.HandlerFunc(ErrorHandler(s.healthHandler)))
-	mux.Get("/:version/meta-data/iam/security-credentials/:role", http.HandlerFunc(ErrorHandler(s.credentialsHandler)))
-	mux.Get("/:version/meta-data/iam/security-credentials/", http.HandlerFunc(ErrorHandler(s.roleNameHandler)))
-	mux.Get("/:default", httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: s.cfg.MetadataEndpoint}))
+	router := mux.NewRouter()
+	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
+	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
+	router.Handle("/health", http.HandlerFunc(ErrorHandler(s.healthHandler)))
+	router.Handle("/{version}/meta-data/iam/security-credentials/", http.HandlerFunc(ErrorHandler(s.roleNameHandler)))
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", http.HandlerFunc(ErrorHandler(s.credentialsHandler)))
+
+	metadataURL, err := url.Parse(s.cfg.MetadataEndpoint)
+	if err != nil {
+		return err
+	}
+	router.Handle("/{path:.*}", httputil.NewSingleHostReverseProxy(metadataURL))
 
 	s.mutex.Lock()
-	s.server = &http.Server{Addr: s.listenAddress(), Handler: LoggingHandler(mux)}
+	s.server = &http.Server{Addr: s.listenAddress(), Handler: LoggingHandler(router)}
 	s.mutex.Unlock()
 
 	log.Infof("listening %s", s.listenAddress())

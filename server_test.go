@@ -39,6 +39,28 @@ func TestParseAddress(t *testing.T) {
 	}
 }
 
+func TestPassthroughToMetadata(t *testing.T) {
+	testutil.WithAWS(&testutil.AWSMetadata{InstanceID: "i-12345"}, context.Background(), func(ctx context.Context) {
+		server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+		go server.Serve()
+		waitForServer(defaultConfig(), t)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		defer server.Stop(ctx)
+
+		body, status, err := get("/latest/meta-data/instance-id")
+		if err != nil {
+			t.Error(err)
+		}
+		if status != http.StatusOK {
+			t.Error("should have returned ok, was", status)
+		}
+		if string(body) != "i-12345" {
+			t.Error("should have returned metadata response, was", string(body))
+		}
+	})
+}
+
 func TestReturnsHealthStatus(t *testing.T) {
 	testutil.WithAWS(&testutil.AWSMetadata{InstanceID: "i-12345"}, context.Background(), func(ctx context.Context) {
 		server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
@@ -162,7 +184,7 @@ func TestReturnsCredentials(t *testing.T) {
 		t.Error(err)
 	}
 	if status != http.StatusOK {
-		t.Error("was unexpected response", status)
+		t.Error("was unexpected response", status, string(body))
 	}
 	var c creds.Credentials
 	json.Unmarshal(body, &c)

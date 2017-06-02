@@ -167,12 +167,6 @@
 			"revisionTime": "2017-05-18T20:52:04Z"
 		},
 		{
-			"checksumSHA1": "AKjqgiWov1IJWbnpCkjVEs6NunQ=",
-			"path": "github.com/bmizerany/pat",
-			"revision": "c068ca2f0aacee5ac3681d68e4d0a003b7d1fd2c",
-			"revisionTime": "2016-02-17T10:30:50Z"
-		},
-		{
 			"checksumSHA1": "8s6lHDs2cnGicy0zrJW4ybIYtgI=",
 			"path": "github.com/coreos/go-iptables/iptables",
 			"revision": "5463fbac3bcc6b990663941c2e12660d19f6b36d",
@@ -307,6 +301,18 @@
 			"path": "github.com/google/gofuzz",
 			"revision": "44d81051d367757e1c7c6a5a86423ece9afcf63c",
 			"revisionTime": "2016-11-22T19:10:42Z"
+		},
+		{
+			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
+			"path": "github.com/gorilla/context",
+			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
+			"revisionTime": "2016-08-17T18:46:32Z"
+		},
+		{
+			"checksumSHA1": "m+Xb6aeLpAjIjq9Utnicv+e96TQ=",
+			"path": "github.com/gorilla/mux",
+			"revision": "043ee6597c29786140136a5747b6a886364f5282",
+			"revisionTime": "2017-05-24T00:31:38Z"
 		},
 		{
 			"checksumSHA1": "d9PxF1XQGLMJZRct2R8qVM/eYlE=",

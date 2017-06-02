@@ -16,6 +16,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	"github.com/uswitch/kiam/pkg/creds"
 	"github.com/uswitch/kiam/pkg/k8s"
@@ -45,7 +46,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusNotFound, fmt.Errorf("no pod found for ip %s", ip)
 	}
 
-	role := req.URL.Query().Get(":role")
+	role := mux.Vars(req)["role"]
 	if role == "" {
 		return http.StatusBadRequest, fmt.Errorf("no role specified")
 	}
