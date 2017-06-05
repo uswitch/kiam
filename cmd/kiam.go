@@ -33,7 +33,7 @@ import (
 
 type options struct {
 	jsonLog        bool
-	debug          bool
+	logLevel       string
 	kubeconfig     string
 	port           int
 	allowIPQuery   bool
@@ -46,11 +46,29 @@ type options struct {
 	hostInterface  string
 }
 
+func (o *options) configureLogger() {
+	if o.jsonLog {
+		log.SetFormatter(&log.JSONFormatter{})
+	}
+
+	switch o.logLevel {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	}
+}
+
 func main() {
 	opts := &options{}
 
 	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&opts.jsonLog)
-	kingpin.Flag("debug", "Log at Debug level").Short('d').BoolVar(&opts.debug)
+	kingpin.Flag("level", "Log level").Default("info").EnumVar(&opts.logLevel, "debug", "info", "warn", "error")
+
 	kingpin.Flag("kubeconfig", "Path to kube config").StringVar(&opts.kubeconfig)
 	kingpin.Flag("port", "HTTP port").Default("3100").IntVar(&opts.port)
 	kingpin.Flag("sync-interval", "Interval to refresh pod state from API server").Default("2m").DurationVar(&opts.syncInterval)
@@ -65,12 +83,7 @@ func main() {
 	kingpin.Flag("host-interface", "Network interface for pods to configure IPTables.").Default("docker0").StringVar(&opts.hostInterface)
 	kingpin.Parse()
 
-	if opts.jsonLog {
-		log.SetFormatter(&log.JSONFormatter{})
-	}
-	if opts.debug {
-		log.SetLevel(log.DebugLevel)
-	}
+	opts.configureLogger()
 
 	if opts.iptables {
 		log.Infof("configuring iptables")
