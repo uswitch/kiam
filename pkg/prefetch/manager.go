@@ -79,7 +79,10 @@ func (m *CredentialManager) handleExpiring(credentials *creds.RoleCredentials) {
 	}
 
 	logger.Infof("expiring credentials, fetching updated")
-	m.fetchCredentialsForRole(credentials.Role)
+	_, err = m.fetchCredentialsForRole(credentials.Role)
+	if err != nil {
+		logger.Errorf("error fetching updated credentials for expiring: %s", err.Error())
+	}
 }
 
 func (m *CredentialManager) IsRoleActive(role string) (bool, error) {
