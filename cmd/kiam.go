@@ -67,7 +67,7 @@ func main() {
 	opts := &options{}
 
 	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&opts.jsonLog)
-	kingpin.Flag("level", "Log level").Default("info").EnumVar(&opts.logLevel, "debug", "info", "warn", "error")
+	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&opts.logLevel, "debug", "info", "warn", "error")
 
 	kingpin.Flag("kubeconfig", "Path to kube config").StringVar(&opts.kubeconfig)
 	kingpin.Flag("port", "HTTP port").Default("3100").IntVar(&opts.port)

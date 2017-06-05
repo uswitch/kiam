@@ -29,25 +29,22 @@ Images are automatically pushed to Docker Hub: [uswitch/kiam](https://hub.docker
 
 ## Usage
 ```
-$ kiam --help
 usage: kiam --role-base-arn=ROLE-BASE-ARN --host=HOST [<flags>]
 
 Flags:
-      --help                   Show context-sensitive help (also try --help-long and --help-man).
-      --json-log               Output log in JSON
-  -d, --debug                  Log at Debug level
-      --kubeconfig=KUBECONFIG  Path to kube config
-      --port=3100              HTTP port
-      --sync-interval=2m       Interval to refresh pod state from API server
-      --allow-ip-query         Allow client IP to be specified with ?ip. Development use only.
-      --role-base-arn=ROLE-BASE-ARN  
-                               Base ARN for roles. e.g. arn:aws:iam::123456789:role/
-      --statsd=""              UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125
-      --statsd-interval=10s    Interval to publish to StatsD
-      --iptables               Add IPTables rules
-      --host=HOST              Host IP address.
-      --host-interface="docker0"  
-                               Network interface for pods to configure IPTables.
+  --help                         Show context-sensitive help (also try --help-long and --help-man).
+  --json-log                     Output log in JSON
+  --level=info                   Log level: debug, info, warn, error.
+  --kubeconfig=KUBECONFIG        Path to kube config
+  --port=3100                    HTTP port
+  --sync-interval=2m             Interval to refresh pod state from API server
+  --allow-ip-query               Allow client IP to be specified with ?ip. Development use only.
+  --role-base-arn=ROLE-BASE-ARN  Base ARN for roles. e.g. arn:aws:iam::123456789:role/
+  --statsd=""                    UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125
+  --statsd-interval=10s          Interval to publish to StatsD
+  --iptables                     Add IPTables rules
+  --host=HOST                    Host IP address.
+  --host-interface="docker0"     Network interface for pods to configure IPTables.
 ```
 
 ## How it Works
