@@ -77,7 +77,7 @@ If you want to build and run locally you can
 $ mkdir -p $GOPATH/src/github.com/uswitch
 $ git clone git@github.com:uswitch/kiam.git $GOPATH/src/github.com/uswitch/kiam
 $ cd $GOPATH/src/github.com/uswitch/kiam
-$ go build -o bin/kiam cmd/*.go
+$ make
 ```
 
 ## License
