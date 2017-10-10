@@ -18,11 +18,9 @@ import (
 	"github.com/pubnub/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/k8sc/official"
+	// "github.com/uswitch/k8sc/official"
 	http "github.com/uswitch/kiam/pkg/aws/metadata"
-	"github.com/uswitch/kiam/pkg/aws/sts"
-	"github.com/uswitch/kiam/pkg/k8s"
-	"github.com/uswitch/kiam/pkg/prefetch"
+	kiamserver "github.com/uswitch/kiam/pkg/server"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"net"
 	"os"
@@ -44,6 +42,7 @@ type options struct {
 	iptables       bool
 	hostIP         string
 	hostInterface  string
+	serverAddress  string
 }
 
 func (o *options) configureLogger() {
@@ -81,6 +80,8 @@ func main() {
 	kingpin.Flag("iptables", "Add IPTables rules").Default("false").BoolVar(&opts.iptables)
 	kingpin.Flag("host", "Host IP address.").Envar("HOST_IP").Required().StringVar(&opts.hostIP)
 	kingpin.Flag("host-interface", "Network interface for pods to configure IPTables.").Default("docker0").StringVar(&opts.hostInterface)
+
+	kingpin.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&opts.serverAddress)
 	kingpin.Parse()
 
 	opts.configureLogger()
@@ -103,10 +104,10 @@ func main() {
 		go statsd.StatsD(metrics.DefaultRegistry, opts.statsDInterval, "kiam", addr)
 	}
 
-	client, err := official.NewClient(opts.kubeconfig)
-	if err != nil {
-		log.Fatalf("couldn't create kubernetes client: %s", err.Error())
-	}
+	// client, err := official.NewClient(opts.kubeconfig)
+	// if err != nil {
+	//   log.Fatalf("couldn't create kubernetes client: %s", err.Error())
+	// }
 
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
@@ -118,17 +119,22 @@ func main() {
 	config := http.NewConfig(opts.port)
 	config.AllowIPQuery = opts.allowIPQuery
 
-	cache := k8s.PodCache(k8s.KubernetesSource(client), opts.syncInterval)
-	cache.Run(ctx)
+	gateway, err := kiamserver.NewGateway(opts.serverAddress)
+	if err != nil {
+		log.Fatalf("error creating server gateway: %s", err.Error())
+	}
 
-	credentials := sts.DefaultCache(opts.roleBaseARN, opts.hostIP)
-	manager := prefetch.NewManager(credentials, cache, cache)
-	go manager.Run(ctx)
+	// cache := k8s.PodCache(k8s.KubernetesSource(client), opts.syncInterval)
+	// cache.Run(ctx)
+	//
+	// credentials := sts.DefaultCache(opts.roleBaseARN, opts.hostIP)
+	// manager := prefetch.NewManager(credentials, cache, cache)
+	// go manager.Run(ctx)
 
-	server := http.NewWebServer(config, cache, credentials)
+	server := http.NewWebServer(config, gateway, gateway)
 	go server.Serve()
 	defer server.Stop(ctx)
 
 	<-stopChan
-	log.Infoln("terminating...")
+	log.Infoln("stopped")
 }

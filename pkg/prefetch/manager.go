@@ -87,5 +87,5 @@ func (m *CredentialManager) handleExpiring(credentials *sts.RoleCredentials) {
 }
 
 func (m *CredentialManager) IsRoleActive(role string) (bool, error) {
-	return m.finder.IsActivePodsForRole(role)
+	return m.announcer.IsActivePodsForRole(role)
 }

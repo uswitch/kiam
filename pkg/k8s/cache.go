@@ -27,13 +27,13 @@ import (
 type PodFinder interface {
 	// Finds a uncompleted pod from its IP address
 	FindPodForIP(ip string) (*v1.Pod, error)
-	// Return whether there are still uncompleted pods in the specified role
-	IsActivePodsForRole(role string) (bool, error)
 }
 
 type PodAnnouncer interface {
 	// Will receive a Pod whenever there's a change/addition for a Pod with a role.
 	Pods() <-chan *v1.Pod
+	// Return whether there are still uncompleted pods in the specified role
+	IsActivePodsForRole(role string) (bool, error)
 }
 
 type service struct {
