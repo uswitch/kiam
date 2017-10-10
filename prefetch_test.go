@@ -28,20 +28,21 @@ func TestPrefetchRunningPods(t *testing.T) {
 
 	requestedRoles := make(chan string)
 	finder := testutil.NewStubFinder(nil)
-	issuer := testutil.NewStubIssuer(func(role string) (*sts.Credentials, error) {
+	announcer := testutil.NewStubAnnouncer()
+	cache := testutil.NewStubCredentialsCache(func(role string) (*sts.Credentials, error) {
 		requestedRoles <- role
 		return &sts.Credentials{}, nil
 	})
-	manager := prefetch.NewManager(issuer, finder)
+	manager := prefetch.NewManager(cache, finder, announcer)
 	go manager.Run(ctx)
 
-	finder.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))
+	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))
 	role := <-requestedRoles
 	if role != "role" {
 		t.Error("should have requested role")
 	}
 
-	finder.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Failed", "failed_role"))
+	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Failed", "failed_role"))
 	select {
 	case role = <-requestedRoles:
 		t.Error("didn't expect to request role, but was requested", role)

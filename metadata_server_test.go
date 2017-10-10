@@ -167,7 +167,7 @@ func TestReturnsCredentials(t *testing.T) {
 	// fails because go-metrics leaks a ticker
 
 	podFinder := testutil.NewStubFinder(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "foo_role"))
-	issuer := testutil.NewStubIssuer(func(role string) (*sts.Credentials, error) {
+	issuer := testutil.NewStubCredentialsCache(func(role string) (*sts.Credentials, error) {
 		return &sts.Credentials{
 			AccessKeyId: "test",
 		}, nil

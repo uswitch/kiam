@@ -118,14 +118,14 @@ func main() {
 	config := http.NewConfig(opts.port)
 	config.AllowIPQuery = opts.allowIPQuery
 
-	finder := k8s.PodCache(k8s.KubernetesSource(client), opts.syncInterval)
-	finder.Run(ctx)
+	cache := k8s.PodCache(k8s.KubernetesSource(client), opts.syncInterval)
+	cache.Run(ctx)
 
 	credentials := sts.DefaultCache(opts.roleBaseARN, opts.hostIP)
-	manager := prefetch.NewManager(credentials, finder)
+	manager := prefetch.NewManager(credentials, cache, cache)
 	go manager.Run(ctx)
 
-	server := http.NewWebServer(config, finder, credentials)
+	server := http.NewWebServer(config, cache, credentials)
 	go server.Serve()
 	defer server.Stop(ctx)
 

@@ -22,12 +22,13 @@ import (
 )
 
 type CredentialManager struct {
-	issuer sts.CredentialsIssuer
-	finder k8s.PodFinderAnnouncer
+	cache     sts.CredentialsCache
+	finder    k8s.PodFinder
+	announcer k8s.PodAnnouncer
 }
 
-func NewManager(issuer sts.CredentialsIssuer, finder k8s.PodFinderAnnouncer) *CredentialManager {
-	return &CredentialManager{issuer: issuer, finder: finder}
+func NewManager(cache sts.CredentialsCache, finder k8s.PodFinder, announcer k8s.PodAnnouncer) *CredentialManager {
+	return &CredentialManager{cache: cache, finder: finder, announcer: announcer}
 }
 
 func (m *CredentialManager) fetchCredentials(pod *v1.Pod) {
@@ -47,7 +48,7 @@ func (m *CredentialManager) fetchCredentials(pod *v1.Pod) {
 }
 
 func (m *CredentialManager) fetchCredentialsForRole(role string) (*sts.Credentials, error) {
-	return m.issuer.CredentialsForRole(role)
+	return m.cache.CredentialsForRole(role)
 }
 
 func (m *CredentialManager) Run(ctx context.Context) {
@@ -55,10 +56,10 @@ func (m *CredentialManager) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case pod := <-m.finder.Pods():
+		case pod := <-m.announcer.Pods():
 			log.WithFields(k8s.PodFields(pod)).Debugf("pod announced")
 			m.fetchCredentials(pod)
-		case expiring := <-m.issuer.Expiring():
+		case expiring := <-m.cache.Expiring():
 			m.handleExpiring(expiring)
 		}
 	}

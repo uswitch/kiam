@@ -33,8 +33,8 @@ import (
 
 type Server struct {
 	cfg         *ServerConfig
-	finder      k8s.PodFinderAnnouncer
-	credentials sts.CredentialsIssuer
+	finder      k8s.PodFinder
+	credentials sts.CredentialsCache
 	mutex       sync.Mutex
 	server      *http.Server
 }
@@ -55,7 +55,7 @@ func NewConfig(port int) *ServerConfig {
 	}
 }
 
-func NewWebServer(config *ServerConfig, finder k8s.PodFinderAnnouncer, credentials sts.CredentialsIssuer) *Server {
+func NewWebServer(config *ServerConfig, finder k8s.PodFinder, credentials sts.CredentialsCache) *Server {
 	return &Server{cfg: config, finder: finder, credentials: credentials}
 }
 

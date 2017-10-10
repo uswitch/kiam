@@ -18,12 +18,11 @@ import (
 )
 
 func NewStubFinder(pod *v1.Pod) *stubFinder {
-	return &stubFinder{pod: pod, pods: make(chan *v1.Pod)}
+	return &stubFinder{pod: pod}
 }
 
 type stubFinder struct {
-	pod  *v1.Pod
-	pods chan *v1.Pod
+	pod *v1.Pod
 }
 
 func (f *stubFinder) FindPodForIP(ip string) (*v1.Pod, error) {
@@ -34,10 +33,18 @@ func (f *stubFinder) IsActivePodsForRole(role string) (bool, error) {
 	return true, nil
 }
 
-func (f *stubFinder) Announce(pod *v1.Pod) {
+type stubAnnouncer struct {
+	pods chan *v1.Pod
+}
+
+func NewStubAnnouncer() *stubAnnouncer {
+	return &stubAnnouncer{pods: make(chan *v1.Pod)}
+}
+
+func (f *stubAnnouncer) Announce(pod *v1.Pod) {
 	f.pods <- pod
 }
 
-func (f *stubFinder) Pods() <-chan *v1.Pod {
+func (f *stubAnnouncer) Pods() <-chan *v1.Pod {
 	return f.pods
 }

@@ -17,18 +17,18 @@ import (
 	"github.com/uswitch/kiam/pkg/aws/sts"
 )
 
-type stubIssuer struct {
+type stubCache struct {
 	issue func(role string) (*sts.Credentials, error)
 }
 
-func (i *stubIssuer) CredentialsForRole(role string) (*sts.Credentials, error) {
+func (i *stubCache) CredentialsForRole(role string) (*sts.Credentials, error) {
 	return i.issue(role)
 }
 
-func (i *stubIssuer) Expiring() chan *sts.RoleCredentials {
+func (i *stubCache) Expiring() chan *sts.RoleCredentials {
 	return make(chan *sts.RoleCredentials)
 }
 
-func NewStubIssuer(f func(role string) (*sts.Credentials, error)) sts.CredentialsIssuer {
-	return &stubIssuer{f}
+func NewStubCredentialsCache(f func(role string) (*sts.Credentials, error)) sts.CredentialsCache {
+	return &stubCache{f}
 }
