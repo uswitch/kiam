@@ -15,6 +15,7 @@ package sts
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/patrickmn/go-cache"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +34,7 @@ type credentialsCache struct {
 	sessionName    string
 	meterCacheHit  metrics.Meter
 	meterCacheMiss metrics.Meter
+	session        *session.Session
 }
 
 type RoleCredentials struct {
@@ -46,13 +48,14 @@ const (
 	DefaultCacheTTL                  = 10 * time.Minute
 )
 
-func Default(roleBaseARN, sessionName string) *credentialsCache {
+func DefaultCache(roleBaseARN, sessionName string) *credentialsCache {
 	c := &credentialsCache{
 		baseARN:        roleBaseARN,
 		expiring:       make(chan *RoleCredentials, 1),
 		sessionName:    fmt.Sprintf("kiam-%s", sessionName),
 		meterCacheHit:  metrics.GetOrRegisterMeter("credentialsCache.cacheHit", metrics.DefaultRegistry),
 		meterCacheMiss: metrics.GetOrRegisterMeter("credentialsCache.cacheMiss", metrics.DefaultRegistry),
+		session:        session.Must(session.NewSession()),
 	}
 	c.cache = cache.New(DefaultCacheTTL, DefaultPurgeInterval)
 	c.cache.OnEvicted(c.evicted)
@@ -95,7 +98,7 @@ func (c *credentialsCache) CredentialsForRole(role string) (*Credentials, error)
 	c.meterCacheMiss.Mark(1)
 
 	arn := fmt.Sprintf("%s%s", c.baseARN, role)
-	credentials, err := IssueNewCredentials(arn, c.sessionName, DefaultCredentialsValidityPeriod)
+	credentials, err := issueNewCredentials(c.session, arn, c.sessionName, DefaultCredentialsValidityPeriod)
 	if err != nil {
 		return nil, err
 	}

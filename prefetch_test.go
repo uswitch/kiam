@@ -15,7 +15,7 @@ package kiam
 
 import (
 	"context"
-	"github.com/uswitch/kiam/pkg/creds"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/prefetch"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"testing"
@@ -28,9 +28,9 @@ func TestPrefetchRunningPods(t *testing.T) {
 
 	requestedRoles := make(chan string)
 	finder := testutil.NewStubFinder(nil)
-	issuer := testutil.NewStubIssuer(func(role string) (*creds.Credentials, error) {
+	issuer := testutil.NewStubIssuer(func(role string) (*sts.Credentials, error) {
 		requestedRoles <- role
-		return &creds.Credentials{}, nil
+		return &sts.Credentials{}, nil
 	})
 	manager := prefetch.NewManager(issuer, finder)
 	go manager.Run(ctx)

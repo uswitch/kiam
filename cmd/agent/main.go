@@ -121,7 +121,7 @@ func main() {
 	finder := k8s.PodCache(k8s.KubernetesSource(client), opts.syncInterval)
 	finder.Run(ctx)
 
-	credentials := sts.Default(opts.roleBaseARN, opts.hostIP)
+	credentials := sts.DefaultCache(opts.roleBaseARN, opts.hostIP)
 	manager := prefetch.NewManager(credentials, finder)
 	go manager.Run(ctx)
 

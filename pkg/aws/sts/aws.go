@@ -21,12 +21,7 @@ import (
 	"time"
 )
 
-func IssueNewCredentials(roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
-	session, err := session.NewSession()
-	if err != nil {
-		return nil, err
-	}
-
+func issueNewCredentials(session *session.Session, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
 	timer := metrics.GetOrRegisterTimer("aws.assumeRole", metrics.DefaultRegistry)
 	started := time.Now()
 	defer timer.UpdateSince(started)
