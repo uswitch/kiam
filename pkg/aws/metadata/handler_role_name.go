@@ -18,9 +18,7 @@ import (
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	khttp "github.com/uswitch/kiam/pkg/http"
-	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/vmg/backoff"
-	"k8s.io/client-go/pkg/api/v1"
 	"net/http"
 	"time"
 )
@@ -47,19 +45,19 @@ func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int,
 
 	respCh := make(chan *asyncObj)
 	go func() {
-		podCh := make(chan *v1.Pod, 1)
+		roleCh := make(chan string, 1)
 		op := func() error {
-			pod, err := s.finder.FindPodForIP(ip)
+			role, err := s.finder.FindRoleFromIP(ip)
 			if err != nil {
 				return err
 			}
 
-			if pod == nil {
+			if role == "" {
 				requestLog.Warnf("no pod found for ip")
 				return PodNotFound
 			}
 
-			podCh <- pod
+			roleCh <- role
 			return nil
 		}
 
@@ -70,8 +68,8 @@ func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int,
 		if err != nil {
 			respCh <- &asyncObj{obj: nil, err: err}
 		} else {
-			pod := <-podCh
-			respCh <- &asyncObj{obj: pod, err: nil}
+			role := <-roleCh
+			respCh <- &asyncObj{obj: role, err: nil}
 		}
 	}()
 
@@ -88,10 +86,7 @@ func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int,
 			return http.StatusInternalServerError, fmt.Errorf("error finding pod: %s", err.Error())
 		}
 
-		pod := resp.obj.(*v1.Pod)
-		log.WithFields(k8s.PodFields(pod)).Infof("found pod")
-
-		role := k8s.PodRole(pod)
+		role := resp.obj.(string)
 		if role == "" {
 			return http.StatusNotFound, fmt.Errorf("no role for pod %s", ip)
 		}

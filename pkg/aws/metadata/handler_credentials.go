@@ -19,7 +19,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	"github.com/uswitch/kiam/pkg/aws/sts"
-	"github.com/uswitch/kiam/pkg/k8s"
 	"net/http"
 	"time"
 )
@@ -36,12 +35,12 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusInternalServerError, fmt.Errorf("error parsing client ip %s: %s", ip, err.Error())
 	}
 
-	pod, err := s.finder.FindPodForIP(ip)
+	foundRole, err := s.finder.FindRoleFromIP(ip)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
 	}
 
-	if pod == nil {
+	if foundRole == "" {
 		metrics.GetOrRegisterMeter("credentialsHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
 		return http.StatusNotFound, fmt.Errorf("no pod found for ip %s", ip)
 	}
@@ -51,8 +50,8 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusBadRequest, fmt.Errorf("no role specified")
 	}
 
-	if k8s.PodRole(pod) != role {
-		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", role, k8s.PodRole(pod))
+	if foundRole != role {
+		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", role, foundRole)
 	}
 
 	respCh := make(chan *asyncObj)

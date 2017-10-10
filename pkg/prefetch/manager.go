@@ -23,11 +23,11 @@ import (
 
 type CredentialManager struct {
 	cache     sts.CredentialsCache
-	finder    k8s.PodFinder
+	finder    k8s.RoleFinder
 	announcer k8s.PodAnnouncer
 }
 
-func NewManager(cache sts.CredentialsCache, finder k8s.PodFinder, announcer k8s.PodAnnouncer) *CredentialManager {
+func NewManager(cache sts.CredentialsCache, finder k8s.RoleFinder, announcer k8s.PodAnnouncer) *CredentialManager {
 	return &CredentialManager{cache: cache, finder: finder, announcer: announcer}
 }
 

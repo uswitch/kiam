@@ -19,10 +19,9 @@ import (
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
-	"k8s.io/client-go/pkg/api/v1"
 )
 
-// Handles interaction with KiamServer, exposing k8s.PodFinder and sts.CredentialsProvider interfaces
+// Handles interaction with KiamServer, exposing k8s.RoleFinder and sts.CredentialsProvider interfaces
 type KiamGateway struct {
 	conn   *grpc.ClientConn
 	client pb.KiamServiceClient
@@ -47,10 +46,10 @@ func (g *KiamGateway) Close() {
 	g.conn.Close()
 }
 
-func (g *KiamGateway) FindPodForIP(ip string) (*v1.Pod, error) {
+func (g *KiamGateway) FindRoleFromIP(ip string) (string, error) {
 	log.Printf("finding pod for ip: %s", ip)
 	g.client.GetPodRole(context.Background(), &pb.GetPodRoleRequest{Ip: ip})
-	return nil, nil
+	return "", nil
 }
 
 func (g *KiamGateway) CredentialsForRole(role string) (*sts.Credentials, error) {
