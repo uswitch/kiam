@@ -29,10 +29,6 @@ func (f *stubFinder) FindPodForIP(ip string) (*v1.Pod, error) {
 	return f.pod, nil
 }
 
-func (f *stubFinder) IsActivePodsForRole(role string) (bool, error) {
-	return true, nil
-}
-
 type stubAnnouncer struct {
 	pods chan *v1.Pod
 }
@@ -47,4 +43,8 @@ func (f *stubAnnouncer) Announce(pod *v1.Pod) {
 
 func (f *stubAnnouncer) Pods() <-chan *v1.Pod {
 	return f.pods
+}
+
+func (f *stubAnnouncer) IsActivePodsForRole(role string) (bool, error) {
+	return true, nil
 }
