@@ -32,7 +32,7 @@ func (s *statusWriter) WriteHeader(code int) {
 	s.ResponseWriter.WriteHeader(code)
 }
 
-func requestFields(req *http.Request) log.Fields {
+func RequestFields(req *http.Request) log.Fields {
 	return log.Fields{
 		"method": req.Method,
 		"path":   req.URL.Path,
@@ -48,6 +48,6 @@ func LoggingHandler(handler http.Handler) http.Handler {
 			"headers": w.Header(),
 			"status":  statusWriter.statusCode,
 		}
-		log.WithFields(requestFields(req)).WithFields(fields).Infof("processed request")
+		log.WithFields(RequestFields(req)).WithFields(fields).Infof("processed request")
 	})
 }

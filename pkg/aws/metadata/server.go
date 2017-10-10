@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package http
+package metadata
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 	"github.com/rcrowley/go-metrics/exp"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/creds"
+	khttp "github.com/uswitch/kiam/pkg/http"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"net/http"
 	"net/http/httputil"
@@ -77,7 +78,7 @@ func (s *Server) Serve() error {
 	router.Handle("/{path:.*}", httputil.NewSingleHostReverseProxy(metadataURL))
 
 	s.mutex.Lock()
-	s.server = &http.Server{Addr: s.listenAddress(), Handler: LoggingHandler(router)}
+	s.server = &http.Server{Addr: s.listenAddress(), Handler: khttp.LoggingHandler(router)}
 	s.mutex.Unlock()
 
 	log.Infof("listening %s", s.listenAddress())
@@ -128,7 +129,7 @@ func ErrorHandler(f func(http.ResponseWriter, *http.Request) (int, error)) func(
 	return func(w http.ResponseWriter, req *http.Request) {
 		status, err := f(w, req)
 		if err != nil {
-			log.WithFields(requestFields(req)).Errorf("error processing request: %s", err.Error())
+			log.WithFields(khttp.RequestFields(req)).Errorf("error processing request: %s", err.Error())
 			http.Error(w, err.Error(), status)
 		}
 	}

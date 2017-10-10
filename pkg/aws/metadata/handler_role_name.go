@@ -11,12 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package http
+package metadata
 
 import (
 	"fmt"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
+	khttp "github.com/uswitch/kiam/pkg/http"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/vmg/backoff"
 	"k8s.io/client-go/pkg/api/v1"
@@ -34,7 +35,7 @@ type asyncObj struct {
 }
 
 func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int, error) {
-	requestLog := log.WithFields(requestFields(req))
+	requestLog := log.WithFields(khttp.RequestFields(req))
 	roleNameTimings := metrics.GetOrRegisterTimer("roleNameHandler", metrics.DefaultRegistry)
 	startTime := time.Now()
 	defer roleNameTimings.UpdateSince(startTime)

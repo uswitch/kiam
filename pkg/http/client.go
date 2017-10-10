@@ -34,7 +34,7 @@ type asyncResponse struct {
 	Err      error
 }
 
-func asyncGet(ctx context.Context, url string) chan *asyncResponse {
+func AsyncGet(ctx context.Context, url string) chan *asyncResponse {
 	out := make(chan *asyncResponse)
 	go func() {
 		resp, err := httpGet(ctx, url)

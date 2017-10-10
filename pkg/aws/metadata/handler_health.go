@@ -11,12 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package http
+package metadata
 
 import (
 	"context"
 	"fmt"
 	"github.com/rcrowley/go-metrics"
+	khttp "github.com/uswitch/kiam/pkg/http"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -30,7 +31,7 @@ func (s *Server) healthHandler(w http.ResponseWriter, req *http.Request) (int, e
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	responseCh := asyncGet(ctx, fmt.Sprintf("%s/latest/meta-data/instance-id", s.cfg.MetadataEndpoint))
+	responseCh := khttp.AsyncGet(ctx, fmt.Sprintf("%s/latest/meta-data/instance-id", s.cfg.MetadataEndpoint))
 
 	select {
 	case resp := <-responseCh:

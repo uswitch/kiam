@@ -1,7 +1,7 @@
 .PHONY: clean
 	
-bin/kiam: $(shell find . -name '*.go')
-	go build -o bin/kiam cmd/*.go
+bin/agent: $(shell find . -name '*.go')
+	go build -o bin/agent cmd/agent/*.go
 
 clean:
 	rm -rf bin/

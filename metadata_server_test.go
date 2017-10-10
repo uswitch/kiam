@@ -18,8 +18,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/fortytw2/leaktest"
+	"github.com/uswitch/kiam/pkg/aws/metadata"
 	"github.com/uswitch/kiam/pkg/creds"
-	kh "github.com/uswitch/kiam/pkg/http"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"github.com/vmg/backoff"
 	"io/ioutil"
@@ -29,7 +29,7 @@ import (
 )
 
 func TestParseAddress(t *testing.T) {
-	ip, err := kh.ParseClientIP("127.0.0.1:9000")
+	ip, err := metadata.ParseClientIP("127.0.0.1:9000")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -41,7 +41,7 @@ func TestParseAddress(t *testing.T) {
 
 func TestPassthroughToMetadata(t *testing.T) {
 	testutil.WithAWS(&testutil.AWSMetadata{InstanceID: "i-12345"}, context.Background(), func(ctx context.Context) {
-		server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+		server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 		go server.Serve()
 		waitForServer(defaultConfig(), t)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -63,7 +63,7 @@ func TestPassthroughToMetadata(t *testing.T) {
 
 func TestReturnsHealthStatus(t *testing.T) {
 	testutil.WithAWS(&testutil.AWSMetadata{InstanceID: "i-12345"}, context.Background(), func(ctx context.Context) {
-		server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+		server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 		go server.Serve()
 		waitForServer(defaultConfig(), t)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -86,7 +86,7 @@ func TestReturnsHealthStatus(t *testing.T) {
 func TestReturnRoleForPod(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPodWithRole("", "", "", "", "foo_role")), nil)
+	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPodWithRole("", "", "", "", "foo_role")), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -108,7 +108,7 @@ func TestReturnRoleForPod(t *testing.T) {
 func TestReturnNotFoundWhenNoPodFound(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -127,7 +127,7 @@ func TestReturnNotFoundWhenNoPodFound(t *testing.T) {
 func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -146,7 +146,7 @@ func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
 func TestReturnsNotFoundResponseWithEmptyRole(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	server := kh.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPod("", "", "", "")), nil)
+	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPod("", "", "", "")), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -172,7 +172,7 @@ func TestReturnsCredentials(t *testing.T) {
 			AccessKeyId: "test",
 		}, nil
 	})
-	server := kh.NewWebServer(defaultConfig(), podFinder, issuer)
+	server := metadata.NewWebServer(defaultConfig(), podFinder, issuer)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -194,7 +194,7 @@ func TestReturnsCredentials(t *testing.T) {
 	}
 }
 
-func waitForServer(config *kh.ServerConfig, t *testing.T) {
+func waitForServer(config *metadata.ServerConfig, t *testing.T) {
 	op := func() error {
 		_, status, err := get("/ping")
 		if err != nil {
@@ -212,8 +212,8 @@ func waitForServer(config *kh.ServerConfig, t *testing.T) {
 	}
 }
 
-func defaultConfig() *kh.ServerConfig {
-	return &kh.ServerConfig{
+func defaultConfig() *metadata.ServerConfig {
+	return &metadata.ServerConfig{
 		ListenPort:       3129,
 		MetadataEndpoint: "http://localhost:3199",
 		AllowIPQuery:     true,
