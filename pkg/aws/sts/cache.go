@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package creds
+package sts
 
 import (
 	"fmt"
@@ -95,7 +95,7 @@ func (c *credentialsCache) CredentialsForRole(role string) (*Credentials, error)
 	c.meterCacheMiss.Mark(1)
 
 	arn := fmt.Sprintf("%s%s", c.baseARN, role)
-	credentials, err := issueNewCredentials(arn, c.sessionName, DefaultCredentialsValidityPeriod)
+	credentials, err := IssueNewCredentials(arn, c.sessionName, DefaultCredentialsValidityPeriod)
 	if err != nil {
 		return nil, err
 	}

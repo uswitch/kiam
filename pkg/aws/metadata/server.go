@@ -20,7 +20,7 @@ import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
 	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/kiam/pkg/creds"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	khttp "github.com/uswitch/kiam/pkg/http"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"net/http"
@@ -34,7 +34,7 @@ import (
 type Server struct {
 	cfg         *ServerConfig
 	finder      k8s.PodFinderAnnouncer
-	credentials creds.CredentialsIssuer
+	credentials sts.CredentialsIssuer
 	mutex       sync.Mutex
 	server      *http.Server
 }
@@ -55,7 +55,7 @@ func NewConfig(port int) *ServerConfig {
 	}
 }
 
-func NewWebServer(config *ServerConfig, finder k8s.PodFinderAnnouncer, credentials creds.CredentialsIssuer) *Server {
+func NewWebServer(config *ServerConfig, finder k8s.PodFinderAnnouncer, credentials sts.CredentialsIssuer) *Server {
 	return &Server{cfg: config, finder: finder, credentials: credentials}
 }
 

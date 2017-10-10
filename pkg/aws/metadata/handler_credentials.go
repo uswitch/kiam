@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
-	"github.com/uswitch/kiam/pkg/creds"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"net/http"
 	"time"
@@ -72,7 +72,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 			return http.StatusInternalServerError, fmt.Errorf("error requesting credentials: %s", resp.err.Error())
 		}
 
-		creds := resp.obj.(*creds.Credentials)
+		creds := resp.obj.(*sts.Credentials)
 		err = json.NewEncoder(w).Encode(creds)
 		if err != nil {
 			return http.StatusInternalServerError, fmt.Errorf("error encoding credentials: %s", err.Error())

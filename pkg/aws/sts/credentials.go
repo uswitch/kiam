@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package creds
+package sts
 
 import (
 	"time"
@@ -29,7 +29,7 @@ type Credentials struct {
 
 const timeLayout = "2006-01-02T15:04:05Z"
 
-func newCredentials(accessKey, secretKey, token string, expiry time.Time) *Credentials {
+func NewCredentials(accessKey, secretKey, token string, expiry time.Time) *Credentials {
 	return &Credentials{
 		Code:            "Success",
 		Type:            "AWS-HMAC",

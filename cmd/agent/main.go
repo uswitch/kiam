@@ -20,7 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/k8sc/official"
 	http "github.com/uswitch/kiam/pkg/aws/metadata"
-	"github.com/uswitch/kiam/pkg/creds"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/prefetch"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -121,7 +121,7 @@ func main() {
 	finder := k8s.PodCache(k8s.KubernetesSource(client), opts.syncInterval)
 	finder.Run(ctx)
 
-	credentials := creds.Default(opts.roleBaseARN, opts.hostIP)
+	credentials := sts.Default(opts.roleBaseARN, opts.hostIP)
 	manager := prefetch.NewManager(credentials, finder)
 	go manager.Run(ctx)
 

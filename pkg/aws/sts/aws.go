@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package creds
+package sts
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-func issueNewCredentials(roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
+func IssueNewCredentials(roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
 	session, err := session.NewSession()
 	if err != nil {
 		return nil, err
@@ -42,5 +42,5 @@ func issueNewCredentials(roleARN, sessionName string, expiry time.Duration) (*Cr
 		return nil, err
 	}
 
-	return newCredentials(*resp.Credentials.AccessKeyId, *resp.Credentials.SecretAccessKey, *resp.Credentials.SessionToken, *resp.Credentials.Expiration), nil
+	return NewCredentials(*resp.Credentials.AccessKeyId, *resp.Credentials.SecretAccessKey, *resp.Credentials.SessionToken, *resp.Credentials.Expiration), nil
 }

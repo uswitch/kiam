@@ -16,17 +16,17 @@ package prefetch
 import (
 	"context"
 	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/kiam/pkg/creds"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
 type CredentialManager struct {
-	issuer creds.CredentialsIssuer
+	issuer sts.CredentialsIssuer
 	finder k8s.PodFinderAnnouncer
 }
 
-func NewManager(issuer creds.CredentialsIssuer, finder k8s.PodFinderAnnouncer) *CredentialManager {
+func NewManager(issuer sts.CredentialsIssuer, finder k8s.PodFinderAnnouncer) *CredentialManager {
 	return &CredentialManager{issuer: issuer, finder: finder}
 }
 
@@ -42,11 +42,11 @@ func (m *CredentialManager) fetchCredentials(pod *v1.Pod) {
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())
 	} else {
-		logger.WithFields(creds.CredentialsFields(issued, role)).Infof("warming credentials")
+		logger.WithFields(sts.CredentialsFields(issued, role)).Infof("warming credentials")
 	}
 }
 
-func (m *CredentialManager) fetchCredentialsForRole(role string) (*creds.Credentials, error) {
+func (m *CredentialManager) fetchCredentialsForRole(role string) (*sts.Credentials, error) {
 	return m.issuer.CredentialsForRole(role)
 }
 
@@ -64,8 +64,8 @@ func (m *CredentialManager) Run(ctx context.Context) {
 	}
 }
 
-func (m *CredentialManager) handleExpiring(credentials *creds.RoleCredentials) {
-	logger := log.WithFields(creds.CredentialsFields(credentials.Credentials, credentials.Role))
+func (m *CredentialManager) handleExpiring(credentials *sts.RoleCredentials) {
+	logger := log.WithFields(sts.CredentialsFields(credentials.Credentials, credentials.Role))
 
 	active, err := m.IsRoleActive(credentials.Role)
 	if err != nil {
