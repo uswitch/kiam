@@ -22,6 +22,10 @@ import (
 	"time"
 )
 
+type CredentialsProvider interface {
+	CredentialsForRole(role string) (*Credentials, error)
+}
+
 type CredentialsCache interface {
 	CredentialsForRole(role string) (*Credentials, error)
 	Expiring() chan *RoleCredentials
