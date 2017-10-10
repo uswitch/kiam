@@ -14,6 +14,7 @@
 package sts
 
 import (
+	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/patrickmn/go-cache"
@@ -21,15 +22,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"time"
 )
-
-type CredentialsProvider interface {
-	CredentialsForRole(role string) (*Credentials, error)
-}
-
-type CredentialsCache interface {
-	CredentialsForRole(role string) (*Credentials, error)
-	Expiring() chan *RoleCredentials
-}
 
 type credentialsCache struct {
 	baseARN        string
@@ -89,7 +81,7 @@ func (c *credentialsCache) Expiring() chan *RoleCredentials {
 	return c.expiring
 }
 
-func (c *credentialsCache) CredentialsForRole(role string) (*Credentials, error) {
+func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) (*Credentials, error) {
 	item, found := c.cache.Get(role)
 
 	if found {

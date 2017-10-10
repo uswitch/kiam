@@ -35,7 +35,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusInternalServerError, fmt.Errorf("error parsing client ip %s: %s", ip, err.Error())
 	}
 
-	foundRole, err := s.finder.FindRoleFromIP(ip)
+	foundRole, err := s.finder.FindRoleFromIP(req.Context(), ip)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
 	}
@@ -56,7 +56,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 
 	respCh := make(chan *asyncObj)
 	go func() {
-		credentials, err := s.credentials.CredentialsForRole(role)
+		credentials, err := s.credentials.CredentialsForRole(req.Context(), role)
 		respCh <- &asyncObj{credentials, err}
 	}()
 

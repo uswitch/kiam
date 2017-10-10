@@ -31,7 +31,7 @@ func NewManager(cache sts.CredentialsCache, finder k8s.RoleFinder, announcer k8s
 	return &CredentialManager{cache: cache, finder: finder, announcer: announcer}
 }
 
-func (m *CredentialManager) fetchCredentials(pod *v1.Pod) {
+func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	logger := log.WithFields(k8s.PodFields(pod))
 	if k8s.IsPodCompleted(pod) {
 		logger.Debugf("ignoring fetch credentials for completed pod")
@@ -39,7 +39,7 @@ func (m *CredentialManager) fetchCredentials(pod *v1.Pod) {
 	}
 
 	role := k8s.PodRole(pod)
-	issued, err := m.fetchCredentialsForRole(role)
+	issued, err := m.fetchCredentialsForRole(ctx, role)
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())
 	} else {
@@ -47,8 +47,8 @@ func (m *CredentialManager) fetchCredentials(pod *v1.Pod) {
 	}
 }
 
-func (m *CredentialManager) fetchCredentialsForRole(role string) (*sts.Credentials, error) {
-	return m.cache.CredentialsForRole(role)
+func (m *CredentialManager) fetchCredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
+	return m.cache.CredentialsForRole(ctx, role)
 }
 
 func (m *CredentialManager) Run(ctx context.Context) {
@@ -58,14 +58,14 @@ func (m *CredentialManager) Run(ctx context.Context) {
 			return
 		case pod := <-m.announcer.Pods():
 			log.WithFields(k8s.PodFields(pod)).Debugf("pod announced")
-			m.fetchCredentials(pod)
+			m.fetchCredentials(ctx, pod)
 		case expiring := <-m.cache.Expiring():
-			m.handleExpiring(expiring)
+			m.handleExpiring(ctx, expiring)
 		}
 	}
 }
 
-func (m *CredentialManager) handleExpiring(credentials *sts.RoleCredentials) {
+func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts.RoleCredentials) {
 	logger := log.WithFields(sts.CredentialsFields(credentials.Credentials, credentials.Role))
 
 	active, err := m.IsRoleActive(credentials.Role)
@@ -80,7 +80,7 @@ func (m *CredentialManager) handleExpiring(credentials *sts.RoleCredentials) {
 	}
 
 	logger.Infof("expiring credentials, fetching updated")
-	_, err = m.fetchCredentialsForRole(credentials.Role)
+	_, err = m.fetchCredentialsForRole(ctx, credentials.Role)
 	if err != nil {
 		logger.Errorf("error fetching updated credentials for expiring: %s", err.Error())
 	}

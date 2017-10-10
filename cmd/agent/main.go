@@ -18,7 +18,6 @@ import (
 	"github.com/pubnub/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
-	// "github.com/uswitch/k8sc/official"
 	http "github.com/uswitch/kiam/pkg/aws/metadata"
 	kiamserver "github.com/uswitch/kiam/pkg/server"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -32,10 +31,8 @@ import (
 type options struct {
 	jsonLog        bool
 	logLevel       string
-	kubeconfig     string
 	port           int
 	allowIPQuery   bool
-	syncInterval   time.Duration
 	roleBaseARN    string
 	statsD         string
 	statsDInterval time.Duration
@@ -68,9 +65,7 @@ func main() {
 	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&opts.jsonLog)
 	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&opts.logLevel, "debug", "info", "warn", "error")
 
-	kingpin.Flag("kubeconfig", "Path to kube config").StringVar(&opts.kubeconfig)
 	kingpin.Flag("port", "HTTP port").Default("3100").IntVar(&opts.port)
-	kingpin.Flag("sync-interval", "Interval to refresh pod state from API server").Default("2m").DurationVar(&opts.syncInterval)
 	kingpin.Flag("allow-ip-query", "Allow client IP to be specified with ?ip. Development use only.").Default("false").BoolVar(&opts.allowIPQuery)
 	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").Required().StringVar(&opts.roleBaseARN)
 
@@ -104,11 +99,6 @@ func main() {
 		go statsd.StatsD(metrics.DefaultRegistry, opts.statsDInterval, "kiam", addr)
 	}
 
-	// client, err := official.NewClient(opts.kubeconfig)
-	// if err != nil {
-	//   log.Fatalf("couldn't create kubernetes client: %s", err.Error())
-	// }
-
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
@@ -123,13 +113,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
-
-	// cache := k8s.PodCache(k8s.KubernetesSource(client), opts.syncInterval)
-	// cache.Run(ctx)
-	//
-	// credentials := sts.DefaultCache(opts.roleBaseARN, opts.hostIP)
-	// manager := prefetch.NewManager(credentials, cache, cache)
-	// go manager.Run(ctx)
 
 	server := http.NewWebServer(config, gateway, gateway)
 	go server.Serve()

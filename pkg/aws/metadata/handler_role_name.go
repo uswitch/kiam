@@ -47,7 +47,7 @@ func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int,
 	go func() {
 		roleCh := make(chan string, 1)
 		op := func() error {
-			role, err := s.finder.FindRoleFromIP(ip)
+			role, err := s.finder.FindRoleFromIP(req.Context(), ip)
 			if err != nil {
 				return err
 			}

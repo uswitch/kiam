@@ -28,7 +28,7 @@ func TestFindsRunningPod(t *testing.T) {
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
-	c := k8s.PodCache(source, time.Second)
+	c := k8s.NewPodCache(source, time.Second)
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role"))
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 	c.Run(ctx)
@@ -50,7 +50,7 @@ func TestFindRoleActive(t *testing.T) {
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
-	c := k8s.PodCache(source, time.Second)
+	c := k8s.NewPodCache(source, time.Second)
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role"))
 	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "running_role"))
 	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
@@ -77,7 +77,7 @@ func BenchmarkFindPodsByIP(b *testing.B) {
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
-	c := k8s.PodCache(source, time.Second)
+	c := k8s.NewPodCache(source, time.Second)
 	c.Run(ctx)
 	for i := 0; i < 1000; i++ {
 		source.Add(testutil.NewPodWithRole("ns", fmt.Sprintf("name-%d", i), fmt.Sprintf("ip-%d", i), "Running", "foo_role"))
@@ -98,7 +98,7 @@ func BenchmarkIsActiveRole(b *testing.B) {
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
-	c := k8s.PodCache(source, time.Second)
+	c := k8s.NewPodCache(source, time.Second)
 	c.Run(ctx)
 
 	// we setup a simulation to approximate usage patterns: many pods with a handful using the same role:

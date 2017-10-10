@@ -21,7 +21,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Handles interaction with KiamServer, exposing k8s.RoleFinder and sts.CredentialsProvider interfaces
+// Client to interact with KiamServer, exposing k8s.RoleFinder and sts.CredentialsProvider interfaces
 type KiamGateway struct {
 	conn   *grpc.ClientConn
 	client pb.KiamServiceClient
@@ -46,14 +46,17 @@ func (g *KiamGateway) Close() {
 	g.conn.Close()
 }
 
-func (g *KiamGateway) FindRoleFromIP(ip string) (string, error) {
+func (g *KiamGateway) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
 	log.Printf("finding pod for ip: %s", ip)
-	g.client.GetPodRole(context.Background(), &pb.GetPodRoleRequest{Ip: ip})
-	return "", nil
+	role, err := g.client.GetPodRole(ctx, &pb.GetPodRoleRequest{Ip: ip})
+	if err != nil {
+		return "", err
+	}
+	return role.Name, nil
 }
 
-func (g *KiamGateway) CredentialsForRole(role string) (*sts.Credentials, error) {
+func (g *KiamGateway) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
 	log.Printf("credentials for role: %s", role)
-	g.client.GetRoleCredentials(context.Background(), &pb.GetRoleCredentialsRequest{&pb.Role{Name: role}})
+	g.client.GetRoleCredentials(ctx, &pb.GetRoleCredentialsRequest{&pb.Role{Name: role}})
 	return nil, nil
 }

@@ -14,12 +14,13 @@
 package k8s
 
 import (
+	"context"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
 type RoleFinder interface {
 	// Finds a uncompleted pod from its IP address
-	FindRoleFromIP(ip string) (string, error)
+	FindRoleFromIP(ctx context.Context, ip string) (string, error)
 }
 
 type PodAnnouncer interface {

@@ -23,13 +23,15 @@ import (
 	"syscall"
 )
 
-type options struct {
-	bind string
-}
-
 func main() {
-	opts := &options{}
-	kingpin.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&opts.bind)
+	opts := &serv.Config{}
+
+	kingpin.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&opts.BindAddress)
+	kingpin.Flag("kubeconfig", "Path to .kube/config (or empty for in-cluster)").Default("").StringVar(&opts.KubeConfig)
+	kingpin.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&opts.PodSyncInterval)
+	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").Required().StringVar(&opts.RoleBaseARN)
+	kingpin.Flag("host", "Host IP address.").Envar("HOST_IP").Required().StringVar(&opts.Host)
+
 	kingpin.Parse()
 
 	log.Infof("starting server")
@@ -37,10 +39,10 @@ func main() {
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
 
-	_, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	server, err := serv.NewServer(opts.bind)
+	server, err := serv.NewServer(opts)
 	if err != nil {
 		log.Fatal("error creating listener:", err.Error())
 	}
@@ -51,8 +53,8 @@ func main() {
 		server.Stop()
 	}()
 
-	log.Infof("will serve on %s", opts.bind)
-	server.Serve()
+	log.Infof("will serve on %s", opts.BindAddress)
+	server.Serve(ctx)
 
 	log.Infoln("stopped")
 }
