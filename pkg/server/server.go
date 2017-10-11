@@ -74,6 +74,9 @@ func translateCredentialsToProto(credentials *sts.Credentials) *pb.Credentials {
 
 func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCredentialsRequest) (*pb.Credentials, error) {
 	logger := log.WithField("pod.iam.role", req.Role.Name)
+	credentialsTimer := metrics.GetOrRegisterTimer("GetRoleCredentials", metrics.DefaultRegistry)
+	startTime := time.Now()
+	defer credentialsTimer.UpdateSince(startTime)
 
 	logger.Infof("requesting credentials")
 	credentials, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role.Name)

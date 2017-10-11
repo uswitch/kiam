@@ -15,9 +15,11 @@ package server
 
 import (
 	"context"
+	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
+	"time"
 )
 
 // Client to interact with KiamServer, exposing k8s.RoleFinder and sts.CredentialsProvider interfaces
@@ -26,12 +28,20 @@ type KiamGateway struct {
 	client pb.KiamServiceClient
 }
 
+const (
+	RetryInterval   = 10 * time.Millisecond
+	RetryMaxRetries = 10
+)
+
 // Creates a client suitable for interacting with a remote server. It can
 // be closed cleanly
 func NewGateway(address string) (*KiamGateway, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure())
-	conn, err := grpc.Dial(address, opts...)
+	callOpts := []retry.CallOption{
+		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
+		retry.WithMax(RetryMaxRetries),
+	}
+	dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...))}
+	conn, err := grpc.Dial(address, dialOpts...)
 	if err != nil {
 		return nil, err
 	}
