@@ -15,29 +15,38 @@ package main
 
 import (
 	"context"
+	"github.com/pubnub/go-metrics-statsd"
+	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	serv "github.com/uswitch/kiam/pkg/server"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
-	opts := &serv.Config{}
+	serverConfig := &serv.Config{}
 	var flags struct {
-		jsonLog  bool
-		logLevel string
+		jsonLog        bool
+		logLevel       string
+		statsd         string
+		statsdInterval time.Duration
 	}
 
 	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&flags.jsonLog)
 	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&flags.logLevel, "debug", "info", "warn", "error")
 
-	kingpin.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&opts.BindAddress)
-	kingpin.Flag("kubeconfig", "Path to .kube/config (or empty for in-cluster)").Default("").StringVar(&opts.KubeConfig)
-	kingpin.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&opts.PodSyncInterval)
-	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").Required().StringVar(&opts.RoleBaseARN)
-	kingpin.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&opts.SessionName)
+	kingpin.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&flags.statsd)
+	kingpin.Flag("statsd-interval", "Interval to publish to StatsD").Default("10s").DurationVar(&flags.statsdInterval)
+
+	kingpin.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&serverConfig.BindAddress)
+	kingpin.Flag("kubeconfig", "Path to .kube/config (or empty for in-cluster)").Default("").StringVar(&serverConfig.KubeConfig)
+	kingpin.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&serverConfig.PodSyncInterval)
+	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").Required().StringVar(&serverConfig.RoleBaseARN)
+	kingpin.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&serverConfig.SessionName)
 
 	kingpin.Parse()
 
@@ -56,6 +65,14 @@ func main() {
 		log.SetLevel(log.ErrorLevel)
 	}
 
+	if flags.statsd != "" {
+		addr, err := net.ResolveUDPAddr("udp", flags.statsd)
+		if err != nil {
+			log.Fatal("error parsing statsd address:", err.Error())
+		}
+		go statsd.StatsD(metrics.DefaultRegistry, flags.statsdInterval, "kiam.server", addr)
+	}
+
 	log.Infof("starting server")
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
@@ -64,7 +81,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	server, err := serv.NewServer(opts)
+	server, err := serv.NewServer(serverConfig)
 	if err != nil {
 		log.Fatal("error creating listener:", err.Error())
 	}
@@ -75,7 +92,8 @@ func main() {
 		server.Stop()
 	}()
 
-	log.Infof("will serve on %s", opts.BindAddress)
+	log.Infof("will serve on %s", serverConfig.BindAddress)
+
 	server.Serve(ctx)
 
 	log.Infoln("stopped")

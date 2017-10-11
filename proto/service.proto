@@ -20,5 +20,12 @@ message GetRoleCredentialsRequest {
 }
 
 message Credentials {
-  string token = 1;
+  string code = 1;
+  string type = 2;
+  string access_key_id = 3;
+  string secret_access_key = 4;
+  string token = 5;
+  string expiration = 6;
+  string last_updated = 7;
 }
+

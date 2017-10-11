@@ -15,6 +15,7 @@ package server
 
 import (
 	"context"
+	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/k8sc/official"
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -35,13 +36,18 @@ type Config struct {
 }
 
 type KiamServer struct {
-	listener net.Listener
-	server   *grpc.Server
-	cache    *k8s.PodCache
-	manager  *prefetch.CredentialManager
+	listener            net.Listener
+	server              *grpc.Server
+	cache               *k8s.PodCache
+	manager             *prefetch.CredentialManager
+	credentialsProvider sts.CredentialsProvider
 }
 
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
+	roleTimer := metrics.GetOrRegisterTimer("GetPodRole", metrics.DefaultRegistry)
+	startTime := time.Now()
+	defer roleTimer.UpdateSince(startTime)
+
 	logger := log.WithField("pod.ip", req.Ip)
 	role, err := k.cache.FindRoleFromIP(ctx, req.Ip)
 	if err != nil {
@@ -54,9 +60,29 @@ func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) 
 	return &pb.Role{Name: role}, nil
 }
 
+func translateCredentialsToProto(credentials *sts.Credentials) *pb.Credentials {
+	return &pb.Credentials{
+		Code:            credentials.Code,
+		Type:            credentials.Type,
+		AccessKeyId:     credentials.AccessKeyId,
+		SecretAccessKey: credentials.SecretAccessKey,
+		Token:           credentials.Token,
+		Expiration:      credentials.Expiration,
+		LastUpdated:     credentials.LastUpdated,
+	}
+}
+
 func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCredentialsRequest) (*pb.Credentials, error) {
-	log.Infof("GetRoleCredentials: %+v", req)
-	return nil, nil
+	logger := log.WithField("pod.iam.role", req.Role.Name)
+
+	logger.Infof("requesting credentials")
+	credentials, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role.Name)
+	if err != nil {
+		logger.Errorf("error requesting credentials: %s", err.Error())
+		return nil, err
+	}
+
+	return translateCredentialsToProto(credentials), nil
 }
 
 func NewServer(config *Config) (*KiamServer, error) {
@@ -75,6 +101,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	server.cache = k8s.NewPodCache(k8s.KubernetesSource(client), config.PodSyncInterval)
 
 	credentials := sts.DefaultCache(config.RoleBaseARN, config.SessionName)
+	server.credentialsProvider = credentials
 	server.manager = prefetch.NewManager(credentials, server.cache, server.cache)
 
 	var serverOpts []grpc.ServerOption

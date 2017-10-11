@@ -94,7 +94,7 @@ func main() {
 		if err != nil {
 			log.Fatal("error parsing statsd address:", err.Error())
 		}
-		go statsd.StatsD(metrics.DefaultRegistry, opts.statsDInterval, "kiam", addr)
+		go statsd.StatsD(metrics.DefaultRegistry, opts.statsDInterval, "kiam.agent", addr)
 	}
 
 	stopChan := make(chan os.Signal)

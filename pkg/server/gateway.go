@@ -15,7 +15,6 @@ package server
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
@@ -47,7 +46,6 @@ func (g *KiamGateway) Close() {
 }
 
 func (g *KiamGateway) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
-	log.Printf("finding pod for ip: %s", ip)
 	role, err := g.client.GetPodRole(ctx, &pb.GetPodRoleRequest{Ip: ip})
 	if err != nil {
 		return "", err
@@ -56,7 +54,17 @@ func (g *KiamGateway) FindRoleFromIP(ctx context.Context, ip string) (string, er
 }
 
 func (g *KiamGateway) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
-	log.Printf("credentials for role: %s", role)
-	g.client.GetRoleCredentials(ctx, &pb.GetRoleCredentialsRequest{&pb.Role{Name: role}})
-	return nil, nil
+	credentials, err := g.client.GetRoleCredentials(ctx, &pb.GetRoleCredentialsRequest{&pb.Role{Name: role}})
+	if err != nil {
+		return nil, err
+	}
+	return &sts.Credentials{
+		Code:            credentials.Code,
+		Type:            credentials.Type,
+		AccessKeyId:     credentials.AccessKeyId,
+		SecretAccessKey: credentials.SecretAccessKey,
+		Token:           credentials.Token,
+		Expiration:      credentials.Expiration,
+		LastUpdated:     credentials.LastUpdated,
+	}, nil
 }
