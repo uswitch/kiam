@@ -33,7 +33,6 @@ type options struct {
 	logLevel       string
 	port           int
 	allowIPQuery   bool
-	roleBaseARN    string
 	statsD         string
 	statsDInterval time.Duration
 	iptables       bool
@@ -67,7 +66,6 @@ func main() {
 
 	kingpin.Flag("port", "HTTP port").Default("3100").IntVar(&opts.port)
 	kingpin.Flag("allow-ip-query", "Allow client IP to be specified with ?ip. Development use only.").Default("false").BoolVar(&opts.allowIPQuery)
-	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").Required().StringVar(&opts.roleBaseARN)
 
 	kingpin.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&opts.statsD)
 	kingpin.Flag("statsd-interval", "Interval to publish to StatsD").Default("10s").DurationVar(&opts.statsDInterval)

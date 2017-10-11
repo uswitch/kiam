@@ -25,14 +25,36 @@ import (
 
 func main() {
 	opts := &serv.Config{}
+	var flags struct {
+		jsonLog  bool
+		logLevel string
+	}
+
+	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&flags.jsonLog)
+	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&flags.logLevel, "debug", "info", "warn", "error")
 
 	kingpin.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&opts.BindAddress)
 	kingpin.Flag("kubeconfig", "Path to .kube/config (or empty for in-cluster)").Default("").StringVar(&opts.KubeConfig)
 	kingpin.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&opts.PodSyncInterval)
 	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").Required().StringVar(&opts.RoleBaseARN)
-	kingpin.Flag("host", "Host IP address.").Envar("HOST_IP").Required().StringVar(&opts.Host)
+	kingpin.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&opts.SessionName)
 
 	kingpin.Parse()
+
+	if flags.jsonLog {
+		log.SetFormatter(&log.JSONFormatter{})
+	}
+
+	switch flags.logLevel {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	}
 
 	log.Infof("starting server")
 	stopChan := make(chan os.Signal)

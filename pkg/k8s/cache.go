@@ -84,6 +84,10 @@ func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 		}
 	}
 
+	for idx, pod := range found {
+		log.WithFields(PodFields(pod)).Debugf("found %d/%d pods for ip %s", len(found), idx+1, ip)
+	}
+
 	if len(found) == 0 {
 		return nil, nil
 	}
@@ -118,7 +122,6 @@ func (s *PodCache) process(obj interface{}) error {
 
 		role := PodRole(pod)
 		if role != "" {
-			logger.Debugf("announcing pod")
 			s.announceRole(pod)
 		}
 

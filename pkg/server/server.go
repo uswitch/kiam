@@ -30,7 +30,7 @@ type Config struct {
 	BindAddress     string
 	KubeConfig      string
 	PodSyncInterval time.Duration
-	Host            string
+	SessionName     string
 	RoleBaseARN     string
 }
 
@@ -42,12 +42,14 @@ type KiamServer struct {
 }
 
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
+	logger := log.WithField("pod.ip", req.Ip)
 	role, err := k.cache.FindRoleFromIP(ctx, req.Ip)
 	if err != nil {
+		logger.Errorf("error finding role: %s", err.Error())
 		return nil, err
 	}
 
-	log.Infof("GetPodRole: %s, role %s", req.Ip, role)
+	logger.WithField("pod.iam.role", role).Infof("successfully found role")
 
 	return &pb.Role{Name: role}, nil
 }
@@ -72,7 +74,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	}
 	server.cache = k8s.NewPodCache(k8s.KubernetesSource(client), config.PodSyncInterval)
 
-	credentials := sts.DefaultCache(config.RoleBaseARN, config.Host)
+	credentials := sts.DefaultCache(config.RoleBaseARN, config.SessionName)
 	server.manager = prefetch.NewManager(credentials, server.cache, server.cache)
 
 	var serverOpts []grpc.ServerOption
