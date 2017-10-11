@@ -55,7 +55,7 @@ func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) 
 		return nil, err
 	}
 
-	logger.WithField("pod.iam.role", role).Infof("successfully found role")
+	logger.WithField("pod.iam.role", role).Infof("found role")
 
 	return &pb.Role{Name: role}, nil
 }
