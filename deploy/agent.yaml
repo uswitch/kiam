@@ -2,18 +2,24 @@ apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   namespace: kube-system
-  name: kiam
+  name: kiam-agent
 spec:
   template:
     metadata:
       labels:
         app: kiam
+        role: agent
     spec:
       hostNetwork: true
+      nodeSelector:
+        kubernetes.io/role: node
       volumes:
         - name: ssl-certs
           hostPath:
             path: /usr/share/ca-certificates
+        - name: tls
+          secret:
+            secretName: kiam-agent-tls            
       containers:
         - name: kiam
           securityContext:
@@ -26,6 +32,9 @@ spec:
             - --role-base-arn=arn:aws:iam::1234567890:role/
             - --json-log
             - --port=8181
+            - --cert=/etc/kiam/tls/agent.pem
+            - --key=/etc/kiam/tls/agent-key.pem
+            - --ca=/etc/kiam/tls/ca.pem
           env:
             - name: HOST_IP
               valueFrom:
@@ -34,3 +43,5 @@ spec:
           volumeMounts:
             - mountPath: /etc/ssl/certs
               name: ssl-certs
+            - mountPath: /etc/kiam/tls
+              name: tls
