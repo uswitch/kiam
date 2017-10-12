@@ -15,7 +15,8 @@ pipeline:
   build:
     when:
       event: push
-    image: registry.usw.co/kiam/builder
+    image: registry.usw.co/kiam/builder:latest
+    pull: true
     commands:
       - protoc -I proto/ proto/service.proto --go_out=plugins=grpc:proto
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/agent cmd/agent/*.go
