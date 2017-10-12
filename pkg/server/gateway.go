@@ -15,10 +15,15 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"io/ioutil"
 	"time"
 )
 
@@ -35,12 +40,31 @@ const (
 
 // Creates a client suitable for interacting with a remote server. It can
 // be closed cleanly
-func NewGateway(address string) (*KiamGateway, error) {
+func NewGateway(address, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
 		retry.WithMax(RetryMaxRetries),
 	}
-	dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...))}
+
+	certificate, err := tls.LoadX509KeyPair(certificateFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+	certPool := x509.NewCertPool()
+	ca, err := ioutil.ReadFile(caFile)
+	if err != nil {
+		return nil, err
+	}
+	if ok := certPool.AppendCertsFromPEM(ca); !ok {
+		return nil, fmt.Errorf("error appending certs from ca")
+	}
+	creds := credentials.NewTLS(&tls.Config{
+		ServerName:   address,
+		Certificates: []tls.Certificate{certificate},
+		RootCAs:      certPool,
+	})
+
+	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(creds), grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...))}
 	conn, err := grpc.Dial(address, dialOpts...)
 	if err != nil {
 		return nil, err

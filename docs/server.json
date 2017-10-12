@@ -1,0 +1,20 @@
+{
+    "hosts": [
+        "kiam-server.kube-system",
+        "localhost",
+        "localhost:9610"
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C":  "UK",
+            "L":  "London",
+            "O":  "uSwitch",
+            "OU": "WWW",
+            "ST": "London"
+        }
+    ]
+}

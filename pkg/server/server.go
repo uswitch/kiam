@@ -15,6 +15,9 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/k8sc/official"
@@ -23,6 +26,8 @@ import (
 	"github.com/uswitch/kiam/pkg/prefetch"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"io/ioutil"
 	"net"
 	"time"
 )
@@ -33,6 +38,13 @@ type Config struct {
 	PodSyncInterval time.Duration
 	SessionName     string
 	RoleBaseARN     string
+	TLS             *TLSConfig
+}
+
+type TLSConfig struct {
+	ServerCert string
+	ServerKey  string
+	CA         string
 }
 
 type KiamServer struct {
@@ -103,12 +115,32 @@ func NewServer(config *Config) (*KiamServer, error) {
 	}
 	server.cache = k8s.NewPodCache(k8s.KubernetesSource(client), config.PodSyncInterval)
 
-	credentials := sts.DefaultCache(config.RoleBaseARN, config.SessionName)
-	server.credentialsProvider = credentials
-	server.manager = prefetch.NewManager(credentials, server.cache, server.cache)
+	credentialsCache := sts.DefaultCache(config.RoleBaseARN, config.SessionName)
+	server.credentialsProvider = credentialsCache
+	server.manager = prefetch.NewManager(credentialsCache, server.cache, server.cache)
 
-	var serverOpts []grpc.ServerOption
-	grpcServer := grpc.NewServer(serverOpts...)
+	certificate, err := tls.LoadX509KeyPair(config.TLS.ServerCert, config.TLS.ServerKey)
+	if err != nil {
+		return nil, err
+	}
+	certPool := x509.NewCertPool()
+	if err != nil {
+		return nil, err
+	}
+	ca, err := ioutil.ReadFile(config.TLS.CA)
+	if err != nil {
+		return nil, err
+	}
+	if ok := certPool.AppendCertsFromPEM(ca); !ok {
+		return nil, fmt.Errorf("failed to append client certs")
+	}
+	creds := credentials.NewTLS(&tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		Certificates: []tls.Certificate{certificate},
+		ClientCAs:    certPool,
+	})
+
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	pb.RegisterKiamServiceServer(grpcServer, server)
 	server.server = grpcServer
 

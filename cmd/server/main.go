@@ -28,7 +28,7 @@ import (
 )
 
 func main() {
-	serverConfig := &serv.Config{}
+	serverConfig := &serv.Config{TLS: &serv.TLSConfig{}}
 	var flags struct {
 		jsonLog        bool
 		logLevel       string
@@ -47,6 +47,10 @@ func main() {
 	kingpin.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&serverConfig.PodSyncInterval)
 	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").Required().StringVar(&serverConfig.RoleBaseARN)
 	kingpin.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&serverConfig.SessionName)
+
+	kingpin.Flag("cert", "Server certificate path").Required().ExistingFileVar(&serverConfig.TLS.ServerCert)
+	kingpin.Flag("key", "Server private key path").Required().ExistingFileVar(&serverConfig.TLS.ServerKey)
+	kingpin.Flag("ca", "CA path").Required().ExistingFileVar(&serverConfig.TLS.CA)
 
 	kingpin.Parse()
 

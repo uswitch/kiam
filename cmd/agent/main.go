@@ -39,6 +39,10 @@ type options struct {
 	hostIP         string
 	hostInterface  string
 	serverAddress  string
+
+	certificatePath string
+	keyPath         string
+	caPath          string
 }
 
 func (o *options) configureLogger() {
@@ -75,6 +79,10 @@ func main() {
 	kingpin.Flag("host-interface", "Network interface for pods to configure IPTables.").Default("docker0").StringVar(&opts.hostInterface)
 
 	kingpin.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&opts.serverAddress)
+	kingpin.Flag("cert", "Agent certificate path").Required().ExistingFileVar(&opts.certificatePath)
+	kingpin.Flag("key", "Agent key path").Required().ExistingFileVar(&opts.keyPath)
+	kingpin.Flag("ca", "CA certificate path").Required().ExistingFileVar(&opts.caPath)
+
 	kingpin.Parse()
 
 	opts.configureLogger()
@@ -107,7 +115,7 @@ func main() {
 	config := http.NewConfig(opts.port)
 	config.AllowIPQuery = opts.allowIPQuery
 
-	gateway, err := kiamserver.NewGateway(opts.serverAddress)
+	gateway, err := kiamserver.NewGateway(opts.serverAddress, opts.caPath, opts.certificatePath, opts.keyPath)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
