@@ -20,12 +20,13 @@ spec:
             path: /usr/share/ca-certificates
         - name: tls
           secret:
-            secretName: kiam-agent-tls            
+            secretName: kiam-agent-tls
       containers:
         - name: kiam
           securityContext:
             privileged: true
           image: quay.io/uswitch/kiam:agent-and-gateway
+          imagePullPolicy: Always
           command:
             - /agent
           args:

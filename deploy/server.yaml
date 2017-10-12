@@ -26,6 +26,7 @@ spec:
           securityContext:
             privileged: true
           image: quay.io/uswitch/kiam:agent-and-gateway
+          imagePullPolicy: Always
           command:
             - /server
           args:
