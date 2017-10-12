@@ -3,23 +3,10 @@ workspace:
   path: src/github.com/uswitch/kiam
 
 pipeline:
-  builder-image:
-    when:
-      event: push
-    image: plugins/docker
-    dockerfile: Dockerfile.build
-    repo: registry.usw.co/kiam/builder
-    tags:
-      - latest
-      
   build:
     when:
       event: push
-    image: registry.usw.co/kiam/builder:latest
-    pull: true
-    environment:
-      - PATH=/usr/local/go/bin:/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: golang:1.9
     commands:
-      - protoc -I proto/ proto/service.proto --go_out=plugins=grpc:proto
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/agent cmd/agent/*.go
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/server cmd/server/*.go
