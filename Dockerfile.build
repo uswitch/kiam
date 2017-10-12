@@ -10,7 +10,7 @@ RUN tar zxvf /tmp/protobuf-cpp.tar.gz -C /tmp && \
 ADD https://storage.googleapis.com/golang/go1.9.1.linux-amd64.tar.gz /tmp/go1.9.tar.gz
 
 RUN tar -C /usr/local -zxvf /tmp/go1.9.tar.gz && apt-get install -y git && mkdir /go
-ENV PATH /usr/local/go/bin:$PATH
+ENV PATH /usr/local/go/bin:/go/bin:$PATH
 ENV GOPATH /go
 
 RUN go get -u -v github.com/golang/protobuf/protoc-gen-go
