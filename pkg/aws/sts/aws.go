@@ -26,6 +26,10 @@ func issueNewCredentials(session *session.Session, roleARN, sessionName string, 
 	started := time.Now()
 	defer timer.UpdateSince(started)
 
+	counter := metrics.GetOrRegisterCounter("stsAssumeRole.executingRequests", metrics.DefaultRegistry)
+	counter.Inc(1)
+	defer counter.Dec(1)
+
 	svc := sts.New(session)
 	in := &sts.AssumeRoleInput{
 		DurationSeconds: aws.Int64(int64(expiry.Seconds())),
