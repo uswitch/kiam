@@ -1,42 +1,41 @@
+---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   namespace: kube-system
-  name: kiam-agent
+  name: kiam-server
 spec:
   template:
     metadata:
       labels:
         app: kiam
-        role: agent
+        role: server
     spec:
       hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
-        kubernetes.io/role: node
+        kubernetes.io/role: master
       volumes:
         - name: ssl-certs
           hostPath:
             path: /usr/share/ca-certificates
         - name: tls
           secret:
-            secretName: kiam-agent-tls            
+            secretName: kiam-server-tls
       containers:
         - name: kiam
           securityContext:
             privileged: true
           image: quay.io/uswitch/kiam:agent-and-gateway
           command:
-            - /agent
+            - /server
           args:
-            - --iptables
-            - --host-interface=cali+
             - --json-log
-            - --port=8181
-            - --cert=/etc/kiam/tls/agent.pem
-            - --key=/etc/kiam/tls/agent-key.pem
+            - --bind=0.0.0.0:9610
+            - --cert=/etc/kiam/tls/server.pem
+            - --key=/etc/kiam/tls/server-key.pem
             - --ca=/etc/kiam/tls/ca.pem
-            - --server-address=kiam-server:443
+            - --role-base-arn=arn:aws:iam::<account-id>:role/
+            - --sync=1m
           env:
             - name: HOST_IP
               valueFrom:
@@ -47,3 +46,18 @@ spec:
               name: ssl-certs
             - mountPath: /etc/kiam/tls
               name: tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kiam-server
+  namespace: kube-system
+spec:
+  selector:
+    app: kiam
+    role: server
+  ports:
+  - name: grpc
+    port: 443
+    targetPort: 9610
+    protocol: TCP

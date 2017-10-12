@@ -1,7 +1,6 @@
 {
     "hosts": [
-        "kiam-server.kube-system",
-        "localhost",
+        "kiam-server:443",
         "localhost:9610"
     ],
     "key": {
