@@ -17,7 +17,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/rcrowley/go-metrics"
-	khttp "github.com/uswitch/kiam/pkg/http"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -31,29 +30,23 @@ func (s *Server) healthHandler(w http.ResponseWriter, req *http.Request) (int, e
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	responseCh := khttp.AsyncGet(ctx, fmt.Sprintf("%s/latest/meta-data/instance-id", s.cfg.MetadataEndpoint))
-
-	select {
-	case resp := <-responseCh:
-		if resp.Err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("unexpected error looking up instance in metadata api: %s", resp.Err)
-		}
-		defer resp.Response.Body.Close()
-		body, err := ioutil.ReadAll(resp.Response.Body)
-		if err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("couldn't read metadata response: %s", err)
-		}
-
-		fmt.Fprint(w, string(body))
-		return http.StatusOK, nil
-
-	case <-ctx.Done():
-		if ctx.Err() == context.DeadlineExceeded {
-			return http.StatusGatewayTimeout, fmt.Errorf("timeout connecting to metadata api: %s", s.cfg.MetadataEndpoint)
-		} else if ctx.Err() != nil {
-			return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", ctx.Err().Error())
-		}
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/latest/meta-data/instance-id", s.cfg.MetadataEndpoint), nil)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("couldn't create request: %s", err)
 	}
 
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("couldn't read metadata response: %s", err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("couldn't read metadata response: %s", err)
+	}
+
+	fmt.Fprint(w, string(body))
 	return http.StatusOK, nil
 }
