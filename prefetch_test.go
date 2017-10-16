@@ -34,7 +34,7 @@ func TestPrefetchRunningPods(t *testing.T) {
 		return &sts.Credentials{}, nil
 	})
 	manager := prefetch.NewManager(cache, finder, announcer)
-	go manager.Run(ctx)
+	go manager.Run(ctx, 1)
 
 	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))
 	role := <-requestedRoles
