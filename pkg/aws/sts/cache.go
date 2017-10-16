@@ -16,9 +16,6 @@ package sts
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/patrickmn/go-cache"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
@@ -32,7 +29,7 @@ type credentialsCache struct {
 	sessionName    string
 	meterCacheHit  metrics.Meter
 	meterCacheMiss metrics.Meter
-	session        *session.Session
+	gateway        STSGateway
 }
 
 type RoleCredentials struct {
@@ -46,14 +43,14 @@ const (
 	DefaultCacheTTL                  = 10 * time.Minute
 )
 
-func DefaultCache(roleBaseARN, sessionName string) *credentialsCache {
+func DefaultCache(gateway STSGateway, roleBaseARN, sessionName string) *credentialsCache {
 	c := &credentialsCache{
 		baseARN:        roleBaseARN,
 		expiring:       make(chan *RoleCredentials, 1),
 		sessionName:    fmt.Sprintf("kiam-%s", sessionName),
 		meterCacheHit:  metrics.GetOrRegisterMeter("credentialsCache.cacheHit", metrics.DefaultRegistry),
 		meterCacheMiss: metrics.GetOrRegisterMeter("credentialsCache.cacheMiss", metrics.DefaultRegistry),
-		session:        session.Must(session.NewSession()),
+		gateway:        gateway,
 	}
 	c.cache = cache.New(DefaultCacheTTL, DefaultPurgeInterval)
 	c.cache.OnEvicted(c.evicted)
@@ -96,7 +93,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	c.meterCacheMiss.Mark(1)
 
 	arn := fmt.Sprintf("%s%s", c.baseARN, role)
-	credentials, err := c.issueNewCredentials(arn, c.sessionName, DefaultCredentialsValidityPeriod)
+	credentials, err := c.gateway.Issue(arn, c.sessionName, DefaultCredentialsValidityPeriod)
 	if err != nil {
 		return nil, err
 	}
@@ -106,27 +103,4 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	c.cache.Set(role, credentials, DefaultCacheTTL)
 
 	return credentials, nil
-}
-
-func (c *credentialsCache) issueNewCredentials(roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
-	timer := metrics.GetOrRegisterTimer("aws.assumeRole", metrics.DefaultRegistry)
-	started := time.Now()
-	defer timer.UpdateSince(started)
-
-	counter := metrics.GetOrRegisterCounter("stsAssumeRole.executingRequests", metrics.DefaultRegistry)
-	counter.Inc(1)
-	defer counter.Dec(1)
-
-	svc := sts.New(c.session)
-	in := &sts.AssumeRoleInput{
-		DurationSeconds: aws.Int64(int64(expiry.Seconds())),
-		RoleArn:         aws.String(roleARN),
-		RoleSessionName: aws.String(sessionName),
-	}
-	resp, err := svc.AssumeRole(in)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewCredentials(*resp.Credentials.AccessKeyId, *resp.Credentials.SecretAccessKey, *resp.Credentials.SessionToken, *resp.Credentials.Expiration), nil
 }

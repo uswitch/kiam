@@ -125,7 +125,8 @@ func NewServer(config *Config) (*KiamServer, error) {
 	}
 	server.cache = k8s.NewPodCache(k8s.KubernetesSource(client), config.PodSyncInterval)
 
-	credentialsCache := sts.DefaultCache(config.RoleBaseARN, config.SessionName)
+	stsGateway := sts.DefaultGateway()
+	credentialsCache := sts.DefaultCache(stsGateway, config.RoleBaseARN, config.SessionName)
 	server.credentialsProvider = credentialsCache
 	server.manager = prefetch.NewManager(credentialsCache, server.cache, server.cache)
 
