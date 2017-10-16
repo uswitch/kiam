@@ -16,7 +16,9 @@ package sts
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/patrickmn/go-cache"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
@@ -94,7 +96,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	c.meterCacheMiss.Mark(1)
 
 	arn := fmt.Sprintf("%s%s", c.baseARN, role)
-	credentials, err := issueNewCredentials(c.session, arn, c.sessionName, DefaultCredentialsValidityPeriod)
+	credentials, err := c.issueNewCredentials(arn, c.sessionName, DefaultCredentialsValidityPeriod)
 	if err != nil {
 		return nil, err
 	}
@@ -104,4 +106,27 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	c.cache.Set(role, credentials, DefaultCacheTTL)
 
 	return credentials, nil
+}
+
+func (c *credentialsCache) issueNewCredentials(roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
+	timer := metrics.GetOrRegisterTimer("aws.assumeRole", metrics.DefaultRegistry)
+	started := time.Now()
+	defer timer.UpdateSince(started)
+
+	counter := metrics.GetOrRegisterCounter("stsAssumeRole.executingRequests", metrics.DefaultRegistry)
+	counter.Inc(1)
+	defer counter.Dec(1)
+
+	svc := sts.New(c.session)
+	in := &sts.AssumeRoleInput{
+		DurationSeconds: aws.Int64(int64(expiry.Seconds())),
+		RoleArn:         aws.String(roleARN),
+		RoleSessionName: aws.String(sessionName),
+	}
+	resp, err := svc.AssumeRole(in)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewCredentials(*resp.Credentials.AccessKeyId, *resp.Credentials.SecretAccessKey, *resp.Credentials.SessionToken, *resp.Credentials.Expiration), nil
 }
