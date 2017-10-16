@@ -3,6 +3,10 @@ workspace:
   path: src/github.com/uswitch/kiam
 
 pipeline:
+  test:
+    image: golang:1.9
+    commands:
+      - go test *_test.go
   build:
     when:
       event: push

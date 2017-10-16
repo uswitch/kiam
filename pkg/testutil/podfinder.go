@@ -33,7 +33,7 @@ func (f *stubFinder) FindPodForIP(ip string) (*v1.Pod, error) {
 
 func (f *stubFinder) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
 	if f.pod == nil {
-		return ""
+		return "", nil
 	}
 	return k8s.PodRole(f.pod), nil
 }
