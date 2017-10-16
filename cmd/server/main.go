@@ -42,6 +42,7 @@ func main() {
 	kingpin.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&flags.statsd)
 	kingpin.Flag("statsd-interval", "Interval to publish to StatsD").Default("10s").DurationVar(&flags.statsdInterval)
 
+	kingpin.Flag("fetchers", "Number of parallel fetcher go routines").Default("8").IntVar(&serverConfig.ParallelFetcherProcesses)
 	kingpin.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&serverConfig.BindAddress)
 	kingpin.Flag("kubeconfig", "Path to .kube/config (or empty for in-cluster)").Default("").StringVar(&serverConfig.KubeConfig)
 	kingpin.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&serverConfig.PodSyncInterval)

@@ -33,12 +33,13 @@ import (
 )
 
 type Config struct {
-	BindAddress     string
-	KubeConfig      string
-	PodSyncInterval time.Duration
-	SessionName     string
-	RoleBaseARN     string
-	TLS             *TLSConfig
+	BindAddress              string
+	KubeConfig               string
+	PodSyncInterval          time.Duration
+	SessionName              string
+	RoleBaseARN              string
+	TLS                      *TLSConfig
+	ParallelFetcherProcesses int
 }
 
 type TLSConfig struct {
@@ -53,6 +54,7 @@ type KiamServer struct {
 	cache               *k8s.PodCache
 	manager             *prefetch.CredentialManager
 	credentialsProvider sts.CredentialsProvider
+	parallelFetchers    int
 }
 
 var (
@@ -111,7 +113,7 @@ func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCred
 }
 
 func NewServer(config *Config) (*KiamServer, error) {
-	server := &KiamServer{}
+	server := &KiamServer{parallelFetchers: config.ParallelFetcherProcesses}
 
 	listener, err := net.Listen("tcp", config.BindAddress)
 	if err != nil {
@@ -160,7 +162,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 
 func (s *KiamServer) Serve(ctx context.Context) {
 	s.cache.Run(ctx)
-	go s.manager.Run(ctx)
+	s.manager.Run(ctx, s.parallelFetchers)
 	s.server.Serve(s.listener)
 }
 
