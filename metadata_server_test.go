@@ -48,7 +48,7 @@ func TestPassthroughToMetadata(t *testing.T) {
 		defer cancel()
 		defer server.Stop(ctx)
 
-		body, status, err := get("/latest/meta-data/instance-id")
+		body, status, err := get(context.Background(), "/latest/meta-data/instance-id")
 		if err != nil {
 			t.Error(err)
 		}
@@ -70,7 +70,7 @@ func TestReturnsHealthStatus(t *testing.T) {
 		defer cancel()
 		defer server.Stop(ctx)
 
-		body, status, err := get("/health")
+		body, status, err := get(context.Background(), "/health")
 		if err != nil {
 			t.Error("error retrieving health page:", err.Error())
 		}
@@ -83,6 +83,31 @@ func TestReturnsHealthStatus(t *testing.T) {
 	})
 }
 
+func TestRetriesFindRoleWhenPodNotFound(t *testing.T) {
+	pod := testutil.NewPodWithRole("", "", "", "", "foo_role")
+	finder := &testutil.FailingFinder{Pod: pod, SucceedAfterCalls: 2}
+	server := metadata.NewWebServer(defaultConfig(), finder, nil)
+	go server.Serve()
+	waitForServer(defaultConfig(), t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer server.Stop(ctx)
+
+	reqCtx, reqCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer reqCancel()
+	body, status, err := get(reqCtx, "/latest/meta-data/iam/security-credentials/")
+
+	if err != nil {
+		t.Error("error retrieving role:", err.Error())
+	}
+	if status != http.StatusOK {
+		t.Error("expected 200 response, was", status)
+	}
+	if string(body) != "foo_role" {
+		t.Error("expected foo_role in body, was", string(body))
+	}
+}
+
 func TestReturnRoleForPod(t *testing.T) {
 	defer leaktest.Check(t)()
 
@@ -93,7 +118,7 @@ func TestReturnRoleForPod(t *testing.T) {
 	defer cancel()
 	defer server.Stop(ctx)
 
-	body, status, err := get("/latest/meta-data/iam/security-credentials/")
+	body, status, err := get(context.Background(), "/latest/meta-data/iam/security-credentials/")
 	if err != nil {
 		t.Error("error retrieving role:", err.Error())
 	}
@@ -115,7 +140,7 @@ func TestReturnNotFoundWhenNoPodFound(t *testing.T) {
 	defer cancel()
 	defer server.Stop(ctx)
 
-	_, status, err := get("/latest/meta-data/iam/security-credentials/")
+	_, status, err := get(context.Background(), "/latest/meta-data/iam/security-credentials/")
 	if err != nil {
 		t.Error("error retrieving role:", err.Error())
 	}
@@ -134,7 +159,7 @@ func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
 	defer cancel()
 	defer server.Stop(ctx)
 
-	_, status, err := get("/latest/meta-data/iam/security-credentials/dummyrole")
+	_, status, err := get(context.Background(), "/latest/meta-data/iam/security-credentials/dummyrole")
 	if err != nil {
 		t.Error("error retrieving role:", err.Error())
 	}
@@ -153,7 +178,7 @@ func TestReturnsNotFoundResponseWithEmptyRole(t *testing.T) {
 	defer cancel()
 	defer server.Stop(ctx)
 
-	_, status, err := get("/latest/meta-data/iam/security-credentials/")
+	_, status, err := get(context.Background(), "/latest/meta-data/iam/security-credentials/")
 	if err != nil {
 		t.Error("error retrieving role:", err.Error())
 	}
@@ -179,7 +204,7 @@ func TestReturnsCredentials(t *testing.T) {
 	defer cancel()
 	defer server.Stop(ctx)
 
-	body, status, err := get("/latest/meta-data/iam/security-credentials/foo_role?ip=192.168.0.1")
+	body, status, err := get(context.Background(), "/latest/meta-data/iam/security-credentials/foo_role?ip=192.168.0.1")
 	if err != nil {
 		t.Error(err)
 	}
@@ -196,7 +221,7 @@ func TestReturnsCredentials(t *testing.T) {
 
 func waitForServer(config *metadata.ServerConfig, t *testing.T) {
 	op := func() error {
-		_, status, err := get("/ping")
+		_, status, err := get(context.Background(), "/ping")
 		if err != nil {
 			return err
 		}
@@ -221,8 +246,14 @@ func defaultConfig() *metadata.ServerConfig {
 	}
 }
 
-func get(path string) ([]byte, int, error) {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:3129%s", path))
+func get(ctx context.Context, path string) ([]byte, int, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:3129%s", path), nil)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, 0, err
 	}

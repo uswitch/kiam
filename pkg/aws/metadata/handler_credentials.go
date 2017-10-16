@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
+	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"time"
 )
@@ -36,12 +37,17 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 
 	foundRole, err := s.finder.FindRoleFromIP(req.Context(), ip)
 	if err != nil {
+		if err == server.PodNotFoundError {
+			metrics.GetOrRegisterMeter("credentialsHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
+			return http.StatusNotFound, fmt.Errorf("no pod found for ip %s", ip)
+		}
+
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
 	}
 
 	if foundRole == "" {
-		metrics.GetOrRegisterMeter("credentialsHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
-		return http.StatusNotFound, fmt.Errorf("no pod found for ip %s", ip)
+		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
+		return http.StatusNotFound, EmptyRoleError
 	}
 
 	role := mux.Vars(req)["role"]

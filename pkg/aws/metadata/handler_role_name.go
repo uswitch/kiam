@@ -14,23 +14,20 @@
 package metadata
 
 import (
+	"context"
 	"fmt"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	khttp "github.com/uswitch/kiam/pkg/http"
-	// "github.com/vmg/backoff"
+	"github.com/uswitch/kiam/pkg/server"
+	"github.com/vmg/backoff"
 	"net/http"
 	"time"
 )
 
 var (
-	PodNotFound = fmt.Errorf("pod not found")
+	MaxTime = time.Millisecond * 500
 )
-
-type asyncObj struct {
-	obj interface{}
-	err error
-}
 
 func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int, error) {
 	requestLog := log.WithFields(khttp.RequestFields(req))
@@ -38,21 +35,44 @@ func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int,
 	startTime := time.Now()
 	defer roleNameTimings.UpdateSince(startTime)
 
+	ctx, cancel := context.WithTimeout(req.Context(), MaxTime)
+	defer cancel()
+
 	ip, err := s.clientIP(req)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("error parsing ip: %s", err.Error())
 	}
 
-	role, err := s.finder.FindRoleFromIP(req.Context(), ip)
+	roleCh := make(chan string, 1)
+	op := func() error {
+		role, err := s.finder.FindRoleFromIP(ctx, ip)
+		if err != nil {
+			return err
+		}
+		roleCh <- role
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = 5 * time.Millisecond
+	err = backoff.Retry(op, backoff.WithContext(strategy, ctx))
 	if err != nil {
+		fmt.Println("error: ", err)
+
+		if err == server.PodNotFoundError {
+			requestLog.Warnf("no pod found for ip")
+			metrics.GetOrRegisterMeter("roleNameHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
+			return http.StatusNotFound, err
+		}
+
 		return http.StatusInternalServerError, err
 	}
 
+	role := <-roleCh
 	if role == "" {
-		requestLog.Warnf("no pod found for ip")
-		metrics.GetOrRegisterMeter("roleNameHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
-
-		return http.StatusNotFound, PodNotFound
+		requestLog.Warnf("empty role defined for pod")
+		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
+		return http.StatusNotFound, EmptyRoleError
 	}
 
 	fmt.Fprint(w, role)
