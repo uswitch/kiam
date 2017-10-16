@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
-	"github.com/uswitch/kiam/pkg/aws/sts"
 	"net/http"
 	"time"
 )
@@ -54,31 +53,17 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", role, foundRole)
 	}
 
-	respCh := make(chan *asyncObj)
-	go func() {
-		credentials, err := s.credentials.CredentialsForRole(req.Context(), role)
-		respCh <- &asyncObj{credentials, err}
-	}()
-
-	select {
-	case <-req.Context().Done():
-		if req.Context().Err() != nil {
-			return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", req.Context().Err().Error())
-		}
-
-	case resp := <-respCh:
-		if resp.err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("error requesting credentials: %s", resp.err.Error())
-		}
-
-		creds := resp.obj.(*sts.Credentials)
-		err = json.NewEncoder(w).Encode(creds)
-		if err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("error encoding credentials: %s", err.Error())
-		}
-		w.Header().Set("Content-Type", "application/json")
+	credentials, err := s.credentials.CredentialsForRole(req.Context(), role)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", req.Context().Err().Error())
 	}
 
+	err = json.NewEncoder(w).Encode(credentials)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error encoding credentials: %s", err.Error())
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	metrics.GetOrRegisterMeter("credentialsHandler.success", metrics.DefaultRegistry).Mark(1)
 	return http.StatusOK, nil
 }
