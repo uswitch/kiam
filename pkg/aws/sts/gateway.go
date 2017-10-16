@@ -1,6 +1,7 @@
 package sts
 
 import (
+	"context"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -9,7 +10,7 @@ import (
 )
 
 type STSGateway interface {
-	Issue(role, session string, expiry time.Duration) (*Credentials, error)
+	Issue(ctx context.Context, role, session string, expiry time.Duration) (*Credentials, error)
 }
 
 type DefaultSTSGateway struct {
@@ -20,7 +21,7 @@ func DefaultGateway() *DefaultSTSGateway {
 	return &DefaultSTSGateway{session: session.Must(session.NewSession())}
 }
 
-func (g *DefaultSTSGateway) Issue(roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
+func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
 	timer := metrics.GetOrRegisterTimer("aws.assumeRole", metrics.DefaultRegistry)
 	started := time.Now()
 	defer timer.UpdateSince(started)
@@ -35,7 +36,7 @@ func (g *DefaultSTSGateway) Issue(roleARN, sessionName string, expiry time.Durat
 		RoleArn:         aws.String(roleARN),
 		RoleSessionName: aws.String(sessionName),
 	}
-	resp, err := svc.AssumeRole(in)
+	resp, err := svc.AssumeRoleWithContext(ctx, in)
 	if err != nil {
 		return nil, err
 	}

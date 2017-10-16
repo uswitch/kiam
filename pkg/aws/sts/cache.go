@@ -93,7 +93,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	c.meterCacheMiss.Mark(1)
 
 	arn := fmt.Sprintf("%s%s", c.baseARN, role)
-	credentials, err := c.gateway.Issue(arn, c.sessionName, DefaultCredentialsValidityPeriod)
+	credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, DefaultCredentialsValidityPeriod)
 	if err != nil {
 		return nil, err
 	}

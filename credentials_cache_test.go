@@ -1,4 +1,4 @@
-package main
+package kiam
 
 import (
 	"context"
@@ -12,7 +12,7 @@ type stubGateway struct {
 	issueCount int
 }
 
-func (s *stubGateway) Issue(roleARN, sessionName string, expiry time.Duration) (*sts.Credentials, error) {
+func (s *stubGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*sts.Credentials, error) {
 	s.issueCount = s.issueCount + 1
 	return s.c, nil
 }
