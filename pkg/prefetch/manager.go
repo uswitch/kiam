@@ -43,7 +43,7 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())
 	} else {
-		logger.WithFields(sts.CredentialsFields(issued, role)).Infof("warming credentials")
+		logger.WithFields(sts.CredentialsFields(issued, role)).Infof("fetched credentials")
 	}
 }
 
@@ -57,7 +57,6 @@ func (m *CredentialManager) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case pod := <-m.announcer.Pods():
-			log.WithFields(k8s.PodFields(pod)).Debugf("pod announced")
 			m.fetchCredentials(ctx, pod)
 		case expiring := <-m.cache.Expiring():
 			m.handleExpiring(ctx, expiring)
