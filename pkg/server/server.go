@@ -61,6 +61,10 @@ var (
 	PodNotFoundError = fmt.Errorf("pod not found")
 )
 
+func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb.HealthStatus, error) {
+	return &pb.HealthStatus{}, nil
+}
+
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
 	roleTimer := metrics.GetOrRegisterTimer("GetPodRole", metrics.DefaultRegistry)
 	startTime := time.Now()

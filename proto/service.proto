@@ -5,6 +5,7 @@ package kiam;
 service KiamService {
     rpc GetPodRole(GetPodRoleRequest) returns (Role) {}
     rpc GetRoleCredentials(GetRoleCredentialsRequest) returns (Credentials) {}
+    rpc GetHealth(GetHealthRequest) returns (HealthStatus) {}
 }
 
 message GetPodRoleRequest {
@@ -29,3 +30,10 @@ message Credentials {
   string last_updated = 7;
 }
 
+
+message GetHealthRequest {
+}
+
+message HealthStatus {
+  string message = 1;
+}
