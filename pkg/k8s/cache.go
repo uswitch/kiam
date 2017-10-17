@@ -35,10 +35,6 @@ func (s *PodCache) Pods() <-chan *v1.Pod {
 	return s.pods
 }
 
-func (s *PodCache) announceRole(pod *v1.Pod) {
-	s.pods <- pod
-}
-
 var MultipleRunningPodsErr = fmt.Errorf("multiple running pods found")
 
 func IsPodCompleted(pod *v1.Pod) bool {
@@ -122,7 +118,12 @@ func (s *PodCache) process(obj interface{}) error {
 
 		role := PodRole(pod)
 		if role != "" {
-			s.announceRole(pod)
+			select {
+			case s.pods <- pod:
+				logger.Debugf("announced pod")
+			default:
+				logger.Warnf("pods announcement full, dropping")
+			}
 		}
 
 		logger.Debugf("processing delta")

@@ -26,7 +26,8 @@ import (
 )
 
 var (
-	MaxTime = time.Millisecond * 500
+	MaxTime       = time.Second * 5
+	RetryInterval = time.Millisecond * 5
 )
 
 func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int, error) {
@@ -54,7 +55,7 @@ func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int,
 	}
 
 	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = 5 * time.Millisecond
+	strategy.InitialInterval = RetryInterval
 	err = backoff.Retry(op, backoff.WithContext(strategy, ctx))
 	if err != nil {
 		fmt.Println("error: ", err)

@@ -131,7 +131,7 @@ func TestReturnRoleForPod(t *testing.T) {
 }
 
 func TestReturnNotFoundWhenNoPodFound(t *testing.T) {
-	defer leaktest.Check(t)()
+	defer leaktest.CheckTimeout(t, time.Second*10)()
 
 	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 	go server.Serve()
@@ -150,7 +150,7 @@ func TestReturnNotFoundWhenNoPodFound(t *testing.T) {
 }
 
 func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
-	defer leaktest.Check(t)()
+	defer leaktest.CheckTimeout(t, time.Second*10)()
 
 	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 	go server.Serve()

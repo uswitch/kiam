@@ -14,11 +14,13 @@
 package metadata
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	"github.com/uswitch/kiam/pkg/server"
+	"github.com/vmg/backoff"
 	"net/http"
 	"time"
 )
@@ -35,7 +37,23 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusInternalServerError, fmt.Errorf("error parsing client ip %s: %s", ip, err.Error())
 	}
 
-	foundRole, err := s.finder.FindRoleFromIP(req.Context(), ip)
+	ctx, cancel := context.WithTimeout(req.Context(), MaxTime)
+	defer cancel()
+
+	roleCh := make(chan string, 1)
+	op := func() error {
+		foundRole, err := s.finder.FindRoleFromIP(ctx, ip)
+		if err != nil {
+			return err
+		}
+		roleCh <- foundRole
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = RetryInterval
+	err = backoff.Retry(op, backoff.WithContext(strategy, ctx))
+
 	if err != nil {
 		if err == server.PodNotFoundError {
 			metrics.GetOrRegisterMeter("credentialsHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
@@ -44,6 +62,8 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
 	}
+
+	foundRole := <-roleCh
 
 	if foundRole == "" {
 		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
@@ -59,9 +79,9 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", role, foundRole)
 	}
 
-	credentials, err := s.credentials.CredentialsForRole(req.Context(), role)
+	credentials, err := s.credentials.CredentialsForRole(ctx, role)
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", req.Context().Err().Error())
+		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", ctx.Err().Error())
 	}
 
 	err = json.NewEncoder(w).Encode(credentials)

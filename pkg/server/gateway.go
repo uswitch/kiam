@@ -35,8 +35,7 @@ type KiamGateway struct {
 }
 
 const (
-	RetryInterval   = 10 * time.Millisecond
-	RetryMaxRetries = 10
+	RetryInterval = 10 * time.Millisecond
 )
 
 // Creates a client suitable for interacting with a remote server. It can
@@ -44,7 +43,6 @@ const (
 func NewGateway(address, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
-		retry.WithMax(RetryMaxRetries),
 	}
 
 	certificate, err := tls.LoadX509KeyPair(certificateFile, keyFile)
