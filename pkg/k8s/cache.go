@@ -16,6 +16,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -111,6 +112,7 @@ func (s *PodCache) FindRoleFromIP(ctx context.Context, ip string) (string, error
 // handles objects from the queue processed by the cache
 func (s *PodCache) process(obj interface{}) error {
 	deltas := obj.(cache.Deltas)
+	deltaMeter := metrics.GetOrRegisterMeter("PodCache.processDelta", metrics.DefaultRegistry)
 
 	for _, delta := range deltas {
 		pod := delta.Object.(*v1.Pod)
@@ -122,6 +124,7 @@ func (s *PodCache) process(obj interface{}) error {
 			case s.pods <- pod:
 				logger.Debugf("announced pod")
 			default:
+				metrics.GetOrRegisterMeter("PodCache.dropAnnounce", metrics.DefaultRegistry).Mark(1)
 				logger.Warnf("pods announcement full, dropping")
 			}
 		}
@@ -137,6 +140,8 @@ func (s *PodCache) process(obj interface{}) error {
 		case cache.Deleted:
 			s.store.Delete(delta.Object)
 		}
+
+		deltaMeter.Mark(1)
 	}
 
 	return nil
