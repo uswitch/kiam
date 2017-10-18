@@ -1,7 +1,13 @@
-# Securing with TLS
+# TLS
 
-Install the tools:
+Kiam is split into two processes:
 
+* Agent. Responsible for receiving HTTP connections that Pods initiate to the metadata API (http://169.254.169.254). Credential requests are processed and anything else is forwarded to the AWS API. Communicates with the server via gRPC.
+* Server. Runs the gRPC server that Agent uses to determine Pod roles and retrieve credentials.
+
+To ensure that only agents and servers can communicate with each other they use mutual TLS authentication. These are not automatically generated so you'll need to create the certificates and store in secrets that only Server and Agent processes can access.
+
+## Install the helper tool
 ```
 go get -u github.com/cloudflare/cfssl/cmd/...
 ```
