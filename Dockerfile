@@ -4,5 +4,6 @@ RUN apk --no-cache add iptables
 
 COPY bin/agent /agent
 COPY bin/server /server
+COPY bin/health /health
 
 CMD []

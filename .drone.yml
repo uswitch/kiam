@@ -14,6 +14,7 @@ pipeline:
     commands:
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/agent cmd/agent/*.go
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/server cmd/server/*.go
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/health cmd/health/*.go
   docker:
     when:
       event: push
