@@ -90,6 +90,14 @@ func (g *KiamGateway) FindRoleFromIP(ctx context.Context, ip string) (string, er
 	return role.Name, nil
 }
 
+func (g *KiamGateway) Health(ctx context.Context) (string, error) {
+	status, err := g.client.GetHealth(ctx, &pb.GetHealthRequest{})
+	if err != nil {
+		return "", err
+	}
+	return status.Message, nil
+}
+
 func (g *KiamGateway) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
 	timer := metrics.GetOrRegisterTimer("gateway.GetRoleCredentials", metrics.DefaultRegistry)
 	startTime := time.Now()

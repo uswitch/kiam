@@ -62,7 +62,7 @@ var (
 )
 
 func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb.HealthStatus, error) {
-	return &pb.HealthStatus{}, nil
+	return &pb.HealthStatus{Message: "ok"}, nil
 }
 
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
