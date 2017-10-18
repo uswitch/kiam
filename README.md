@@ -21,7 +21,11 @@ metadata:
 When your process starts an AWS SDK library will normally use a chain of credential providers (environment variables, instance metadata, config files etc.) to determine which credentials to use. kiam intercepts the metadata requests and uses the [Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) to retrieve temporary role credentials. 
 
 ## Deploying to Kubernetes
-Please see the `deploy` directory for example manifests for deploying to Kubernetes. TLS assets must be created to mutually authenticate the agents and server processes; notes are in [docs/TLS.md]([docs/TLS.md]).
+Please see the `deploy` directory for example manifests for deploying to Kubernetes. 
+
+TLS assets must be created to mutually authenticate the agents and server processes; notes are in [docs/TLS.md]([docs/TLS.md]).
+
+Please also make note of how to configure IAM in your AWS account; notes in [docs/IAM.md]([docs/IAM.md]).
 
 ## How it Works
 Kiam is split into two processes that run independently.
