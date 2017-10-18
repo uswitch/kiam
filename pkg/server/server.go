@@ -18,7 +18,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/rcrowley/go-metrics"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/k8sc/official"
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -66,10 +66,6 @@ func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb
 }
 
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
-	roleTimer := metrics.GetOrRegisterTimer("GetPodRole", metrics.DefaultRegistry)
-	startTime := time.Now()
-	defer roleTimer.UpdateSince(startTime)
-
 	logger := log.WithField("pod.ip", req.Ip)
 	pod, err := k.cache.FindPodForIP(req.Ip)
 	if err != nil {
@@ -102,9 +98,6 @@ func translateCredentialsToProto(credentials *sts.Credentials) *pb.Credentials {
 
 func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCredentialsRequest) (*pb.Credentials, error) {
 	logger := log.WithField("pod.iam.role", req.Role.Name)
-	credentialsTimer := metrics.GetOrRegisterTimer("GetRoleCredentials", metrics.DefaultRegistry)
-	startTime := time.Now()
-	defer credentialsTimer.UpdateSince(startTime)
 
 	logger.Infof("requesting credentials")
 	credentials, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role.Name)

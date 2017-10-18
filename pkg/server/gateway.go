@@ -19,7 +19,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/rcrowley/go-metrics"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
@@ -70,8 +69,7 @@ func NewGateway(address, caFile, certificateFile, keyFile string) (*KiamGateway,
 	}
 
 	client := pb.NewKiamServiceClient(conn)
-
-	return &KiamGateway{conn: conn, client: client}, nil
+	return &KiamGateway{conn: conn, client: ClientWithTelemetry(client)}, nil
 }
 
 func (g *KiamGateway) Close() {
@@ -79,10 +77,6 @@ func (g *KiamGateway) Close() {
 }
 
 func (g *KiamGateway) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
-	timer := metrics.GetOrRegisterTimer("gateway.GetPodRole", metrics.DefaultRegistry)
-	startTime := time.Now()
-	defer timer.UpdateSince(startTime)
-
 	role, err := g.client.GetPodRole(ctx, &pb.GetPodRoleRequest{Ip: ip})
 	if err != nil {
 		return "", err
@@ -99,10 +93,6 @@ func (g *KiamGateway) Health(ctx context.Context) (string, error) {
 }
 
 func (g *KiamGateway) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
-	timer := metrics.GetOrRegisterTimer("gateway.GetRoleCredentials", metrics.DefaultRegistry)
-	startTime := time.Now()
-	defer timer.UpdateSince(startTime)
-
 	credentials, err := g.client.GetRoleCredentials(ctx, &pb.GetRoleCredentialsRequest{&pb.Role{Name: role}})
 	if err != nil {
 		return nil, err
