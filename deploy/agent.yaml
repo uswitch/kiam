@@ -48,3 +48,9 @@ spec:
               name: ssl-certs
             - mountPath: /etc/kiam/tls
               name: tls
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8181
+            initialDelaySeconds: 3
+            periodSeconds: 3
