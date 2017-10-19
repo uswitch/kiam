@@ -39,7 +39,7 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	}
 
 	role := k8s.PodRole(pod)
-	issued, err := m.fetchCredentialsForRole(ctx, role)
+	issued, err := m.fetchCredentialsFromCache(ctx, role)
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())
 	} else {
@@ -47,7 +47,7 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	}
 }
 
-func (m *CredentialManager) fetchCredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
+func (m *CredentialManager) fetchCredentialsFromCache(ctx context.Context, role string) (*sts.Credentials, error) {
 	return m.cache.CredentialsForRole(ctx, role)
 }
 
@@ -85,7 +85,7 @@ func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts
 	}
 
 	logger.Infof("expiring credentials, fetching updated")
-	_, err = m.fetchCredentialsForRole(ctx, credentials.Role)
+	_, err = m.fetchCredentialsFromCache(ctx, credentials.Role)
 	if err != nil {
 		logger.Errorf("error fetching updated credentials for expiring: %s", err.Error())
 	}
