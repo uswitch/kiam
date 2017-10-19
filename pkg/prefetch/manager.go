@@ -54,11 +54,11 @@ func (m *CredentialManager) fetchCredentialsFromCache(ctx context.Context, role 
 func (m *CredentialManager) Run(ctx context.Context, parallelRoutines int) {
 	for i := 0; i < parallelRoutines; i++ {
 		log.Infof("starting credential manager process %d", i)
-		go func() {
+		go func(id int) {
 			for {
 				select {
 				case <-ctx.Done():
-					log.Infof("stopping credential manager process %d", i)
+					log.Infof("stopping credential manager process %d", id)
 					return
 				case pod := <-m.announcer.Pods():
 					m.fetchCredentials(ctx, pod)
@@ -66,7 +66,7 @@ func (m *CredentialManager) Run(ctx context.Context, parallelRoutines int) {
 					m.handleExpiring(ctx, expiring)
 				}
 			}
-		}()
+		}(i)
 	}
 }
 
