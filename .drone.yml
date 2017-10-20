@@ -25,3 +25,13 @@ pipeline:
     tags:
       - ${DRONE_COMMIT_SHA}
       - ${DRONE_COMMIT_BRANCH}
+
+  docker-tagged:
+    image: plugins/docker
+    repo: quay.io/uswitch/kiam
+    registry: quay.io
+    secrets: [ docker_username, docker_password ]
+    tags:
+      - ${DRONE_TAG}
+    when:
+      event: tag
