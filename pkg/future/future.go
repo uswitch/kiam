@@ -28,14 +28,14 @@ type Future struct {
 	val       interface{}
 	err       error
 	completed bool
-	sync.RWMutex
+	sync.Mutex
 }
 
 type FutureFn func() (interface{}, error)
 
 func (f *Future) isComplete() bool {
-	f.RLock()
-	defer f.RUnlock()
+	f.Lock()
+	defer f.Unlock()
 	return f.completed
 }
 

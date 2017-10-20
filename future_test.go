@@ -30,10 +30,7 @@ func TestReturnsValue(t *testing.T) {
 		t.Error("expected hello, was", val)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	val2, _ := f.Get(ctx)
+	val2, _ := f.Get(context.Background())
 	msg2, ok := val2.(string)
 	if !ok || msg2 != "hello" {
 		t.Error("expected hello, was", val2)
