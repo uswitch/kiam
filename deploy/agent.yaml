@@ -21,12 +21,14 @@ spec:
         - name: tls
           secret:
             secretName: kiam-agent-tls
+        - name: xtables
+          hostPath:
+            path: /run/xtables.lock
       containers:
         - name: kiam
           securityContext:
             privileged: true
-          image: quay.io/uswitch/kiam:agent-and-gateway
-          imagePullPolicy: Always
+          image: quay.io/uswitch/kiam:v2.0-rc1
           command:
             - /agent
           args:
@@ -48,6 +50,8 @@ spec:
               name: ssl-certs
             - mountPath: /etc/kiam/tls
               name: tls
+            - mountPath: /var/run/xtables.lock
+              name: xtables
           livenessProbe:
             httpGet:
               path: /ping
