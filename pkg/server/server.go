@@ -40,6 +40,7 @@ type Config struct {
 	RoleBaseARN              string
 	TLS                      *TLSConfig
 	ParallelFetcherProcesses int
+	PrefetchBufferSize       int
 }
 
 type TLSConfig struct {
@@ -122,7 +123,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	if err != nil {
 		log.Fatalf("couldn't create kubernetes client: %s", err.Error())
 	}
-	server.cache = k8s.NewPodCache(k8s.KubernetesSource(client), config.PodSyncInterval)
+	server.cache = k8s.NewPodCache(k8s.KubernetesSource(client), config.PodSyncInterval, config.PrefetchBufferSize)
 
 	stsGateway := sts.DefaultGateway()
 	credentialsCache := sts.DefaultCache(stsGateway, config.RoleBaseARN, config.SessionName)

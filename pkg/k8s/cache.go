@@ -176,12 +176,12 @@ func podRoleIndex(obj interface{}) ([]string, error) {
 	return []string{role}, nil
 }
 
-const (
-	announceBufferSize = 100
-)
-
-func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration) *PodCache {
-	PodCache := &PodCache{stop: make(chan struct{}), pods: make(chan *v1.Pod, announceBufferSize)}
+// Creates the cache object that uses a watcher to listen for Pod events. The cache indexes pods by their
+// IP address so that Kiam can identify which role a Pod should assume. It periodically syncs the list of
+// pods and can announce Pods. When announcing Pods via the channel it will drop events if the buffer
+// is full- bufferSize determines how many.
+func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration, bufferSize int) *PodCache {
+	PodCache := &PodCache{stop: make(chan struct{}), pods: make(chan *v1.Pod, bufferSize)}
 	indexers := cache.Indexers{
 		indexPodIP:   podIPIndex,
 		indexPodRole: podRoleIndex,
