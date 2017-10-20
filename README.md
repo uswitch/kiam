@@ -1,8 +1,7 @@
 # kiam
 kiam runs as an agent on each node in your Kubernetes cluster and allows cluster users to associate IAM roles to Pods.
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/uswitch/kiam.svg)]()
-[![CircleCI](https://img.shields.io/circleci/project/github/uswitch/kiam.svg)]()
+Docker images are available at [https://quay.io/repository/uswitch/kiam](https://quay.io/repository/uswitch/kiam).
 
 ## Overview
 From the [AWS documentation on IAM roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html):
@@ -22,53 +21,20 @@ metadata:
 When your process starts an AWS SDK library will normally use a chain of credential providers (environment variables, instance metadata, config files etc.) to determine which credentials to use. kiam intercepts the metadata requests and uses the [Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) to retrieve temporary role credentials. 
 
 ## Deploying to Kubernetes
+Please see the `deploy` directory for example manifests for deploying to Kubernetes. 
 
-Please see [`./kiam.daemonset.yaml`](kiam.daemonset.yaml) for an example of how to deploy as a `DaemonSet` on Kubernetes.
+TLS assets must be created to mutually authenticate the agents and server processes; notes are in [docs/TLS.md]([docs/TLS.md]).
 
-Images are automatically pushed to Docker Hub: [uswitch/kiam](https://hub.docker.com/r/uswitch/kiam). Image releases are tagged with `latest` and their corresponding git tag `v1.0.1`. Master is also built and tagged as `latest-head` and the git sha.
-
-## Usage
-```
-usage: kiam --role-base-arn=ROLE-BASE-ARN --host=HOST [<flags>]
-
-Flags:
-  --help                         Show context-sensitive help (also try --help-long and --help-man).
-  --json-log                     Output log in JSON
-  --level=info                   Log level: debug, info, warn, error.
-  --kubeconfig=KUBECONFIG        Path to kube config
-  --port=3100                    HTTP port
-  --sync-interval=2m             Interval to refresh pod state from API server
-  --allow-ip-query               Allow client IP to be specified with ?ip. Development use only.
-  --role-base-arn=ROLE-BASE-ARN  Base ARN for roles. e.g. arn:aws:iam::123456789:role/
-  --statsd=""                    UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125
-  --statsd-interval=10s          Interval to publish to StatsD
-  --iptables                     Add IPTables rules
-  --host=HOST                    Host IP address.
-  --host-interface="docker0"     Network interface for pods to configure IPTables.
-```
+Please also make note of how to configure IAM in your AWS account; notes in [docs/IAM.md]([docs/IAM.md]).
 
 ## How it Works
-kiam is split into a few processes:
+Kiam is split into two processes that run independently.
 
-* Web server. This handles requests from Pods when determining which role they should assume (using the Kubernetes cache) and retrieving credentials for the role (using the Credentials cache).
-* Kubernetes cache. This uses a Watch to monitor changes on the cluster and runs a periodic sync (via. a List) to ensure a local cache of Pods.
-* Credentials cache. This uses the AWS API to retrieve session credentials and stores them in an in-memory cache.
-* Prefetch. This watches for changes in the Kubernetes cache and warms the Credentials cache for uncompleted Pods. It is also notified when Credentials expire from the credentials cache and determines whether they should be refreshed or discarded.
+### Agent
+This is the process that would typically be deployed as a DaemonSet to ensure that Pods have no access to the AWS Metadata API. Instead, the agent runs an HTTP proxy which intercepts credentials requests and passes on anything else. 
 
-It is currently intended to be run as a `DaemonSet`- running a kiam process on each node in your cluster.
-
-## Thanks to Kube2iam
-We owe a **huge** thanks to the creators and maintainers of [Kube2iam](https://github.com/jtblin/kube2iam) which we ran for many months as we were bootstrapping our clusters.
-
-We wanted to overcome two things in kube2iam:
-
-1. We had data races under load causing incorrect credentials to be issued [#46](https://github.com/jtblin/kube2iam/issues/46).
-1. Prefetch credentials to reduce start latency and improve reliability.
-
-Other improvements/changes we made were (largely driven out of how we have our systems setup):
-
-1. Use structured logging to improve the integration into our ELK setup with pod names, roles, access key ids etc.
-1. Use metrics to track response times, cache hit rates etc.
+### Server
+This process is responsible for connecting to the Kubernetes API Servers to watch Pods and communicating with AWS STS to request credentials. It also maintains a cache of credentials for roles currently in use by running pods- ensuring that credentials are refreshed every few minutes and stored in advance of Pods needing them.
 
 ## Building locally
 If you want to build and run locally you can
@@ -77,7 +43,7 @@ If you want to build and run locally you can
 $ mkdir -p $GOPATH/src/github.com/uswitch
 $ git clone git@github.com:uswitch/kiam.git $GOPATH/src/github.com/uswitch/kiam
 $ cd $GOPATH/src/github.com/uswitch/kiam
-$ go build -o bin/kiam cmd/*.go
+$ make
 ```
 
 ## License
@@ -97,3 +63,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
+
+## Thanks to Kube2iam
+We owe a **huge** thanks to the creators and maintainers of [Kube2iam](https://github.com/jtblin/kube2iam) which we ran for many months as we were bootstrapping our clusters.
+
+We wanted to overcome two things in kube2iam:
+
+1. We had data races under load causing incorrect credentials to be issued [#46](https://github.com/jtblin/kube2iam/issues/46).
+1. Prefetch credentials to reduce start latency and improve reliability.
+
+Other improvements/changes we made were (largely driven out of how we have our systems setup):
+
+1. Use structured logging to improve the integration into our ELK setup with pod names, roles, access key ids etc.
+1. Use metrics to track response times, cache hit rates etc.
+

@@ -14,21 +14,22 @@
 package testutil
 
 import (
-	"github.com/uswitch/kiam/pkg/creds"
+	"context"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 )
 
-type stubIssuer struct {
-	issue func(role string) (*creds.Credentials, error)
+type stubCache struct {
+	issue func(role string) (*sts.Credentials, error)
 }
 
-func (i *stubIssuer) CredentialsForRole(role string) (*creds.Credentials, error) {
+func (i *stubCache) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
 	return i.issue(role)
 }
 
-func (i *stubIssuer) Expiring() chan *creds.RoleCredentials {
-	return make(chan *creds.RoleCredentials)
+func (i *stubCache) Expiring() chan *sts.RoleCredentials {
+	return make(chan *sts.RoleCredentials)
 }
 
-func NewStubIssuer(f func(role string) (*creds.Credentials, error)) creds.CredentialsIssuer {
-	return &stubIssuer{f}
+func NewStubCredentialsCache(f func(role string) (*sts.Credentials, error)) sts.CredentialsCache {
+	return &stubCache{f}
 }

@@ -1,4 +1,4 @@
-Leaktest [![Build Status](https://travis-ci.org/fortytw2/leaktest.svg?branch=master)](https://travis-ci.org/fortytw2/leaktest) [![codecov](https://codecov.io/gh/fortytw2/leaktest/branch/master/graph/badge.svg)](https://codecov.io/gh/fortytw2/leaktest)
+Leaktest [![Build Status](https://travis-ci.org/fortytw2/leaktest.svg?branch=master)](https://travis-ci.org/fortytw2/leaktest) [![codecov](https://codecov.io/gh/fortytw2/leaktest/branch/master/graph/badge.svg)](https://codecov.io/gh/fortytw2/leaktest) [![Sourcegraph](https://sourcegraph.com/github.com/fortytw2/leaktest/-/badge.svg)](https://sourcegraph.com/github.com/fortytw2/leaktest?badge)
 ------
 
 Refactored, tested variant of the goroutine leak detector found in both 

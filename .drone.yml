@@ -1,0 +1,27 @@
+workspace:
+  base: /go
+  path: src/github.com/uswitch/kiam
+
+pipeline:
+  test:
+    image: golang:1.9
+    commands:
+      - go test *_test.go
+  build:
+    when:
+      event: push
+    image: golang:1.9
+    commands:
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/agent cmd/agent/*.go
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/server cmd/server/*.go
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/health cmd/health/*.go
+  docker:
+    when:
+      event: push
+    image: plugins/docker
+    registry: quay.io
+    repo: quay.io/uswitch/kiam
+    secrets: [ docker_username, docker_password ]
+    tags:
+      - ${DRONE_COMMIT_SHA}
+      - ${DRONE_COMMIT_BRANCH}

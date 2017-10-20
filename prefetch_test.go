@@ -15,7 +15,7 @@ package kiam
 
 import (
 	"context"
-	"github.com/uswitch/kiam/pkg/creds"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/prefetch"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"testing"
@@ -28,20 +28,21 @@ func TestPrefetchRunningPods(t *testing.T) {
 
 	requestedRoles := make(chan string)
 	finder := testutil.NewStubFinder(nil)
-	issuer := testutil.NewStubIssuer(func(role string) (*creds.Credentials, error) {
+	announcer := testutil.NewStubAnnouncer()
+	cache := testutil.NewStubCredentialsCache(func(role string) (*sts.Credentials, error) {
 		requestedRoles <- role
-		return &creds.Credentials{}, nil
+		return &sts.Credentials{}, nil
 	})
-	manager := prefetch.NewManager(issuer, finder)
-	go manager.Run(ctx)
+	manager := prefetch.NewManager(cache, finder, announcer)
+	go manager.Run(ctx, 1)
 
-	finder.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))
+	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))
 	role := <-requestedRoles
 	if role != "role" {
 		t.Error("should have requested role")
 	}
 
-	finder.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Failed", "failed_role"))
+	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Failed", "failed_role"))
 	select {
 	case role = <-requestedRoles:
 		t.Error("didn't expect to request role, but was requested", role)

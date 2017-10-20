@@ -1,0 +1,56 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  namespace: kube-system
+  name: kiam-agent
+spec:
+  template:
+    metadata:
+      labels:
+        app: kiam
+        role: agent
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        kubernetes.io/role: node
+      volumes:
+        - name: ssl-certs
+          hostPath:
+            path: /usr/share/ca-certificates
+        - name: tls
+          secret:
+            secretName: kiam-agent-tls
+      containers:
+        - name: kiam
+          securityContext:
+            privileged: true
+          image: quay.io/uswitch/kiam:agent-and-gateway
+          imagePullPolicy: Always
+          command:
+            - /agent
+          args:
+            - --iptables
+            - --host-interface=cali+
+            - --json-log
+            - --port=8181
+            - --cert=/etc/kiam/tls/agent.pem
+            - --key=/etc/kiam/tls/agent-key.pem
+            - --ca=/etc/kiam/tls/ca.pem
+            - --server-address=kiam-server:443
+          env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          volumeMounts:
+            - mountPath: /etc/ssl/certs
+              name: ssl-certs
+            - mountPath: /etc/kiam/tls
+              name: tls
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8181
+            initialDelaySeconds: 3
+            periodSeconds: 3

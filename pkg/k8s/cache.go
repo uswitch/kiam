@@ -16,36 +16,24 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 	"time"
 )
 
-type PodFinderAnnouncer interface {
-	// Finds a uncompleted pod from its IP address
-	FindPodForIP(ip string) (*v1.Pod, error)
-	// Return whether there are still uncompleted pods in the specified role
-	IsActivePodsForRole(role string) (bool, error)
-	// Will receive a Pod whenever there's a change/addition for a Pod with a role.
-	Pods() <-chan *v1.Pod
-}
-
-type service struct {
+type PodCache struct {
 	store           cache.Store
 	cacheController cache.Controller
 	stop            chan struct{}
 	pods            chan *v1.Pod
 }
 
-func (s *service) Pods() <-chan *v1.Pod {
+func (s *PodCache) Pods() <-chan *v1.Pod {
 	return s.pods
-}
-
-func (s *service) announceRole(pod *v1.Pod) {
-	s.pods <- pod
 }
 
 var MultipleRunningPodsErr = fmt.Errorf("multiple running pods found")
@@ -54,7 +42,7 @@ func IsPodCompleted(pod *v1.Pod) bool {
 	return pod.Status.Phase == v1.PodSucceeded || pod.Status.Phase == v1.PodFailed
 }
 
-func (s *service) IsActivePodsForRole(role string) (bool, error) {
+func (s *PodCache) IsActivePodsForRole(role string) (bool, error) {
 	indexer, _ := s.store.(cache.Indexer)
 	items, err := indexer.ByIndex(indexPodRole, role)
 	if err != nil {
@@ -72,7 +60,7 @@ func (s *service) IsActivePodsForRole(role string) (bool, error) {
 	return false, nil
 }
 
-func (s *service) FindPodForIP(ip string) (*v1.Pod, error) {
+func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 	found := make([]*v1.Pod, 0)
 
 	indexer, _ := s.store.(cache.Indexer)
@@ -93,6 +81,10 @@ func (s *service) FindPodForIP(ip string) (*v1.Pod, error) {
 		}
 	}
 
+	for idx, pod := range found {
+		log.WithFields(PodFields(pod)).Debugf("found %d/%d pods for ip %s", len(found), idx+1, ip)
+	}
+
 	if len(found) == 0 {
 		return nil, nil
 	}
@@ -104,9 +96,23 @@ func (s *service) FindPodForIP(ip string) (*v1.Pod, error) {
 	return nil, MultipleRunningPodsErr
 }
 
+func (s *PodCache) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
+	pod, err := s.FindPodForIP(ip)
+	if err != nil {
+		return "", err
+	}
+
+	if pod == nil {
+		return "", nil
+	}
+
+	return PodRole(pod), nil
+}
+
 // handles objects from the queue processed by the cache
-func (s *service) process(obj interface{}) error {
+func (s *PodCache) process(obj interface{}) error {
 	deltas := obj.(cache.Deltas)
+	deltaMeter := metrics.GetOrRegisterMeter("PodCache.processDelta", metrics.DefaultRegistry)
 
 	for _, delta := range deltas {
 		pod := delta.Object.(*v1.Pod)
@@ -114,8 +120,13 @@ func (s *service) process(obj interface{}) error {
 
 		role := PodRole(pod)
 		if role != "" {
-			logger.Debugf("announcing pod")
-			s.announceRole(pod)
+			select {
+			case s.pods <- pod:
+				logger.Debugf("announced pod")
+			default:
+				metrics.GetOrRegisterMeter("PodCache.dropAnnounce", metrics.DefaultRegistry).Mark(1)
+				logger.Warnf("pods announcement full, dropping")
+			}
 		}
 
 		logger.Debugf("processing delta")
@@ -129,6 +140,8 @@ func (s *service) process(obj interface{}) error {
 		case cache.Deleted:
 			s.store.Delete(delta.Object)
 		}
+
+		deltaMeter.Mark(1)
 	}
 
 	return nil
@@ -167,27 +180,27 @@ const (
 	announceBufferSize = 100
 )
 
-func PodCache(source cache.ListerWatcher, syncInterval time.Duration) *service {
-	service := &service{stop: make(chan struct{}), pods: make(chan *v1.Pod, announceBufferSize)}
+func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration) *PodCache {
+	PodCache := &PodCache{stop: make(chan struct{}), pods: make(chan *v1.Pod, announceBufferSize)}
 	indexers := cache.Indexers{
 		indexPodIP:   podIPIndex,
 		indexPodRole: podRoleIndex,
 	}
 	store := cache.NewIndexer(cache.DeletionHandlingMetaNamespaceKeyFunc, indexers)
-	service.store = store
+	PodCache.store = store
 	config := &cache.Config{
-		Queue:            cache.NewDeltaFIFO(cache.MetaNamespaceKeyFunc, nil, service.store),
+		Queue:            cache.NewDeltaFIFO(cache.MetaNamespaceKeyFunc, nil, PodCache.store),
 		ListerWatcher:    source,
 		ObjectType:       &v1.Pod{},
 		FullResyncPeriod: syncInterval,
 		RetryOnError:     false,
-		Process:          service.process,
+		Process:          PodCache.process,
 	}
-	service.cacheController = cache.New(config)
-	return service
+	PodCache.cacheController = cache.New(config)
+	return PodCache
 }
 
-func (s *service) Run(ctx context.Context) {
+func (s *PodCache) Run(ctx context.Context) {
 	go func() {
 		<-ctx.Done()
 		log.Infof("stopping cache controller")

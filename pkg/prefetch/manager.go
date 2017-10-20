@@ -16,21 +16,22 @@ package prefetch
 import (
 	"context"
 	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/kiam/pkg/creds"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
 )
 
 type CredentialManager struct {
-	issuer creds.CredentialsIssuer
-	finder k8s.PodFinderAnnouncer
+	cache     sts.CredentialsCache
+	finder    k8s.RoleFinder
+	announcer k8s.PodAnnouncer
 }
 
-func NewManager(issuer creds.CredentialsIssuer, finder k8s.PodFinderAnnouncer) *CredentialManager {
-	return &CredentialManager{issuer: issuer, finder: finder}
+func NewManager(cache sts.CredentialsCache, finder k8s.RoleFinder, announcer k8s.PodAnnouncer) *CredentialManager {
+	return &CredentialManager{cache: cache, finder: finder, announcer: announcer}
 }
 
-func (m *CredentialManager) fetchCredentials(pod *v1.Pod) {
+func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	logger := log.WithFields(k8s.PodFields(pod))
 	if k8s.IsPodCompleted(pod) {
 		logger.Debugf("ignoring fetch credentials for completed pod")
@@ -38,34 +39,39 @@ func (m *CredentialManager) fetchCredentials(pod *v1.Pod) {
 	}
 
 	role := k8s.PodRole(pod)
-	issued, err := m.fetchCredentialsForRole(role)
+	issued, err := m.fetchCredentialsFromCache(ctx, role)
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())
 	} else {
-		logger.WithFields(creds.CredentialsFields(issued, role)).Infof("warming credentials")
+		logger.WithFields(sts.CredentialsFields(issued, role)).Infof("fetched credentials")
 	}
 }
 
-func (m *CredentialManager) fetchCredentialsForRole(role string) (*creds.Credentials, error) {
-	return m.issuer.CredentialsForRole(role)
+func (m *CredentialManager) fetchCredentialsFromCache(ctx context.Context, role string) (*sts.Credentials, error) {
+	return m.cache.CredentialsForRole(ctx, role)
 }
 
-func (m *CredentialManager) Run(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case pod := <-m.finder.Pods():
-			log.WithFields(k8s.PodFields(pod)).Debugf("pod announced")
-			m.fetchCredentials(pod)
-		case expiring := <-m.issuer.Expiring():
-			m.handleExpiring(expiring)
-		}
+func (m *CredentialManager) Run(ctx context.Context, parallelRoutines int) {
+	for i := 0; i < parallelRoutines; i++ {
+		log.Infof("starting credential manager process %d", i)
+		go func(id int) {
+			for {
+				select {
+				case <-ctx.Done():
+					log.Infof("stopping credential manager process %d", id)
+					return
+				case pod := <-m.announcer.Pods():
+					m.fetchCredentials(ctx, pod)
+				case expiring := <-m.cache.Expiring():
+					m.handleExpiring(ctx, expiring)
+				}
+			}
+		}(i)
 	}
 }
 
-func (m *CredentialManager) handleExpiring(credentials *creds.RoleCredentials) {
-	logger := log.WithFields(creds.CredentialsFields(credentials.Credentials, credentials.Role))
+func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts.RoleCredentials) {
+	logger := log.WithFields(sts.CredentialsFields(credentials.Credentials, credentials.Role))
 
 	active, err := m.IsRoleActive(credentials.Role)
 	if err != nil {
@@ -79,12 +85,12 @@ func (m *CredentialManager) handleExpiring(credentials *creds.RoleCredentials) {
 	}
 
 	logger.Infof("expiring credentials, fetching updated")
-	_, err = m.fetchCredentialsForRole(credentials.Role)
+	_, err = m.fetchCredentialsFromCache(ctx, credentials.Role)
 	if err != nil {
 		logger.Errorf("error fetching updated credentials for expiring: %s", err.Error())
 	}
 }
 
 func (m *CredentialManager) IsRoleActive(role string) (bool, error) {
-	return m.finder.IsActivePodsForRole(role)
+	return m.announcer.IsActivePodsForRole(role)
 }

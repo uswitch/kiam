@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package kiam;
+
+service KiamService {
+    rpc GetPodRole(GetPodRoleRequest) returns (Role) {}
+    rpc GetRoleCredentials(GetRoleCredentialsRequest) returns (Credentials) {}
+    rpc GetHealth(GetHealthRequest) returns (HealthStatus) {}
+}
+
+message GetPodRoleRequest {
+  string ip = 1;
+}
+
+message Role {
+  string name = 1;
+}
+
+message GetRoleCredentialsRequest {
+  Role role = 1;
+}
+
+message Credentials {
+  string code = 1;
+  string type = 2;
+  string access_key_id = 3;
+  string secret_access_key = 4;
+  string token = 5;
+  string expiration = 6;
+  string last_updated = 7;
+}
+
+
+message GetHealthRequest {
+}
+
+message HealthStatus {
+  string message = 1;
+}

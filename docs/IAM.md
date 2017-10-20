@@ -2,8 +2,8 @@
 
 Kiam has two policy implications:
 
-1. Your Node must have permissions to call `sts:AssumeRole` to retrieve credentials for the role.
-2. Any roles you want to allow Pods to assume should trust the role assigned to the Node.
+1. Any nodes that run the Server process must have permissions to call `sts:AssumeRole`.
+2. Any roles that Pods wish to assume must have policy which trusts the nodes running the Server process.
 
 ## Cluster Node Policy
 
