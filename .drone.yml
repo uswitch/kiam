@@ -8,8 +8,6 @@ pipeline:
     commands:
       - go test *_test.go
   build:
-    when:
-      event: push
     image: golang:1.9
     commands:
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/agent cmd/agent/*.go
@@ -27,11 +25,11 @@ pipeline:
       - ${DRONE_COMMIT_BRANCH}
 
   docker-tagged:
+    when:
+      event: tag
     image: plugins/docker
     repo: quay.io/uswitch/kiam
     registry: quay.io
     secrets: [ docker_username, docker_password ]
     tags:
       - ${DRONE_TAG}
-    when:
-      event: tag
