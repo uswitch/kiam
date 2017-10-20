@@ -53,3 +53,12 @@ func TestCancelsWhenBlocked(t *testing.T) {
 		t.Error("Unexpected error:", err.Error())
 	}
 }
+
+func BenchmarkFutureGet(b *testing.B) {
+	f := future.New(func() (interface{}, error) {
+		return 1, nil
+	})
+	for n := 0; n < b.N; n++ {
+		f.Get(context.Background())
+	}
+}
