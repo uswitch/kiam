@@ -19,6 +19,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/future"
 	"time"
 )
 
@@ -61,12 +62,14 @@ func DefaultCache(gateway STSGateway, roleBaseARN, sessionName string) *credenti
 }
 
 func (c *credentialsCache) evicted(role string, item interface{}) {
-	creds, ok := item.(*Credentials)
-	if !ok {
-		log.Errorf("type error, something other than *Credentials in cache")
+	f := item.(*future.Future)
+	obj, err := f.Get(context.Background())
+	if err != nil {
+		log.WithField("pod.iam.role", role).Errorf("error getting credentials from future during eviction: %s", err.Error())
 		return
 	}
 
+	creds := obj.(*Credentials)
 	select {
 	case c.expiring <- &RoleCredentials{Role: role, Credentials: creds}:
 		log.WithFields(CredentialsFields(creds, role)).Infof("notified credentials expire soon")
@@ -81,26 +84,43 @@ func (c *credentialsCache) Expiring() chan *RoleCredentials {
 }
 
 func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) (*Credentials, error) {
+	logger := log.WithFields(log.Fields{"pod.iam.role": role})
 	item, found := c.cache.Get(role)
 
 	if found {
 		c.meterCacheHit.Mark(1)
 
-		creds, _ := item.(*Credentials)
-		return creds, nil
+		future, _ := item.(*future.Future)
+		val, err := future.Get(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return val.(*Credentials), nil
 	}
 
 	c.meterCacheMiss.Mark(1)
 
-	arn := fmt.Sprintf("%s%s", c.baseARN, role)
-	credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, DefaultCredentialsValidityPeriod)
+	issue := func() (interface{}, error) {
+		arn := fmt.Sprintf("%s%s", c.baseARN, role)
+		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, DefaultCredentialsValidityPeriod)
+		if err != nil {
+			logger.Errorf("error requesting credentials: %s", err.Error())
+			return nil, err
+		}
+
+		log.WithFields(CredentialsFields(credentials, role)).Infof("requested new credentials")
+		return credentials, err
+	}
+	f := future.New(issue)
+	c.cache.Set(role, f, DefaultCacheTTL)
+
+	val, err := f.Get(ctx)
 	if err != nil {
+		c.cache.Delete(role)
 		return nil, err
 	}
 
-	log.WithFields(CredentialsFields(credentials, role)).Infof("requested new credentials")
-
-	c.cache.Set(role, credentials, DefaultCacheTTL)
-
-	return credentials, nil
+	return val.(*Credentials), nil
 }
