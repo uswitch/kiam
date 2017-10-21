@@ -64,8 +64,9 @@ func DefaultCache(gateway STSGateway, roleBaseARN, sessionName string) *credenti
 func (c *credentialsCache) evicted(role string, item interface{}) {
 	f := item.(*future.Future)
 	obj, err := f.Get(context.Background())
+
 	if err != nil {
-		log.WithField("pod.iam.role", role).Errorf("error getting credentials from future during eviction: %s", err.Error())
+		log.WithField("pod.iam.role", role).Debugf("evicted credentials future had error: %s", err.Error())
 		return
 	}
 
