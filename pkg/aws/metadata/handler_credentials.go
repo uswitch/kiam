@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-func issueCredentials(ctx context.Context, credentialsProvider sts.CredentialsProvider, role string) (*sts.Credentials, error) {
+func credentialsForRole(ctx context.Context, credentialsProvider sts.CredentialsProvider, role string) (*sts.Credentials, error) {
 	credsCh := make(chan *sts.Credentials, 1)
 	op := func() error {
 		credentials, err := credentialsProvider.CredentialsForRole(ctx, role)
@@ -88,7 +88,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", requestedRole, foundRole)
 	}
 
-	credentials, err := issueCredentials(ctx, s.credentials, requestedRole)
+	credentials, err := credentialsForRole(ctx, s.credentials, requestedRole)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", ctx.Err().Error())
 	}
