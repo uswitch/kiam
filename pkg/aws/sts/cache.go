@@ -56,7 +56,7 @@ func DefaultCache(gateway STSGateway, roleBaseARN, sessionName string) *credenti
 	c.cache = cache.New(DefaultCacheTTL, DefaultPurgeInterval)
 	c.cache.OnEvicted(c.evicted)
 
-	metrics.NewRegisteredFunctionalGauge("credentialsCacheSize", metrics.DefaultRegistry, func() int64 { return int64(c.cache.ItemCount()) })
+	metrics.NewRegisteredFunctionalGauge("credentialsCache.size", metrics.DefaultRegistry, func() int64 { return int64(c.cache.ItemCount()) })
 
 	return c
 }
@@ -107,6 +107,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 		arn := fmt.Sprintf("%s%s", c.baseARN, role)
 		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, DefaultCredentialsValidityPeriod)
 		if err != nil {
+			metrics.GetOrRegisterMeter("credentialsCache.errorIssuing", metrics.DefaultRegistry).Mark(1)
 			logger.Errorf("error requesting credentials: %s", err.Error())
 			return nil, err
 		}
