@@ -30,12 +30,12 @@ func (s *Server) healthHandler(w http.ResponseWriter, req *http.Request) (int, e
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	client := &http.Client{}
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/latest/meta-data/instance-id", s.cfg.MetadataEndpoint), nil)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("couldn't create request: %s", err)
 	}
 
+	client := &http.Client{}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("couldn't read metadata response: %s", err)
