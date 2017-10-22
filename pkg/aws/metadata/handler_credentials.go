@@ -60,20 +60,20 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusNotFound, EmptyRoleError
 	}
 
-	role := mux.Vars(req)["role"]
-	if role == "" {
+	requestedRole := mux.Vars(req)["role"]
+	if requestedRole == "" {
 		return http.StatusBadRequest, fmt.Errorf("no role specified")
 	}
 
-	if foundRole != role {
-		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", role, foundRole)
+	if foundRole != requestedRole {
+		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", requestedRole, foundRole)
 	}
 
 	credsCh := make(chan *sts.Credentials, 1)
 	op := func() error {
-		credentials, err := s.credentials.CredentialsForRole(ctx, role)
+		credentials, err := s.credentials.CredentialsForRole(ctx, requestedRole)
 		if err != nil {
-			logger.WithField("pod.iam.role", role).Errorf("error getting credentials for role: %s", err.Error())
+			logger.WithField("pod.iam.role", requestedRole).Errorf("error getting credentials for role: %s", err.Error())
 			return err
 		}
 		credsCh <- credentials
