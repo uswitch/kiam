@@ -31,6 +31,11 @@ import (
 	"time"
 )
 
+const (
+	MaxTime       = time.Second * 5
+	RetryInterval = time.Millisecond * 5
+)
+
 type Server struct {
 	cfg         *ServerConfig
 	finder      k8s.RoleFinder
