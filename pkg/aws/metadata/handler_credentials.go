@@ -45,21 +45,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 
 	logger := log.WithFields(khttp.RequestFields(req))
 
-	roleCh := make(chan string, 1)
-	op := func() error {
-		foundRole, err := s.finder.FindRoleFromIP(ctx, ip)
-		if err != nil {
-			logger.Errorf("error finding role for ip %s", ip)
-			return err
-		}
-		roleCh <- foundRole
-		return nil
-	}
-
-	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = RetryInterval
-	err = backoff.Retry(op, backoff.WithContext(strategy, ctx))
-
+	foundRole, err := findRole(ctx, s.finder, ip)
 	if err != nil {
 		if err == server.PodNotFoundError {
 			metrics.GetOrRegisterMeter("credentialsHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
@@ -68,8 +54,6 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
 	}
-
-	foundRole := <-roleCh
 
 	if foundRole == "" {
 		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
@@ -86,7 +70,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 	}
 
 	credsCh := make(chan *sts.Credentials, 1)
-	op = func() error {
+	op := func() error {
 		credentials, err := s.credentials.CredentialsForRole(ctx, role)
 		if err != nil {
 			logger.WithField("pod.iam.role", role).Errorf("error getting credentials for role: %s", err.Error())
@@ -96,7 +80,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return nil
 	}
 
-	strategy = backoff.NewExponentialBackOff()
+	strategy := backoff.NewExponentialBackOff()
 	strategy.InitialInterval = RetryInterval
 	err = backoff.Retry(op, backoff.WithContext(strategy, ctx))
 
