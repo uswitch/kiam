@@ -21,12 +21,33 @@ import (
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
-	khttp "github.com/uswitch/kiam/pkg/http"
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/vmg/backoff"
 	"net/http"
 	"time"
 )
+
+func issueCredentials(ctx context.Context, credentialsProvider sts.CredentialsProvider, role string) (*sts.Credentials, error) {
+	credsCh := make(chan *sts.Credentials, 1)
+	op := func() error {
+		credentials, err := credentialsProvider.CredentialsForRole(ctx, role)
+		if err != nil {
+			log.WithField("pod.iam.role", role).Errorf("error getting credentials for role: %s", err.Error())
+			return err
+		}
+		credsCh <- credentials
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = RetryInterval
+
+	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
+	if err != nil {
+		return nil, err
+	}
+	return <-credsCh, nil
+}
 
 func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (int, error) {
 	credentialTimings := metrics.GetOrRegisterTimer("credentialsHandler", metrics.DefaultRegistry)
@@ -42,8 +63,6 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 
 	ctx, cancel := context.WithTimeout(req.Context(), MaxTime)
 	defer cancel()
-
-	logger := log.WithFields(khttp.RequestFields(req))
 
 	foundRole, err := findRole(ctx, s.finder, ip)
 	if err != nil {
@@ -69,26 +88,11 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", requestedRole, foundRole)
 	}
 
-	credsCh := make(chan *sts.Credentials, 1)
-	op := func() error {
-		credentials, err := s.credentials.CredentialsForRole(ctx, requestedRole)
-		if err != nil {
-			logger.WithField("pod.iam.role", requestedRole).Errorf("error getting credentials for role: %s", err.Error())
-			return err
-		}
-		credsCh <- credentials
-		return nil
-	}
-
-	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = RetryInterval
-	err = backoff.Retry(op, backoff.WithContext(strategy, ctx))
-
+	credentials, err := issueCredentials(ctx, s.credentials, requestedRole)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", ctx.Err().Error())
 	}
 
-	credentials := <-credsCh
 	err = json.NewEncoder(w).Encode(credentials)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("error encoding credentials: %s", err.Error())
