@@ -19,16 +19,37 @@ import (
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	khttp "github.com/uswitch/kiam/pkg/http"
+	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/vmg/backoff"
 	"net/http"
 	"time"
 )
 
-var (
-	MaxTime       = time.Second * 5
-	RetryInterval = time.Millisecond * 5
-)
+func findRole(ctx context.Context, finder k8s.RoleFinder, ip string) (string, error) {
+	logger := log.WithField("pod.ip", ip)
+
+	roleCh := make(chan string, 1)
+	op := func() error {
+		role, err := finder.FindRoleFromIP(ctx, ip)
+		if err != nil {
+			logger.Warnf("error finding role for pod: %s", err.Error())
+			return err
+		}
+		roleCh <- role
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = RetryInterval
+
+	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
+	if err != nil {
+		return "", err
+	}
+
+	return <-roleCh, nil
+}
 
 func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int, error) {
 	requestLog := log.WithFields(khttp.RequestFields(req))
@@ -44,24 +65,10 @@ func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int,
 		return http.StatusInternalServerError, fmt.Errorf("error parsing ip: %s", err.Error())
 	}
 
-	roleCh := make(chan string, 1)
-	op := func() error {
-		role, err := s.finder.FindRoleFromIP(ctx, ip)
-		if err != nil {
-			return err
-		}
-		roleCh <- role
-		return nil
-	}
-
-	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = RetryInterval
-	err = backoff.Retry(op, backoff.WithContext(strategy, ctx))
+	role, err := findRole(ctx, s.finder, ip)
 	if err != nil {
-		fmt.Println("error: ", err)
-
 		if err == server.PodNotFoundError {
-			requestLog.Warnf("no pod found for ip")
+			requestLog.Errorf("no pod found for ip")
 			metrics.GetOrRegisterMeter("roleNameHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
 			return http.StatusNotFound, err
 		}
@@ -69,7 +76,6 @@ func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int,
 		return http.StatusInternalServerError, err
 	}
 
-	role := <-roleCh
 	if role == "" {
 		requestLog.Warnf("empty role defined for pod")
 		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)

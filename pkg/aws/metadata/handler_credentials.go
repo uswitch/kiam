@@ -19,11 +19,35 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
+	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/vmg/backoff"
 	"net/http"
 	"time"
 )
+
+func credentialsForRole(ctx context.Context, credentialsProvider sts.CredentialsProvider, role string) (*sts.Credentials, error) {
+	credsCh := make(chan *sts.Credentials, 1)
+	op := func() error {
+		credentials, err := credentialsProvider.CredentialsForRole(ctx, role)
+		if err != nil {
+			log.WithField("pod.iam.role", role).Errorf("error getting credentials for role: %s", err.Error())
+			return err
+		}
+		credsCh <- credentials
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = RetryInterval
+
+	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
+	if err != nil {
+		return nil, err
+	}
+	return <-credsCh, nil
+}
 
 func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (int, error) {
 	credentialTimings := metrics.GetOrRegisterTimer("credentialsHandler", metrics.DefaultRegistry)
@@ -40,20 +64,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 	ctx, cancel := context.WithTimeout(req.Context(), MaxTime)
 	defer cancel()
 
-	roleCh := make(chan string, 1)
-	op := func() error {
-		foundRole, err := s.finder.FindRoleFromIP(ctx, ip)
-		if err != nil {
-			return err
-		}
-		roleCh <- foundRole
-		return nil
-	}
-
-	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = RetryInterval
-	err = backoff.Retry(op, backoff.WithContext(strategy, ctx))
-
+	foundRole, err := findRole(ctx, s.finder, ip)
 	if err != nil {
 		if err == server.PodNotFoundError {
 			metrics.GetOrRegisterMeter("credentialsHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
@@ -63,23 +74,21 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
 	}
 
-	foundRole := <-roleCh
-
 	if foundRole == "" {
 		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
 		return http.StatusNotFound, EmptyRoleError
 	}
 
-	role := mux.Vars(req)["role"]
-	if role == "" {
+	requestedRole := mux.Vars(req)["role"]
+	if requestedRole == "" {
 		return http.StatusBadRequest, fmt.Errorf("no role specified")
 	}
 
-	if foundRole != role {
-		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", role, foundRole)
+	if foundRole != requestedRole {
+		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", requestedRole, foundRole)
 	}
 
-	credentials, err := s.credentials.CredentialsForRole(ctx, role)
+	credentials, err := credentialsForRole(ctx, s.credentials, requestedRole)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", ctx.Err().Error())
 	}

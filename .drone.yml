@@ -7,6 +7,10 @@ pipeline:
     image: golang:1.9
     commands:
       - go test *_test.go
+  benchmarks:
+    image: golang:1.9
+    commands:
+      - go test -run=XX -bench=.
   build:
     image: golang:1.9
     commands:
