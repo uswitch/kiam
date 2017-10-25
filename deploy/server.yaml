@@ -23,9 +23,7 @@ spec:
             secretName: kiam-server-tls
       containers:
         - name: kiam
-          securityContext:
-            privileged: true
-          image: quay.io/uswitch/kiam:v2.0-rc3
+          image: quay.io/uswitch/kiam:v2.0
           imagePullPolicy: Always
           command:
             - /server
