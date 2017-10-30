@@ -25,6 +25,7 @@ type options struct {
 	jsonLog         bool
 	logLevel        string
 	serverAddress   string
+	serverNamespace string
 	certificatePath string
 	keyPath         string
 	caPath          string
@@ -37,6 +38,7 @@ func main() {
 	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&opts.logLevel, "debug", "info", "warn", "error")
 
 	kingpin.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&opts.serverAddress)
+	kingpin.Flag("server-namespace", "Namespace for Server service; used to load-balance and resolve pods.").Default("kube-system").StringVar(&opts.serverNamespace)
 	kingpin.Flag("cert", "Agent certificate path").Required().ExistingFileVar(&opts.certificatePath)
 	kingpin.Flag("key", "Agent key path").Required().ExistingFileVar(&opts.keyPath)
 	kingpin.Flag("ca", "CA certificate path").Required().ExistingFileVar(&opts.caPath)
@@ -60,7 +62,7 @@ func main() {
 		log.SetLevel(log.ErrorLevel)
 	}
 
-	gateway, err := kiamserver.NewGateway(opts.serverAddress, opts.caPath, opts.certificatePath, opts.keyPath)
+	gateway, err := kiamserver.NewGateway(opts.serverAddress, opts.serverNamespace, opts.caPath, opts.certificatePath, opts.keyPath)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
