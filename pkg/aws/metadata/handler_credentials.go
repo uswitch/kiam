@@ -32,7 +32,7 @@ func credentialsForRole(ctx context.Context, credentialsProvider sts.Credentials
 	op := func() error {
 		credentials, err := credentialsProvider.CredentialsForRole(ctx, role)
 		if err != nil {
-			log.WithField("pod.iam.role", role).Errorf("error getting credentials for role: %s", err.Error())
+			log.WithField("pod.iam.role", role).Warnf("error getting credentials for role: %s", err.Error())
 			return err
 		}
 		credsCh <- credentials
