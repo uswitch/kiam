@@ -152,7 +152,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	})
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
-	pb.RegisterKiamServiceServer(grpcServer, server)
+	pb.RegisterKiamServiceServer(grpcServer, ServerWithTelemetry(server))
 	server.server = grpcServer
 
 	return server, nil
