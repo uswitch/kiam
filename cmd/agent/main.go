@@ -29,17 +29,16 @@ import (
 )
 
 type options struct {
-	jsonLog         bool
-	logLevel        string
-	port            int
-	allowIPQuery    bool
-	statsD          string
-	statsDInterval  time.Duration
-	iptables        bool
-	hostIP          string
-	hostInterface   string
-	serverAddress   string
-	serverNamespace string
+	jsonLog        bool
+	logLevel       string
+	port           int
+	allowIPQuery   bool
+	statsD         string
+	statsDInterval time.Duration
+	iptables       bool
+	hostIP         string
+	hostInterface  string
+	serverAddress  string
 
 	certificatePath string
 	keyPath         string
@@ -80,7 +79,6 @@ func main() {
 	kingpin.Flag("host-interface", "Network interface for pods to configure IPTables.").Default("docker0").StringVar(&opts.hostInterface)
 
 	kingpin.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&opts.serverAddress)
-	kingpin.Flag("server-namespace", "Namespace for Server service; used to load-balance and resolve pods.").Default("kube-system").StringVar(&opts.serverNamespace)
 	kingpin.Flag("cert", "Agent certificate path").Required().ExistingFileVar(&opts.certificatePath)
 	kingpin.Flag("key", "Agent key path").Required().ExistingFileVar(&opts.keyPath)
 	kingpin.Flag("ca", "CA certificate path").Required().ExistingFileVar(&opts.caPath)
@@ -117,7 +115,7 @@ func main() {
 	config := http.NewConfig(opts.port)
 	config.AllowIPQuery = opts.allowIPQuery
 
-	gateway, err := kiamserver.NewGateway(opts.serverAddress, opts.serverNamespace, opts.caPath, opts.certificatePath, opts.keyPath)
+	gateway, err := kiamserver.NewGateway(opts.serverAddress, opts.caPath, opts.certificatePath, opts.keyPath)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}

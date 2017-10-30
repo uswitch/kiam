@@ -473,12 +473,6 @@
 			"revisionTime": "2016-11-28T21:05:44Z"
 		},
 		{
-			"checksumSHA1": "nkMBChbuVQWZW5aTxRmgtBADcDI=",
-			"path": "github.com/sercand/kuberesolver",
-			"revision": "7b3d51468778ed0c53045edd7015b5a21f902d53",
-			"revisionTime": "2017-07-20T13:34:31Z"
-		},
-		{
 			"checksumSHA1": "O2d6k/wJgvPgEfYKO6VvL1zOCc4=",
 			"path": "github.com/sirupsen/logrus",
 			"revision": "5ff5dd844dfeb4e23e27528f79f1f845bc8bb78f",

@@ -19,7 +19,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/sercand/kuberesolver"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
@@ -40,7 +39,7 @@ const (
 
 // Creates a client suitable for interacting with a remote server. It can
 // be closed cleanly
-func NewGateway(address, namespace, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
+func NewGateway(address, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
 	}
@@ -64,8 +63,7 @@ func NewGateway(address, namespace, caFile, certificateFile, keyFile string) (*K
 	})
 
 	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(creds), grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...))}
-	balancer := kuberesolver.NewWithNamespace(namespace)
-	conn, err := balancer.Dial(address, dialOpts...)
+	conn, err := grpc.Dial(address, dialOpts...)
 	if err != nil {
 		return nil, err
 	}
