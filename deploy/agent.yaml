@@ -28,7 +28,7 @@ spec:
         - name: kiam
           securityContext:
             privileged: true
-          image: quay.io/uswitch/kiam:v2.0
+          image: quay.io/uswitch/kiam:v2.1
           command:
             - /agent
           args:
