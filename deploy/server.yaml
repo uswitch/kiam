@@ -11,7 +11,6 @@ spec:
         app: kiam
         role: server
     spec:
-      hostNetwork: true
       nodeSelector:
         kubernetes.io/role: master
       volumes:
@@ -35,11 +34,6 @@ spec:
             - --ca=/etc/kiam/tls/ca.pem
             - --role-base-arn=arn:aws:iam::<account-id>:role/
             - --sync=1m
-          env:
-            - name: HOST_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
           volumeMounts:
             - mountPath: /etc/ssl/certs
               name: ssl-certs
