@@ -17,6 +17,7 @@ import (
 	"context"
 	log "github.com/sirupsen/logrus"
 	kiamserver "github.com/uswitch/kiam/pkg/server"
+	"github.com/vmg/backoff"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"time"
 )
@@ -68,9 +69,21 @@ func main() {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), opts.timeout)
 	defer cancel()
-	message, err := gateway.Health(ctx)
+
+	op := func() error {
+		message, err := gateway.Health(ctx)
+		if err != nil {
+			log.Warnf("error checking health: %s", err.Error())
+			return err
+		}
+
+		log.Infof("healthy: %s", message)
+
+		return nil
+	}
+	err = backoff.Retry(op, backoff.WithContext(backoff.NewConstantBackOff(100*time.Millisecond), ctx))
+
 	if err != nil {
 		log.Fatalf("error retrieving health: %s", err.Error())
 	}
-	log.Debugf("healthy: %s", message)
 }
