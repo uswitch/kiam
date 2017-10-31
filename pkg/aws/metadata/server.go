@@ -72,9 +72,9 @@ func (s *Server) Serve() error {
 	router := mux.NewRouter()
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
-	router.Handle("/health", http.HandlerFunc(ErrorHandler(s.healthHandler)))
-	router.Handle("/{version}/meta-data/iam/security-credentials/", http.HandlerFunc(ErrorHandler(s.roleNameHandler)))
-	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", http.HandlerFunc(ErrorHandler(s.credentialsHandler)))
+	router.Handle("/health", http.HandlerFunc(ErrorHandler("health", s.healthHandler)))
+	router.Handle("/{version}/meta-data/iam/security-credentials/", http.HandlerFunc(ErrorHandler("roleName", s.roleNameHandler)))
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", http.HandlerFunc(ErrorHandler("credentials", s.credentialsHandler)))
 
 	metadataURL, err := url.Parse(s.cfg.MetadataEndpoint)
 	if err != nil {
@@ -130,11 +130,33 @@ func (s *Server) clientIP(req *http.Request) (string, error) {
 	return ParseClientIP(req.RemoteAddr)
 }
 
-func ErrorHandler(f func(http.ResponseWriter, *http.Request) (int, error)) func(http.ResponseWriter, *http.Request) {
+func getStatusBucket(status int) string {
+	if status >= 200 && status < 300 {
+		return "2xx"
+	}
+	if status >= 300 && status < 400 {
+		return "3xx"
+	}
+	if status >= 400 && status < 500 {
+		return "4xx"
+	}
+	if status >= 500 && status < 600 {
+		return "5xx"
+	}
+	return "unknown"
+}
+
+func getResponseMeter(name string, result int) metrics.Meter {
+	bucket := getStatusBucket(result)
+	return metrics.GetOrRegisterMeter(fmt.Sprintf("handlerResponse-%s.%s", name, bucket), metrics.DefaultRegistry)
+}
+
+func ErrorHandler(name string, f func(http.ResponseWriter, *http.Request) (int, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		status, err := f(w, req)
+		getResponseMeter(name, status).Mark(1)
 		if err != nil {
-			log.WithFields(khttp.RequestFields(req)).Errorf("error processing request: %s", err.Error())
+			log.WithFields(khttp.RequestFields(req)).WithField("status", status).Errorf("error processing request: %s", err.Error())
 			http.Error(w, err.Error(), status)
 		}
 	}
