@@ -19,37 +19,9 @@ import (
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	khttp "github.com/uswitch/kiam/pkg/http"
-	"github.com/uswitch/kiam/pkg/k8s"
-	"github.com/uswitch/kiam/pkg/server"
-	"github.com/vmg/backoff"
 	"net/http"
 	"time"
 )
-
-func findRole(ctx context.Context, finder k8s.RoleFinder, ip string) (string, error) {
-	logger := log.WithField("pod.ip", ip)
-
-	roleCh := make(chan string, 1)
-	op := func() error {
-		role, err := finder.FindRoleFromIP(ctx, ip)
-		if err != nil {
-			logger.Warnf("error finding role for pod: %s", err.Error())
-			return err
-		}
-		roleCh <- role
-		return nil
-	}
-
-	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = RetryInterval
-
-	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
-	if err != nil {
-		return "", err
-	}
-
-	return <-roleCh, nil
-}
 
 func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int, error) {
 	requestLog := log.WithFields(khttp.RequestFields(req))
@@ -67,11 +39,8 @@ func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int,
 
 	role, err := findRole(ctx, s.finder, ip)
 	if err != nil {
-		if err == server.PodNotFoundError {
-			requestLog.Errorf("no pod found for ip")
-			metrics.GetOrRegisterMeter("roleNameHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
-			return http.StatusNotFound, err
-		}
+		requestLog.Errorf("unable to find pod role: %s", err.Error())
+		metrics.GetOrRegisterMeter("roleNameHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
 
 		return http.StatusInternalServerError, err
 	}

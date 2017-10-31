@@ -130,7 +130,7 @@ func TestReturnRoleForPod(t *testing.T) {
 	}
 }
 
-func TestReturnNotFoundWhenNoPodFound(t *testing.T) {
+func TestReturnErrorWhenNoPodFound(t *testing.T) {
 	defer leaktest.CheckTimeout(t, time.Second*10)()
 
 	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
@@ -144,8 +144,8 @@ func TestReturnNotFoundWhenNoPodFound(t *testing.T) {
 	if err != nil {
 		t.Error("error retrieving role:", err.Error())
 	}
-	if status != http.StatusNotFound {
-		t.Error("expected 404 response, was", status)
+	if status != http.StatusInternalServerError {
+		t.Error("expected 500 response, was", status)
 	}
 }
 
@@ -163,8 +163,8 @@ func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
 	if err != nil {
 		t.Error("error retrieving role:", err.Error())
 	}
-	if status != http.StatusNotFound {
-		t.Error("expected 404 response, was", status)
+	if status != http.StatusInternalServerError {
+		t.Error("expected 500 response, was", status)
 	}
 }
 
