@@ -11,7 +11,6 @@ spec:
         app: kiam
         role: server
     spec:
-      hostNetwork: true
       nodeSelector:
         kubernetes.io/role: master
       volumes:
@@ -35,11 +34,6 @@ spec:
             - --ca=/etc/kiam/tls/ca.pem
             - --role-base-arn=arn:aws:iam::<account-id>:role/
             - --sync=1m
-          env:
-            - name: HOST_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
           volumeMounts:
             - mountPath: /etc/ssl/certs
               name: ssl-certs
@@ -52,11 +46,12 @@ spec:
               - --cert=/etc/kiam/tls/server.pem
               - --key=/etc/kiam/tls/server-key.pem
               - --ca=/etc/kiam/tls/ca.pem
-              - --server-address=localhost:9610
-              - --timeout=2s
-              - --level=debug
+              - --server-address=localhost:443
+              - --server-address-refresh=2s
+              - --timeout=5s
             initialDelaySeconds: 10
-            periodSeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 10
           readinessProbe:
             exec:
               command:
@@ -64,11 +59,12 @@ spec:
               - --cert=/etc/kiam/tls/server.pem
               - --key=/etc/kiam/tls/server-key.pem
               - --ca=/etc/kiam/tls/ca.pem
-              - --server-address=localhost:9610
-              - --timeout=2s
-              - --level=debug
+              - --server-address=localhost:443
+              - --server-address-refresh=2s
+              - --timeout=5s
             initialDelaySeconds: 3
-            periodSeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 10
 ---
 apiVersion: v1
 kind: Service
@@ -76,6 +72,7 @@ metadata:
   name: kiam-server
   namespace: kube-system
 spec:
+  clusterIP: None
   selector:
     app: kiam
     role: server

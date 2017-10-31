@@ -23,6 +23,7 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/naming"
 	"io/ioutil"
 	"time"
 )
@@ -39,7 +40,12 @@ const (
 
 // Creates a client suitable for interacting with a remote server. It can
 // be closed cleanly
-func NewGateway(address, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
+type GatewayConfig struct {
+	Address string
+	TLS     *TLSConfig
+}
+
+func NewGateway(address string, refresh time.Duration, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
 	}
@@ -62,7 +68,13 @@ func NewGateway(address, caFile, certificateFile, keyFile string) (*KiamGateway,
 		RootCAs:      certPool,
 	})
 
-	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(creds), grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...))}
+	resolver, err := naming.NewDNSResolverWithFreq(refresh)
+	if err != nil {
+		return nil, err
+	}
+
+	balancer := grpc.RoundRobin(resolver)
+	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(creds), grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...)), grpc.WithBalancer(balancer)}
 	conn, err := grpc.Dial(address, dialOpts...)
 	if err != nil {
 		return nil, err

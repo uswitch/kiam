@@ -19,35 +19,9 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
-	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/kiam/pkg/aws/sts"
-	"github.com/uswitch/kiam/pkg/server"
-	"github.com/vmg/backoff"
 	"net/http"
 	"time"
 )
-
-func credentialsForRole(ctx context.Context, credentialsProvider sts.CredentialsProvider, role string) (*sts.Credentials, error) {
-	credsCh := make(chan *sts.Credentials, 1)
-	op := func() error {
-		credentials, err := credentialsProvider.CredentialsForRole(ctx, role)
-		if err != nil {
-			log.WithField("pod.iam.role", role).Warnf("error getting credentials for role: %s", err.Error())
-			return err
-		}
-		credsCh <- credentials
-		return nil
-	}
-
-	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = RetryInterval
-
-	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
-	if err != nil {
-		return nil, err
-	}
-	return <-credsCh, nil
-}
 
 func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (int, error) {
 	credentialTimings := metrics.GetOrRegisterTimer("credentialsHandler", metrics.DefaultRegistry)
@@ -66,11 +40,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 
 	foundRole, err := findRole(ctx, s.finder, ip)
 	if err != nil {
-		if err == server.PodNotFoundError {
-			metrics.GetOrRegisterMeter("credentialsHandler.podNotFound", metrics.DefaultRegistry).Mark(1)
-			return http.StatusNotFound, fmt.Errorf("no pod found for ip %s", ip)
-		}
-
+		metrics.GetOrRegisterMeter("credentialsHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
 	}
 

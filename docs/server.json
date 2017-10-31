@@ -1,6 +1,7 @@
 {
     "hosts": [
         "kiam-server:443",
+        "localhost:443",
         "localhost:9610"
     ],
     "key": {
