@@ -16,7 +16,6 @@ package metadata
 import (
 	"context"
 	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/vmg/backoff"
 	"time"
@@ -49,26 +48,4 @@ func findRole(ctx context.Context, finder k8s.RoleFinder, ip string) (string, er
 	}
 
 	return <-roleCh, nil
-}
-
-func credentialsForRole(ctx context.Context, credentialsProvider sts.CredentialsProvider, role string) (*sts.Credentials, error) {
-	credsCh := make(chan *sts.Credentials, 1)
-	op := func() error {
-		credentials, err := credentialsProvider.CredentialsForRole(ctx, role)
-		if err != nil {
-			log.WithField("pod.iam.role", role).Warnf("error getting credentials for role: %s", err.Error())
-			return err
-		}
-		credsCh <- credentials
-		return nil
-	}
-
-	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = retryInterval
-
-	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
-	if err != nil {
-		return nil, err
-	}
-	return <-credsCh, nil
 }

@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
+	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
+	"github.com/vmg/backoff"
 	"net/http"
 	"time"
 )
@@ -66,7 +68,7 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", requestedRole, foundRole)
 	}
 
-	credentials, err := credentialsForRole(ctx, c.credentialsProvider, requestedRole)
+	credentials, err := c.credentialsForRole(ctx, requestedRole)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", ctx.Err().Error())
 	}
@@ -79,4 +81,26 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 	w.Header().Set("Content-Type", "application/json")
 	metrics.GetOrRegisterMeter("credentialsHandler.success", metrics.DefaultRegistry).Mark(1)
 	return http.StatusOK, nil
+}
+
+func (c *credentialsHandler) credentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
+	credsCh := make(chan *sts.Credentials, 1)
+	op := func() error {
+		credentials, err := c.credentialsProvider.CredentialsForRole(ctx, role)
+		if err != nil {
+			log.WithField("pod.iam.role", role).Warnf("error getting credentials for role: %s", err.Error())
+			return err
+		}
+		credsCh <- credentials
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = retryInterval
+
+	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
+	if err != nil {
+		return nil, err
+	}
+	return <-credsCh, nil
 }
