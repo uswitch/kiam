@@ -19,26 +19,34 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
+	"github.com/uswitch/kiam/pkg/aws/sts"
+	"github.com/uswitch/kiam/pkg/k8s"
 	"net/http"
 	"time"
 )
 
-func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (int, error) {
+type credentialsHandler struct {
+	roleFinder          k8s.RoleFinder
+	credentialsProvider sts.CredentialsProvider
+	clientIP            clientIPFunc
+}
+
+func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	credentialTimings := metrics.GetOrRegisterTimer("credentialsHandler", metrics.DefaultRegistry)
 	startTime := time.Now()
 	defer credentialTimings.UpdateSince(startTime)
 
-	req.ParseForm()
-
-	ip, err := s.clientIP(req)
+	err := req.ParseForm()
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error parsing client ip %s: %s", ip, err.Error())
+		return http.StatusInternalServerError, err
 	}
 
-	ctx, cancel := context.WithTimeout(req.Context(), MaxTime)
-	defer cancel()
+	ip, err := c.clientIP(req)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
 
-	foundRole, err := findRole(ctx, s.finder, ip)
+	foundRole, err := findRole(ctx, c.roleFinder, ip)
 	if err != nil {
 		metrics.GetOrRegisterMeter("credentialsHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
@@ -58,7 +66,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", requestedRole, foundRole)
 	}
 
-	credentials, err := credentialsForRole(ctx, s.credentials, requestedRole)
+	credentials, err := credentialsForRole(ctx, c.credentialsProvider, requestedRole)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", ctx.Err().Error())
 	}

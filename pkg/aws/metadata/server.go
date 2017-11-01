@@ -72,9 +72,22 @@ func (s *Server) Serve() error {
 	router := mux.NewRouter()
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
-	router.Handle("/health", http.HandlerFunc(ErrorHandler("health", s.healthHandler)))
-	router.Handle("/{version}/meta-data/iam/security-credentials/", http.HandlerFunc(ErrorHandler("roleName", s.roleNameHandler)))
-	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", http.HandlerFunc(ErrorHandler("credentials", s.credentialsHandler)))
+
+	h := &healthHandler{s.cfg.MetadataEndpoint}
+	router.Handle("/health", http.HandlerFunc(errorHandler("health", h)))
+
+	r := &roleHandler{
+		roleFinder: s.finder,
+		clientIP:   s.clientIP,
+	}
+	router.Handle("/{version}/meta-data/iam/security-credentials/", http.HandlerFunc(errorHandler("roleName", r)))
+
+	c := &credentialsHandler{
+		roleFinder:          s.finder,
+		credentialsProvider: s.credentials,
+		clientIP:            s.clientIP,
+	}
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", http.HandlerFunc(errorHandler("credentials", c)))
 
 	metadataURL, err := url.Parse(s.cfg.MetadataEndpoint)
 	if err != nil {
@@ -115,11 +128,6 @@ func ParseClientIP(addr string) (string, error) {
 }
 
 func (s *Server) clientIP(req *http.Request) (string, error) {
-	err := req.ParseForm()
-	if err != nil {
-		return "", err
-	}
-
 	if s.cfg.AllowIPQuery {
 		ip := req.Form.Get("ip")
 		if ip != "" {
@@ -151,10 +159,14 @@ func getResponseMeter(name string, result int) metrics.Meter {
 	return metrics.GetOrRegisterMeter(fmt.Sprintf("handlerResponse-%s.%s", name, bucket), metrics.DefaultRegistry)
 }
 
-func ErrorHandler(name string, f func(http.ResponseWriter, *http.Request) (int, error)) func(http.ResponseWriter, *http.Request) {
+func errorHandler(name string, handle handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		status, err := f(w, req)
+		ctx, cancel := context.WithTimeout(req.Context(), MaxTime)
+		defer cancel()
+
+		status, err := handle.Handle(ctx, w, req)
 		getResponseMeter(name, status).Mark(1)
+
 		if err != nil {
 			log.WithFields(khttp.RequestFields(req)).WithField("status", status).Errorf("error processing request: %s", err.Error())
 			http.Error(w, err.Error(), status)

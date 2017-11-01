@@ -17,41 +17,44 @@ import (
 	"context"
 	"fmt"
 	"github.com/rcrowley/go-metrics"
-	log "github.com/sirupsen/logrus"
-	khttp "github.com/uswitch/kiam/pkg/http"
+	"github.com/uswitch/kiam/pkg/k8s"
 	"net/http"
 	"time"
 )
 
-func (s *Server) roleNameHandler(w http.ResponseWriter, req *http.Request) (int, error) {
-	requestLog := log.WithFields(khttp.RequestFields(req))
+type roleHandler struct {
+	roleFinder k8s.RoleFinder
+	clientIP   clientIPFunc
+}
+
+func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	roleNameTimings := metrics.GetOrRegisterTimer("roleNameHandler", metrics.DefaultRegistry)
 	startTime := time.Now()
 	defer roleNameTimings.UpdateSince(startTime)
 
-	ctx, cancel := context.WithTimeout(req.Context(), MaxTime)
-	defer cancel()
-
-	ip, err := s.clientIP(req)
+	err := req.ParseForm()
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error parsing ip: %s", err.Error())
+		return http.StatusInternalServerError, err
 	}
 
-	role, err := findRole(ctx, s.finder, ip)
+	ip, err := h.clientIP(req)
 	if err != nil {
-		requestLog.Errorf("unable to find pod role: %s", err.Error())
-		metrics.GetOrRegisterMeter("roleNameHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
+		return http.StatusInternalServerError, err
+	}
 
+	role, err := findRole(ctx, h.roleFinder, ip)
+	if err != nil {
+		metrics.GetOrRegisterMeter("roleNameHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
 		return http.StatusInternalServerError, err
 	}
 
 	if role == "" {
-		requestLog.Warnf("empty role defined for pod")
 		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
 		return http.StatusNotFound, EmptyRoleError
 	}
 
 	fmt.Fprint(w, role)
 	metrics.GetOrRegisterMeter("roleNameHandler.success", metrics.DefaultRegistry).Mark(1)
+
 	return http.StatusOK, nil
 }
