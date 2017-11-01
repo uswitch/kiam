@@ -79,5 +79,5 @@ spec:
   ports:
   - name: grpc
     port: 443
-    targetPort: 9610
+    targetPort: 443
     protocol: TCP
