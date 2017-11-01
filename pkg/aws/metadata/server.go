@@ -27,16 +27,12 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 )
 
 type Server struct {
-	cfg         *ServerConfig
-	finder      k8s.RoleFinder
-	credentials sts.CredentialsProvider
-	mutex       sync.Mutex
-	server      *http.Server
+	cfg    *ServerConfig
+	server *http.Server
 }
 
 type ServerConfig struct {
@@ -55,57 +51,71 @@ func NewConfig(port int) *ServerConfig {
 	}
 }
 
-func NewWebServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider) *Server {
-	return &Server{cfg: config, finder: finder, credentials: credentials}
+func NewWebServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider) (*Server, error) {
+	http, err := buildHTTPServer(config, finder, credentials)
+	if err != nil {
+		return nil, err
+	}
+	return &Server{cfg: config, server: http}, nil
 }
 
-func (s *Server) listenAddress() string {
-	return fmt.Sprintf(":%d", s.cfg.ListenPort)
+func buildClientIP(config *ServerConfig) func(*http.Request) (string, error) {
+	remote := func(req *http.Request) (string, error) {
+		return ParseClientIP(req.RemoteAddr)
+	}
+
+	if config.AllowIPQuery {
+		return func(req *http.Request) (string, error) {
+			ip := req.Form.Get("ip")
+			if ip != "" {
+				return ip, nil
+			}
+			return remote(req)
+		}
+	}
+
+	return remote
 }
 
-func (s *Server) Serve() error {
+func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider) (*http.Server, error) {
 	router := mux.NewRouter()
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
 
-	h := &healthHandler{s.cfg.MetadataEndpoint}
+	h := &healthHandler{config.MetadataEndpoint}
 	router.Handle("/health", http.HandlerFunc(errorHandler("health", h)))
 
+	clientIP := buildClientIP(config)
+
 	r := &roleHandler{
-		roleFinder: s.finder,
-		clientIP:   s.clientIP,
+		roleFinder: finder,
+		clientIP:   clientIP,
 	}
 	router.Handle("/{version}/meta-data/iam/security-credentials/", http.HandlerFunc(errorHandler("roleName", r)))
 
 	c := &credentialsHandler{
-		roleFinder:          s.finder,
-		credentialsProvider: s.credentials,
-		clientIP:            s.clientIP,
+		roleFinder:          finder,
+		credentialsProvider: credentials,
+		clientIP:            clientIP,
 	}
 	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", http.HandlerFunc(errorHandler("credentials", c)))
 
-	metadataURL, err := url.Parse(s.cfg.MetadataEndpoint)
+	metadataURL, err := url.Parse(config.MetadataEndpoint)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	router.Handle("/{path:.*}", httputil.NewSingleHostReverseProxy(metadataURL))
 
-	s.mutex.Lock()
-	s.server = &http.Server{Addr: s.listenAddress(), Handler: khttp.LoggingHandler(router)}
-	s.mutex.Unlock()
+	listen := fmt.Sprintf(":%d", config.ListenPort)
+	return &http.Server{Addr: listen, Handler: khttp.LoggingHandler(router)}, nil
+}
 
-	log.Infof("listening %s", s.listenAddress())
-
+func (s *Server) Serve() error {
+	log.Infof("listening :%d", s.cfg.ListenPort)
 	return s.server.ListenAndServe()
 }
 
 func (s *Server) Stop(ctx context.Context) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if s.server == nil {
-		return
-	}
-
 	log.Infoln("starting server shutdown")
 	c, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -124,10 +134,6 @@ func ParseClientIP(addr string) (string, error) {
 
 func (s *Server) clientIP(req *http.Request) (string, error) {
 	if s.cfg.AllowIPQuery {
-		ip := req.Form.Get("ip")
-		if ip != "" {
-			return ip, nil
-		}
 	}
 
 	return ParseClientIP(req.RemoteAddr)
