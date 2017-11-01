@@ -19,6 +19,11 @@ import (
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/vmg/backoff"
+	"time"
+)
+
+const (
+	retryInterval = time.Millisecond * 5
 )
 
 func findRole(ctx context.Context, finder k8s.RoleFinder, ip string) (string, error) {
@@ -36,7 +41,7 @@ func findRole(ctx context.Context, finder k8s.RoleFinder, ip string) (string, er
 	}
 
 	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = RetryInterval
+	strategy.InitialInterval = retryInterval
 
 	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
 	if err != nil {
@@ -59,7 +64,7 @@ func credentialsForRole(ctx context.Context, credentialsProvider sts.Credentials
 	}
 
 	strategy := backoff.NewExponentialBackOff()
-	strategy.InitialInterval = RetryInterval
+	strategy.InitialInterval = retryInterval
 
 	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
 	if err != nil {

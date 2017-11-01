@@ -31,11 +31,6 @@ import (
 	"time"
 )
 
-const (
-	MaxTime       = time.Second * 5
-	RetryInterval = time.Millisecond * 5
-)
-
 type Server struct {
 	cfg         *ServerConfig
 	finder      k8s.RoleFinder
@@ -159,9 +154,13 @@ func getResponseMeter(name string, result int) metrics.Meter {
 	return metrics.GetOrRegisterMeter(fmt.Sprintf("handlerResponse-%s.%s", name, bucket), metrics.DefaultRegistry)
 }
 
+const (
+	handlerMaxDuration = time.Second * 5
+)
+
 func errorHandler(name string, handle handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		ctx, cancel := context.WithTimeout(req.Context(), MaxTime)
+		ctx, cancel := context.WithTimeout(req.Context(), handlerMaxDuration)
 		defer cancel()
 
 		status, err := handle.Handle(ctx, w, req)
