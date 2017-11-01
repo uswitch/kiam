@@ -39,7 +39,6 @@ type ServerConfig struct {
 	ListenPort       int
 	MetadataEndpoint string
 	AllowIPQuery     bool
-	MaxElapsedTime   time.Duration
 }
 
 func NewConfig(port int) *ServerConfig {
@@ -47,7 +46,6 @@ func NewConfig(port int) *ServerConfig {
 		MetadataEndpoint: "http://169.254.169.254",
 		ListenPort:       port,
 		AllowIPQuery:     false,
-		MaxElapsedTime:   time.Second * 10,
 	}
 }
 

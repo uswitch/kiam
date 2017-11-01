@@ -242,7 +242,6 @@ func defaultConfig() *metadata.ServerConfig {
 		ListenPort:       3129,
 		MetadataEndpoint: "http://localhost:3199",
 		AllowIPQuery:     true,
-		MaxElapsedTime:   time.Second,
 	}
 }
 
