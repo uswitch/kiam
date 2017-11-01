@@ -12,7 +12,7 @@ pipeline:
   benchmarks:
     image: golang:1.9
     commands:
-      - go test -run=XX -bench=.
+      - go test -run=XX -bench=. test/unit/*.go
 
   build:
     image: golang:1.9
