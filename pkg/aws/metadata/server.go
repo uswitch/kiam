@@ -59,24 +59,6 @@ func NewWebServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.C
 	return &Server{cfg: config, server: http}, nil
 }
 
-func buildClientIP(config *ServerConfig) func(*http.Request) (string, error) {
-	remote := func(req *http.Request) (string, error) {
-		return ParseClientIP(req.RemoteAddr)
-	}
-
-	if config.AllowIPQuery {
-		return func(req *http.Request) (string, error) {
-			ip := req.Form.Get("ip")
-			if ip != "" {
-				return ip, nil
-			}
-			return remote(req)
-		}
-	}
-
-	return remote
-}
-
 func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider) (*http.Server, error) {
 	router := mux.NewRouter()
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
@@ -108,6 +90,24 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 
 	listen := fmt.Sprintf(":%d", config.ListenPort)
 	return &http.Server{Addr: listen, Handler: khttp.LoggingHandler(router)}, nil
+}
+
+func buildClientIP(config *ServerConfig) func(*http.Request) (string, error) {
+	remote := func(req *http.Request) (string, error) {
+		return ParseClientIP(req.RemoteAddr)
+	}
+
+	if config.AllowIPQuery {
+		return func(req *http.Request) (string, error) {
+			ip := req.Form.Get("ip")
+			if ip != "" {
+				return ip, nil
+			}
+			return remote(req)
+		}
+	}
+
+	return remote
 }
 
 func (s *Server) Serve() error {
