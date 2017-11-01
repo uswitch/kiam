@@ -28,7 +28,7 @@ spec:
             - /server
           args:
             - --json-log
-            - --bind=0.0.0.0:9610
+            - --bind=0.0.0.0:443
             - --cert=/etc/kiam/tls/server.pem
             - --key=/etc/kiam/tls/server-key.pem
             - --ca=/etc/kiam/tls/ca.pem
