@@ -129,10 +129,3 @@ func ParseClientIP(addr string) (string, error) {
 
 	return strings.Join(parts[0:len(parts)-1], ":"), nil
 }
-
-func (s *Server) clientIP(req *http.Request) (string, error) {
-	if s.cfg.AllowIPQuery {
-	}
-
-	return ParseClientIP(req.RemoteAddr)
-}
