@@ -15,7 +15,10 @@ package metadata
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
+	khttp "github.com/uswitch/kiam/pkg/http"
 	"net/http"
+	"time"
 )
 
 // interface for request handlers
@@ -26,3 +29,27 @@ type handler interface {
 
 // clientIPFunc is the function used by handlers to find the client IP address
 type clientIPFunc func(req *http.Request) (string, error)
+
+const (
+	handlerMaxDuration = time.Second * 5 //
+)
+
+// adapts between handler and http.Handler
+type handlerAdapter struct {
+	h handler
+}
+
+func (a *handlerAdapter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	ctx, cancel := context.WithTimeout(req.Context(), handlerMaxDuration)
+	defer cancel()
+
+	status, err := a.h.Handle(ctx, w, req)
+	if err != nil {
+		log.WithFields(khttp.RequestFields(req)).WithField("status", status).Errorf("error processing request: %s", err.Error())
+		http.Error(w, err.Error(), status)
+	}
+}
+
+func adaptHandler(h handler) *handlerAdapter {
+	return &handlerAdapter{h: h}
+}

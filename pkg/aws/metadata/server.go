@@ -63,7 +63,7 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
 
 	h := &healthHandler{config.MetadataEndpoint}
-	router.Handle("/health", http.HandlerFunc(errorHandler("health", h)))
+	router.Handle("/health", adaptHandler(h))
 
 	clientIP := buildClientIP(config)
 
@@ -71,14 +71,14 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 		roleFinder: finder,
 		clientIP:   clientIP,
 	}
-	router.Handle("/{version}/meta-data/iam/security-credentials/", http.HandlerFunc(errorHandler("roleName", r)))
+	router.Handle("/{version}/meta-data/iam/security-credentials/", adaptHandler(r))
 
 	c := &credentialsHandler{
 		roleFinder:          finder,
 		credentialsProvider: credentials,
 		clientIP:            clientIP,
 	}
-	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", http.HandlerFunc(errorHandler("credentials", c)))
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adaptHandler(c))
 
 	metadataURL, err := url.Parse(config.MetadataEndpoint)
 	if err != nil {
@@ -156,23 +156,4 @@ func getStatusBucket(status int) string {
 func getResponseMeter(name string, result int) metrics.Meter {
 	bucket := getStatusBucket(result)
 	return metrics.GetOrRegisterMeter(fmt.Sprintf("handlerResponse-%s.%s", name, bucket), metrics.DefaultRegistry)
-}
-
-const (
-	handlerMaxDuration = time.Second * 5
-)
-
-func errorHandler(name string, handle handler) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		ctx, cancel := context.WithTimeout(req.Context(), handlerMaxDuration)
-		defer cancel()
-
-		status, err := handle.Handle(ctx, w, req)
-		getResponseMeter(name, status).Mark(1)
-
-		if err != nil {
-			log.WithFields(khttp.RequestFields(req)).WithField("status", status).Errorf("error processing request: %s", err.Error())
-			http.Error(w, err.Error(), status)
-		}
-	}
 }
