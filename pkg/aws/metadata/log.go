@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package http
+package metadata
 
 import (
 	log "github.com/sirupsen/logrus"
@@ -32,7 +32,7 @@ func (s *statusWriter) WriteHeader(code int) {
 	s.ResponseWriter.WriteHeader(code)
 }
 
-func RequestFields(req *http.Request) log.Fields {
+func requestFields(req *http.Request) log.Fields {
 	return log.Fields{
 		"method": req.Method,
 		"path":   req.URL.Path,
@@ -40,7 +40,7 @@ func RequestFields(req *http.Request) log.Fields {
 	}
 }
 
-func LoggingHandler(handler http.Handler) http.Handler {
+func loggingHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		statusWriter := newStatusWriter(w)
 		handler.ServeHTTP(statusWriter, req)
@@ -48,6 +48,6 @@ func LoggingHandler(handler http.Handler) http.Handler {
 			"headers": w.Header(),
 			"status":  statusWriter.statusCode,
 		}
-		log.WithFields(RequestFields(req)).WithFields(fields).Infof("processed request")
+		log.WithFields(requestFields(req)).WithFields(fields).Infof("processed request")
 	})
 }

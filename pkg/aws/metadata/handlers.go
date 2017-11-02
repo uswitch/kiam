@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
-	khttp "github.com/uswitch/kiam/pkg/http"
 	"net/http"
 	"time"
 )
@@ -48,7 +47,7 @@ func (a *handlerAdapter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	status, err := a.h.Handle(ctx, w, req)
 
 	if err != nil {
-		log.WithFields(khttp.RequestFields(req)).WithField("status", status).Errorf("error processing request: %s", err.Error())
+		log.WithFields(requestFields(req)).WithField("status", status).Errorf("error processing request: %s", err.Error())
 		http.Error(w, err.Error(), status)
 	}
 }

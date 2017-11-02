@@ -21,7 +21,6 @@ import (
 	"github.com/rcrowley/go-metrics/exp"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
-	khttp "github.com/uswitch/kiam/pkg/http"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"net/http"
 	"net/http/httputil"
@@ -87,7 +86,7 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 	router.Handle("/{path:.*}", httputil.NewSingleHostReverseProxy(metadataURL))
 
 	listen := fmt.Sprintf(":%d", config.ListenPort)
-	return &http.Server{Addr: listen, Handler: khttp.LoggingHandler(router)}, nil
+	return &http.Server{Addr: listen, Handler: loggingHandler(router)}, nil
 }
 
 func buildClientIP(config *ServerConfig) clientIPFunc {
