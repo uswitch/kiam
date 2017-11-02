@@ -53,6 +53,7 @@ type KiamServer struct {
 	listener            net.Listener
 	server              *grpc.Server
 	cache               *k8s.PodCache
+	namespaces          *k8s.NamespaceCache
 	manager             *prefetch.CredentialManager
 	credentialsProvider sts.CredentialsProvider
 	parallelFetchers    int
@@ -123,7 +124,8 @@ func NewServer(config *Config) (*KiamServer, error) {
 	if err != nil {
 		log.Fatalf("couldn't create kubernetes client: %s", err.Error())
 	}
-	server.cache = k8s.NewPodCache(k8s.KubernetesSource(client), config.PodSyncInterval, config.PrefetchBufferSize)
+	server.cache = k8s.NewPodCache(k8s.KubernetesSource(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
+	server.namespaces = k8s.NewNamespaceCache(k8s.KubernetesSource(client, k8s.ResourceNamespaces), time.Minute)
 
 	stsGateway := sts.DefaultGateway()
 	credentialsCache := sts.DefaultCache(stsGateway, config.RoleBaseARN, config.SessionName)
@@ -160,6 +162,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 
 func (s *KiamServer) Serve(ctx context.Context) {
 	s.cache.Run(ctx)
+	s.namespaces.Run(ctx)
 	s.manager.Run(ctx, s.parallelFetchers)
 	s.server.Serve(s.listener)
 }

@@ -116,7 +116,11 @@ func (s *PodCache) process(obj interface{}) error {
 
 	for _, delta := range deltas {
 		pod := delta.Object.(*v1.Pod)
-		logger := log.WithFields(log.Fields{"cache.delta.type": delta.Type}).WithFields(PodFields(pod))
+		fields := log.Fields{
+			"cache.delta.type": delta.Type,
+			"cache.object":     "pod",
+		}
+		logger := log.WithFields(fields).WithFields(PodFields(pod))
 
 		role := PodRole(pod)
 		if role != "" {
@@ -147,8 +151,13 @@ func (s *PodCache) process(obj interface{}) error {
 	return nil
 }
 
-func KubernetesSource(client *kubernetes.Clientset) *cache.ListWatch {
-	return cache.NewListWatchFromClient(client.Core().RESTClient(), "pods", "", fields.Everything())
+const (
+	ResourcePods       = "pods"
+	ResourceNamespaces = "namespaces"
+)
+
+func KubernetesSource(client *kubernetes.Clientset, resource string) *cache.ListWatch {
+	return cache.NewListWatchFromClient(client.Core().RESTClient(), resource, "", fields.Everything())
 }
 
 const (

@@ -29,3 +29,7 @@ type PodAnnouncer interface {
 	// Return whether there are still uncompleted pods in the specified role
 	IsActivePodsForRole(role string) (bool, error)
 }
+
+type NamespaceFinder interface {
+	FindNamespace(ctx context.Context, name string) (*v1.Namespace, error)
+}
