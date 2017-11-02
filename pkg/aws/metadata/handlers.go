@@ -15,6 +15,8 @@ package metadata
 
 import (
 	"context"
+	"fmt"
+	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	khttp "github.com/uswitch/kiam/pkg/http"
 	"net/http"
@@ -44,12 +46,53 @@ func (a *handlerAdapter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	defer cancel()
 
 	status, err := a.h.Handle(ctx, w, req)
+
 	if err != nil {
 		log.WithFields(khttp.RequestFields(req)).WithField("status", status).Errorf("error processing request: %s", err.Error())
 		http.Error(w, err.Error(), status)
 	}
 }
 
-func adaptHandler(h handler) *handlerAdapter {
+func adapt(h handler) *handlerAdapter {
 	return &handlerAdapter{h: h}
+}
+
+// uses a meter to record error statuses
+type metricHandler struct {
+	name string
+	h    handler
+}
+
+func withMeter(name string, h handler) handler {
+	return &metricHandler{
+		name: name,
+		h:    h,
+	}
+}
+
+func (m *metricHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
+	status, err := m.h.Handle(ctx, w, r)
+	getResponseMeter(m.name, status).Mark(1)
+	return status, err
+}
+
+func getResponseMeter(name string, result int) metrics.Meter {
+	bucket := getStatusBucket(result)
+	return metrics.GetOrRegisterMeter(fmt.Sprintf("handlerResponse-%s.%s", name, bucket), metrics.DefaultRegistry)
+}
+
+func getStatusBucket(status int) string {
+	if status >= 200 && status < 300 {
+		return "2xx"
+	}
+	if status >= 300 && status < 400 {
+		return "3xx"
+	}
+	if status >= 400 && status < 500 {
+		return "4xx"
+	}
+	if status >= 500 && status < 600 {
+		return "5xx"
+	}
+	return "unknown"
 }

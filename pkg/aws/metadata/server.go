@@ -63,7 +63,7 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
 
 	h := &healthHandler{config.MetadataEndpoint}
-	router.Handle("/health", adaptHandler(h))
+	router.Handle("/health", adapt(withMeter("health", h)))
 
 	clientIP := buildClientIP(config)
 
@@ -71,14 +71,14 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 		roleFinder: finder,
 		clientIP:   clientIP,
 	}
-	router.Handle("/{version}/meta-data/iam/security-credentials/", adaptHandler(r))
+	router.Handle("/{version}/meta-data/iam/security-credentials/", adapt(withMeter("roleName", r)))
 
 	c := &credentialsHandler{
 		roleFinder:          finder,
 		credentialsProvider: credentials,
 		clientIP:            clientIP,
 	}
-	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adaptHandler(c))
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", c)))
 
 	metadataURL, err := url.Parse(config.MetadataEndpoint)
 	if err != nil {
@@ -135,25 +135,4 @@ func (s *Server) clientIP(req *http.Request) (string, error) {
 	}
 
 	return ParseClientIP(req.RemoteAddr)
-}
-
-func getStatusBucket(status int) string {
-	if status >= 200 && status < 300 {
-		return "2xx"
-	}
-	if status >= 300 && status < 400 {
-		return "3xx"
-	}
-	if status >= 400 && status < 500 {
-		return "4xx"
-	}
-	if status >= 500 && status < 600 {
-		return "5xx"
-	}
-	return "unknown"
-}
-
-func getResponseMeter(name string, result int) metrics.Meter {
-	bucket := getStatusBucket(result)
-	return metrics.GetOrRegisterMeter(fmt.Sprintf("handlerResponse-%s.%s", name, bucket), metrics.DefaultRegistry)
 }
