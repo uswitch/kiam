@@ -90,7 +90,7 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 	return &http.Server{Addr: listen, Handler: khttp.LoggingHandler(router)}, nil
 }
 
-func buildClientIP(config *ServerConfig) func(*http.Request) (string, error) {
+func buildClientIP(config *ServerConfig) clientIPFunc {
 	remote := func(req *http.Request) (string, error) {
 		return ParseClientIP(req.RemoteAddr)
 	}
