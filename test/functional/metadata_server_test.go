@@ -41,7 +41,7 @@ func TestParseAddress(t *testing.T) {
 
 func TestPassthroughToMetadata(t *testing.T) {
 	testutil.WithAWS(&testutil.AWSMetadata{InstanceID: "i-12345"}, context.Background(), func(ctx context.Context) {
-		server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+		server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 		go server.Serve()
 		waitForServer(defaultConfig(), t)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -63,7 +63,7 @@ func TestPassthroughToMetadata(t *testing.T) {
 
 func TestReturnsHealthStatus(t *testing.T) {
 	testutil.WithAWS(&testutil.AWSMetadata{InstanceID: "i-12345"}, context.Background(), func(ctx context.Context) {
-		server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+		server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 		go server.Serve()
 		waitForServer(defaultConfig(), t)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -86,7 +86,7 @@ func TestReturnsHealthStatus(t *testing.T) {
 func TestRetriesFindRoleWhenPodNotFound(t *testing.T) {
 	pod := testutil.NewPodWithRole("", "", "", "", "foo_role")
 	finder := &testutil.FailingFinder{Pod: pod, SucceedAfterCalls: 2}
-	server := metadata.NewWebServer(defaultConfig(), finder, nil)
+	server, _ := metadata.NewWebServer(defaultConfig(), finder, nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -111,7 +111,7 @@ func TestRetriesFindRoleWhenPodNotFound(t *testing.T) {
 func TestReturnRoleForPod(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPodWithRole("", "", "", "", "foo_role")), nil)
+	server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPodWithRole("", "", "", "", "foo_role")), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -133,7 +133,7 @@ func TestReturnRoleForPod(t *testing.T) {
 func TestReturnErrorWhenNoPodFound(t *testing.T) {
 	defer leaktest.CheckTimeout(t, time.Second*10)()
 
-	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+	server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -152,7 +152,7 @@ func TestReturnErrorWhenNoPodFound(t *testing.T) {
 func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
 	defer leaktest.CheckTimeout(t, time.Second*10)()
 
-	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+	server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -171,7 +171,7 @@ func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
 func TestReturnsNotFoundResponseWithEmptyRole(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	server := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPod("", "", "", "")), nil)
+	server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPod("", "", "", "")), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -197,7 +197,7 @@ func TestReturnsCredentials(t *testing.T) {
 			AccessKeyId: "test",
 		}, nil
 	})
-	server := metadata.NewWebServer(defaultConfig(), podFinder, issuer)
+	server, _ := metadata.NewWebServer(defaultConfig(), podFinder, issuer)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -242,7 +242,6 @@ func defaultConfig() *metadata.ServerConfig {
 		ListenPort:       3129,
 		MetadataEndpoint: "http://localhost:3199",
 		AllowIPQuery:     true,
-		MaxElapsedTime:   time.Second,
 	}
 }
 

@@ -27,28 +27,18 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 )
 
-const (
-	MaxTime       = time.Second * 5
-	RetryInterval = time.Millisecond * 5
-)
-
 type Server struct {
-	cfg         *ServerConfig
-	finder      k8s.RoleFinder
-	credentials sts.CredentialsProvider
-	mutex       sync.Mutex
-	server      *http.Server
+	cfg    *ServerConfig
+	server *http.Server
 }
 
 type ServerConfig struct {
 	ListenPort       int
 	MetadataEndpoint string
 	AllowIPQuery     bool
-	MaxElapsedTime   time.Duration
 }
 
 func NewConfig(port int) *ServerConfig {
@@ -56,48 +46,74 @@ func NewConfig(port int) *ServerConfig {
 		MetadataEndpoint: "http://169.254.169.254",
 		ListenPort:       port,
 		AllowIPQuery:     false,
-		MaxElapsedTime:   time.Second * 10,
 	}
 }
 
-func NewWebServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider) *Server {
-	return &Server{cfg: config, finder: finder, credentials: credentials}
+func NewWebServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider) (*Server, error) {
+	http, err := buildHTTPServer(config, finder, credentials)
+	if err != nil {
+		return nil, err
+	}
+	return &Server{cfg: config, server: http}, nil
 }
 
-func (s *Server) listenAddress() string {
-	return fmt.Sprintf(":%d", s.cfg.ListenPort)
-}
-
-func (s *Server) Serve() error {
+func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider) (*http.Server, error) {
 	router := mux.NewRouter()
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
-	router.Handle("/health", http.HandlerFunc(ErrorHandler("health", s.healthHandler)))
-	router.Handle("/{version}/meta-data/iam/security-credentials/", http.HandlerFunc(ErrorHandler("roleName", s.roleNameHandler)))
-	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", http.HandlerFunc(ErrorHandler("credentials", s.credentialsHandler)))
 
-	metadataURL, err := url.Parse(s.cfg.MetadataEndpoint)
+	h := &healthHandler{config.MetadataEndpoint}
+	router.Handle("/health", http.HandlerFunc(errorHandler("health", h)))
+
+	clientIP := buildClientIP(config)
+
+	r := &roleHandler{
+		roleFinder: finder,
+		clientIP:   clientIP,
+	}
+	router.Handle("/{version}/meta-data/iam/security-credentials/", http.HandlerFunc(errorHandler("roleName", r)))
+
+	c := &credentialsHandler{
+		roleFinder:          finder,
+		credentialsProvider: credentials,
+		clientIP:            clientIP,
+	}
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", http.HandlerFunc(errorHandler("credentials", c)))
+
+	metadataURL, err := url.Parse(config.MetadataEndpoint)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	router.Handle("/{path:.*}", httputil.NewSingleHostReverseProxy(metadataURL))
 
-	s.mutex.Lock()
-	s.server = &http.Server{Addr: s.listenAddress(), Handler: khttp.LoggingHandler(router)}
-	s.mutex.Unlock()
+	listen := fmt.Sprintf(":%d", config.ListenPort)
+	return &http.Server{Addr: listen, Handler: khttp.LoggingHandler(router)}, nil
+}
 
-	log.Infof("listening %s", s.listenAddress())
+func buildClientIP(config *ServerConfig) func(*http.Request) (string, error) {
+	remote := func(req *http.Request) (string, error) {
+		return ParseClientIP(req.RemoteAddr)
+	}
 
+	if config.AllowIPQuery {
+		return func(req *http.Request) (string, error) {
+			ip := req.Form.Get("ip")
+			if ip != "" {
+				return ip, nil
+			}
+			return remote(req)
+		}
+	}
+
+	return remote
+}
+
+func (s *Server) Serve() error {
+	log.Infof("listening :%d", s.cfg.ListenPort)
 	return s.server.ListenAndServe()
 }
 
 func (s *Server) Stop(ctx context.Context) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if s.server == nil {
-		return
-	}
-
 	log.Infoln("starting server shutdown")
 	c, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -115,16 +131,7 @@ func ParseClientIP(addr string) (string, error) {
 }
 
 func (s *Server) clientIP(req *http.Request) (string, error) {
-	err := req.ParseForm()
-	if err != nil {
-		return "", err
-	}
-
 	if s.cfg.AllowIPQuery {
-		ip := req.Form.Get("ip")
-		if ip != "" {
-			return ip, nil
-		}
 	}
 
 	return ParseClientIP(req.RemoteAddr)
@@ -151,10 +158,18 @@ func getResponseMeter(name string, result int) metrics.Meter {
 	return metrics.GetOrRegisterMeter(fmt.Sprintf("handlerResponse-%s.%s", name, bucket), metrics.DefaultRegistry)
 }
 
-func ErrorHandler(name string, f func(http.ResponseWriter, *http.Request) (int, error)) func(http.ResponseWriter, *http.Request) {
+const (
+	handlerMaxDuration = time.Second * 5
+)
+
+func errorHandler(name string, handle handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		status, err := f(w, req)
+		ctx, cancel := context.WithTimeout(req.Context(), handlerMaxDuration)
+		defer cancel()
+
+		status, err := handle.Handle(ctx, w, req)
 		getResponseMeter(name, status).Mark(1)
+
 		if err != nil {
 			log.WithFields(khttp.RequestFields(req)).WithField("status", status).Errorf("error processing request: %s", err.Error())
 			http.Error(w, err.Error(), status)

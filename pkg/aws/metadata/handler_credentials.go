@@ -19,26 +19,36 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
+	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/aws/sts"
+	"github.com/uswitch/kiam/pkg/k8s"
+	"github.com/vmg/backoff"
 	"net/http"
 	"time"
 )
 
-func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (int, error) {
+type credentialsHandler struct {
+	roleFinder          k8s.RoleFinder
+	credentialsProvider sts.CredentialsProvider
+	clientIP            clientIPFunc
+}
+
+func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	credentialTimings := metrics.GetOrRegisterTimer("credentialsHandler", metrics.DefaultRegistry)
 	startTime := time.Now()
 	defer credentialTimings.UpdateSince(startTime)
 
-	req.ParseForm()
-
-	ip, err := s.clientIP(req)
+	err := req.ParseForm()
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error parsing client ip %s: %s", ip, err.Error())
+		return http.StatusInternalServerError, err
 	}
 
-	ctx, cancel := context.WithTimeout(req.Context(), MaxTime)
-	defer cancel()
+	ip, err := c.clientIP(req)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
 
-	foundRole, err := findRole(ctx, s.finder, ip)
+	foundRole, err := findRole(ctx, c.roleFinder, ip)
 	if err != nil {
 		metrics.GetOrRegisterMeter("credentialsHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
@@ -58,7 +68,7 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", requestedRole, foundRole)
 	}
 
-	credentials, err := credentialsForRole(ctx, s.credentials, requestedRole)
+	credentials, err := c.credentialsForRole(ctx, requestedRole)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", ctx.Err().Error())
 	}
@@ -71,4 +81,26 @@ func (s *Server) credentialsHandler(w http.ResponseWriter, req *http.Request) (i
 	w.Header().Set("Content-Type", "application/json")
 	metrics.GetOrRegisterMeter("credentialsHandler.success", metrics.DefaultRegistry).Mark(1)
 	return http.StatusOK, nil
+}
+
+func (c *credentialsHandler) credentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
+	credsCh := make(chan *sts.Credentials, 1)
+	op := func() error {
+		credentials, err := c.credentialsProvider.CredentialsForRole(ctx, role)
+		if err != nil {
+			log.WithField("pod.iam.role", role).Warnf("error getting credentials for role: %s", err.Error())
+			return err
+		}
+		credsCh <- credentials
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = retryInterval
+
+	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
+	if err != nil {
+		return nil, err
+	}
+	return <-credsCh, nil
 }

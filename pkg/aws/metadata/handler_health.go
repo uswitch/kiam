@@ -22,15 +22,16 @@ import (
 	"time"
 )
 
-func (s *Server) healthHandler(w http.ResponseWriter, req *http.Request) (int, error) {
+type healthHandler struct {
+	endpoint string
+}
+
+func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	healthTimer := metrics.GetOrRegisterTimer("healthHandler", metrics.DefaultRegistry)
 	started := time.Now()
 	defer healthTimer.UpdateSince(started)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/latest/meta-data/instance-id", s.cfg.MetadataEndpoint), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/latest/meta-data/instance-id", h.endpoint), nil)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("couldn't create request: %s", err)
 	}
