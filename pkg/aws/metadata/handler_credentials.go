@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
+	"github.com/uswitch/kiam/pkg/server"
 	"github.com/vmg/backoff"
 	"net/http"
 	"time"
@@ -31,6 +32,7 @@ type credentialsHandler struct {
 	roleFinder          k8s.RoleFinder
 	credentialsProvider sts.CredentialsProvider
 	clientIP            clientIPFunc
+	policy              server.AssumeRolePolicy
 }
 
 func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
@@ -64,8 +66,13 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 		return http.StatusBadRequest, fmt.Errorf("no role specified")
 	}
 
-	if foundRole != requestedRole {
-		return http.StatusForbidden, fmt.Errorf("unable to assume role %s, role on pod specified is %s", requestedRole, foundRole)
+	decision, err := c.policy.IsAllowedAssumeRole(ctx, requestedRole, ip)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error checking assume role permissions: %s", err.Error())
+	}
+
+	if !decision.IsAllowed() {
+		return http.StatusForbidden, fmt.Errorf("assume role forbidden: %s", decision.Explanation())
 	}
 
 	credentials, err := c.credentialsForRole(ctx, requestedRole)

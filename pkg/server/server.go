@@ -56,6 +56,7 @@ type KiamServer struct {
 	namespaces          *k8s.NamespaceCache
 	manager             *prefetch.CredentialManager
 	credentialsProvider sts.CredentialsProvider
+	assumePolicy        AssumeRolePolicy
 	parallelFetchers    int
 }
 
@@ -64,8 +65,16 @@ var (
 )
 
 func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
+	decision, err := k.assumePolicy.IsAllowedAssumeRole(ctx, req.Role.Name, req.Ip)
+	if err != nil {
+		return nil, err
+	}
+
 	return &pb.IsAllowedAssumeRoleResponse{
-		Permitted: true,
+		Decision: &pb.Decision{
+			IsAllowed:   decision.IsAllowed(),
+			Explanation: decision.Explanation(),
+		},
 	}, nil
 }
 
@@ -137,6 +146,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	credentialsCache := sts.DefaultCache(stsGateway, config.RoleBaseARN, config.SessionName)
 	server.credentialsProvider = credentialsCache
 	server.manager = prefetch.NewManager(credentialsCache, server.pods, server.pods)
+	server.assumePolicy = Policies(&RequestingAnnotatedRolePolicy{pods: server.pods})
 
 	certificate, err := tls.LoadX509KeyPair(config.TLS.ServerCert, config.TLS.ServerKey)
 	if err != nil {

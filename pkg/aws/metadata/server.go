@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
+	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -48,15 +49,15 @@ func NewConfig(port int) *ServerConfig {
 	}
 }
 
-func NewWebServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider) (*Server, error) {
-	http, err := buildHTTPServer(config, finder, credentials)
+func NewWebServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider, policy server.AssumeRolePolicy) (*Server, error) {
+	http, err := buildHTTPServer(config, finder, credentials, policy)
 	if err != nil {
 		return nil, err
 	}
 	return &Server{cfg: config, server: http}, nil
 }
 
-func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider) (*http.Server, error) {
+func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider, policy server.AssumeRolePolicy) (*http.Server, error) {
 	router := mux.NewRouter()
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
@@ -76,6 +77,7 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 		roleFinder:          finder,
 		credentialsProvider: credentials,
 		clientIP:            clientIP,
+		policy:              policy,
 	}
 	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", c)))
 

@@ -45,5 +45,10 @@ message IsAllowedAssumeRoleRequest {
 }
 
 message IsAllowedAssumeRoleResponse {
-  bool permitted = 1;
+  Decision decision = 1;
+}
+
+message Decision {
+  bool is_allowed = 1;
+  string explanation = 2;
 }
