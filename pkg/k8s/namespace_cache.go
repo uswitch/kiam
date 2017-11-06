@@ -85,5 +85,12 @@ func (c *NamespaceCache) Run(ctx context.Context) {
 }
 
 func (c *NamespaceCache) FindNamespace(ctx context.Context, name string) (*v1.Namespace, error) {
-	return nil, nil
+	obj, exists, err := c.store.GetByKey(name)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, nil
+	}
+	return obj.(*v1.Namespace), nil
 }

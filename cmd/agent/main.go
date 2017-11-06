@@ -122,7 +122,7 @@ func main() {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
 
-	server, err := http.NewWebServer(config, gateway, gateway)
+	server, err := http.NewWebServer(config, gateway, gateway, gateway)
 	if err != nil {
 		log.Fatalf("error creating agent http server: %s", err.Error())
 	}
