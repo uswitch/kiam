@@ -60,8 +60,12 @@ type KiamServer struct {
 }
 
 var (
-	PodNotFoundError = fmt.Errorf("pod not found")
+	ErrPodNotFound = fmt.Errorf("pod not found")
 )
+
+func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
+	return nil, nil
+}
 
 func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb.HealthStatus, error) {
 	return &pb.HealthStatus{Message: "ok"}, nil
@@ -76,7 +80,7 @@ func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) 
 	}
 
 	if pod == nil {
-		return nil, PodNotFoundError
+		return nil, ErrPodNotFound
 	}
 
 	role := k8s.PodRole(pod)
