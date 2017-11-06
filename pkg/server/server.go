@@ -64,7 +64,9 @@ var (
 )
 
 func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
-	return nil, nil
+	return &pb.IsAllowedAssumeRoleResponse{
+		Permitted: true,
+	}, nil
 }
 
 func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb.HealthStatus, error) {
