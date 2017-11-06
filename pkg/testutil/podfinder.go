@@ -29,7 +29,7 @@ type FailingFinder struct {
 func (f *FailingFinder) FindPodForIP(ip string) (*v1.Pod, error) {
 	if f.calls != f.SucceedAfterCalls {
 		f.calls = f.calls + 1
-		return nil, server.PodNotFoundError
+		return nil, server.ErrPodNotFound
 	}
 
 	return f.Pod, nil
@@ -58,7 +58,7 @@ type stubFinder struct {
 
 func (f *stubFinder) FindPodForIP(ip string) (*v1.Pod, error) {
 	if f.pod == nil {
-		return nil, server.PodNotFoundError
+		return nil, server.ErrPodNotFound
 	}
 
 	return f.pod, nil
