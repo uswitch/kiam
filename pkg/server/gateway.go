@@ -105,7 +105,11 @@ func (g *KiamGateway) Health(ctx context.Context) (string, error) {
 }
 
 func (g *KiamGateway) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-	return nil, nil
+	resp, err := g.client.IsAllowedAssumeRole(ctx, &pb.IsAllowedAssumeRoleRequest{Ip: podIP, Role: &pb.Role{Name: role}})
+	if err != nil {
+		return nil, err
+	}
+	return &adaptedDecision{resp.Decision}, nil
 }
 
 func (g *KiamGateway) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
