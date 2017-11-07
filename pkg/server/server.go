@@ -60,10 +60,6 @@ type KiamServer struct {
 	parallelFetchers    int
 }
 
-var (
-	ErrPodNotFound = fmt.Errorf("pod not found")
-)
-
 func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
 	decision, err := k.assumePolicy.IsAllowedAssumeRole(ctx, req.Role.Name, req.Ip)
 	if err != nil {
@@ -88,10 +84,6 @@ func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) 
 	if err != nil {
 		logger.Errorf("error finding pod: %s", err.Error())
 		return nil, err
-	}
-
-	if pod == nil {
-		return nil, ErrPodNotFound
 	}
 
 	role := k8s.PodRole(pod)

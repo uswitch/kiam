@@ -71,11 +71,11 @@ func Policies(p ...AssumeRolePolicy) *CompositeAssumeRolePolicy {
 // RequestingAnnotatedRolePolicy ensures the pod is requesting the role that it's
 // currently annotated with.
 type RequestingAnnotatedRolePolicy struct {
-	pods k8s.RoleFinder
+	pods k8s.PodGetter
 }
 
-func NewRequestingAnnotatedRolePolicy(finder k8s.RoleFinder) *RequestingAnnotatedRolePolicy {
-	return &RequestingAnnotatedRolePolicy{pods: finder}
+func NewRequestingAnnotatedRolePolicy(p k8s.PodGetter) *RequestingAnnotatedRolePolicy {
+	return &RequestingAnnotatedRolePolicy{pods: p}
 }
 
 type forbidden struct {
@@ -91,11 +91,12 @@ func (f *forbidden) Explanation() string {
 }
 
 func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-	annotatedRole, err := p.pods.FindRoleFromIP(ctx, podIP)
+	pod, err := p.pods.GetPodByIP(ctx, podIP)
 	if err != nil {
 		return nil, err
 	}
 
+	annotatedRole := k8s.PodRole(pod)
 	if annotatedRole != role {
 		return &forbidden{requested: role, annotated: annotatedRole}, nil
 	}

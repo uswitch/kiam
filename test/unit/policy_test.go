@@ -2,6 +2,7 @@ package kiam
 
 import (
 	"context"
+	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"testing"
@@ -36,7 +37,7 @@ func TestErrorWhenPodNotFound(t *testing.T) {
 		t.Error("no pod found, should have been error")
 	}
 
-	if err != server.ErrPodNotFound {
+	if err != k8s.ErrPodNotFound {
 		t.Error("wrong message", err.Error())
 	}
 }

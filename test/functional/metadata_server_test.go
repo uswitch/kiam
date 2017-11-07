@@ -20,7 +20,6 @@ import (
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/metadata"
 	"github.com/uswitch/kiam/pkg/aws/sts"
-	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"github.com/vmg/backoff"
@@ -41,7 +40,7 @@ func TestParseAddress(t *testing.T) {
 	}
 }
 
-func newWebServer(finder k8s.RoleFinder, creds sts.CredentialsProvider) (*metadata.Server, error) {
+func newWebServer(finder *testutil.StubFinder, creds sts.CredentialsProvider) (*metadata.Server, error) {
 	policy := server.Policies(server.NewRequestingAnnotatedRolePolicy(finder))
 	return metadata.NewWebServer(defaultConfig(), finder, creds, policy)
 }
@@ -93,7 +92,7 @@ func TestReturnsHealthStatus(t *testing.T) {
 func TestRetriesFindRoleWhenPodNotFound(t *testing.T) {
 	pod := testutil.NewPodWithRole("", "", "", "", "foo_role")
 	finder := &testutil.FailingFinder{Pod: pod, SucceedAfterCalls: 2}
-	server, _ := newWebServer(finder, nil)
+	server, _ := metadata.NewWebServer(defaultConfig(), finder, nil, server.Policies())
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())

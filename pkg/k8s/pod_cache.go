@@ -60,6 +60,10 @@ func (s *PodCache) IsActivePodsForRole(role string) (bool, error) {
 	return false, nil
 }
 
+var (
+	ErrPodNotFound = fmt.Errorf("pod not found")
+)
+
 func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 	found := make([]*v1.Pod, 0)
 
@@ -86,7 +90,7 @@ func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 	}
 
 	if len(found) == 0 {
-		return nil, nil
+		return nil, ErrPodNotFound
 	}
 
 	if len(found) == 1 {
