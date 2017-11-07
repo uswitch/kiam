@@ -104,10 +104,11 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 
 type NamespacePermittedRoleNamePolicy struct {
 	namespaces k8s.NamespaceFinder
+	pods       k8s.RoleFinder
 }
 
-func NewNamespacePermittedRoleNamePolicy(finder k8s.NamespaceFinder) *NamespacePermittedRoleNamePolicy {
-	return &NamespacePermittedRoleNamePolicy{namespaces: finder}
+func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.RoleFinder) *NamespacePermittedRoleNamePolicy {
+	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p}
 }
 
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
