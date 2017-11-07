@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/uswitch/kiam/pkg/k8s"
 	pb "github.com/uswitch/kiam/proto"
+	"regexp"
 )
 
 type adaptedDecision struct {
@@ -104,13 +105,50 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 
 type NamespacePermittedRoleNamePolicy struct {
 	namespaces k8s.NamespaceFinder
-	pods       k8s.RoleFinder
+	pods       k8s.PodGetter
 }
 
-func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.RoleFinder) *NamespacePermittedRoleNamePolicy {
+func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.PodGetter) *NamespacePermittedRoleNamePolicy {
 	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p}
 }
 
+type namespacePolicyForbidden struct {
+	expression string
+	role       string
+}
+
+func (f *namespacePolicyForbidden) IsAllowed() bool {
+	return false
+}
+
+func (f *namespacePolicyForbidden) Explanation() string {
+	return fmt.Sprintf("namespace policy expression '%s' forbids role '%s'", f.expression, f.role)
+}
+
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-	return nil, nil
+	pod, err := p.pods.GetPodByIP(ctx, podIP)
+	if err != nil {
+		return nil, err
+	}
+
+	ns, err := p.namespaces.FindNamespace(ctx, pod.GetObjectMeta().GetNamespace())
+	if err != nil {
+		return nil, err
+	}
+
+	expression := ns.GetAnnotations()[k8s.AnnotationName]
+	if expression == "" {
+		return &namespacePolicyForbidden{expression: "(empty)", role: role}, nil
+	}
+
+	re, err := regexp.Compile(expression)
+	if err != nil {
+		return nil, err
+	}
+
+	if !re.MatchString(role) {
+		return &namespacePolicyForbidden{expression: expression, role: role}, nil
+	}
+
+	return &allowed{}, nil
 }

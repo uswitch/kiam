@@ -73,6 +73,10 @@ func (f *stubFinder) FindRoleFromIP(ctx context.Context, ip string) (string, err
 	return k8s.PodRole(pod), nil
 }
 
+func (f *stubFinder) GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error) {
+	return f.FindPodForIP(ip)
+}
+
 type stubAnnouncer struct {
 	pods chan *v1.Pod
 }
@@ -91,4 +95,18 @@ func (f *stubAnnouncer) Pods() <-chan *v1.Pod {
 
 func (f *stubAnnouncer) IsActivePodsForRole(role string) (bool, error) {
 	return true, nil
+}
+
+type stubNSFinder struct {
+	n *v1.Namespace
+}
+
+func NewNamespaceFinder(n *v1.Namespace) *stubNSFinder {
+	return &stubNSFinder{
+		n: n,
+	}
+}
+
+func (f *stubNSFinder) FindNamespace(ctx context.Context, name string) (*v1.Namespace, error) {
+	return f.n, nil
 }

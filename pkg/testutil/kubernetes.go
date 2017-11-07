@@ -16,8 +16,8 @@ package testutil
 import (
 	"fmt"
 	"github.com/uswitch/kiam/pkg/k8s"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 )
 
@@ -25,6 +25,16 @@ const (
 	PhaseRunning   = "Running"
 	PhaseSucceeded = "Succeeded"
 )
+
+func NewNamespace(name, roleRegexp string) *v1.Namespace {
+	n := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	n.Annotations = map[string]string{k8s.AnnotationName: roleRegexp}
+	return n
+}
 
 func NewPod(namespace, name, ip, phase string) *v1.Pod {
 	return &v1.Pod{

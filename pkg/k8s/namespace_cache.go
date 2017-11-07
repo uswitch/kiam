@@ -24,7 +24,7 @@ import (
 const (
 	// AnnotationName hold the name of the annotation for the regex expressing the
 	// roles that can be assumed by pods in that namespace.
-	AnnotationName = "com.amazonaws.iam/permitted"
+	AnnotationName = "iam.amazonaws.com/permitted"
 )
 
 // NamespaceCache implements NamespaceFinder interface used to determine which roles

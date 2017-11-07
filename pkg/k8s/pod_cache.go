@@ -109,6 +109,10 @@ func (s *PodCache) FindRoleFromIP(ctx context.Context, ip string) (string, error
 	return PodRole(pod), nil
 }
 
+func (s *PodCache) GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error) {
+	return s.FindPodForIP(ip)
+}
+
 // handles objects from the queue processed by the cache
 func (s *PodCache) process(obj interface{}) error {
 	deltas := obj.(cache.Deltas)
