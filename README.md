@@ -14,8 +14,19 @@ kiam uses an annotation added to a `Pod` to indicate which role should be assume
 kind: Pod
 metadata:
   name: foo
+  namespace: iam-example
   annotations:
     iam.amazonaws.com/role: reportingdb-reader
+```
+
+Further, all namespaces must also have an annotation with a regular expression expressing which roles are permitted to be assumed within that namespace.
+
+```yaml
+kind: Namespace
+metadata:
+  name: iam-example
+  annotations:
+    iam.amazonaws.com/permitted: ".*"
 ```
 
 When your process starts an AWS SDK library will normally use a chain of credential providers (environment variables, instance metadata, config files etc.) to determine which credentials to use. kiam intercepts the metadata requests and uses the [Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) to retrieve temporary role credentials. 
