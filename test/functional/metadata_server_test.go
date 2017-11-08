@@ -20,6 +20,7 @@ import (
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/metadata"
 	"github.com/uswitch/kiam/pkg/aws/sts"
+	"github.com/uswitch/kiam/pkg/server"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"github.com/vmg/backoff"
 	"io/ioutil"
@@ -39,9 +40,14 @@ func TestParseAddress(t *testing.T) {
 	}
 }
 
+func newWebServer(finder *testutil.StubFinder, creds sts.CredentialsProvider) (*metadata.Server, error) {
+	policy := server.Policies(server.NewRequestingAnnotatedRolePolicy(finder))
+	return metadata.NewWebServer(defaultConfig(), finder, creds, policy)
+}
+
 func TestPassthroughToMetadata(t *testing.T) {
 	testutil.WithAWS(&testutil.AWSMetadata{InstanceID: "i-12345"}, context.Background(), func(ctx context.Context) {
-		server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+		server, _ := newWebServer(testutil.NewStubFinder(nil), nil)
 		go server.Serve()
 		waitForServer(defaultConfig(), t)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -63,7 +69,7 @@ func TestPassthroughToMetadata(t *testing.T) {
 
 func TestReturnsHealthStatus(t *testing.T) {
 	testutil.WithAWS(&testutil.AWSMetadata{InstanceID: "i-12345"}, context.Background(), func(ctx context.Context) {
-		server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+		server, _ := newWebServer(testutil.NewStubFinder(nil), nil)
 		go server.Serve()
 		waitForServer(defaultConfig(), t)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -86,7 +92,7 @@ func TestReturnsHealthStatus(t *testing.T) {
 func TestRetriesFindRoleWhenPodNotFound(t *testing.T) {
 	pod := testutil.NewPodWithRole("", "", "", "", "foo_role")
 	finder := &testutil.FailingFinder{Pod: pod, SucceedAfterCalls: 2}
-	server, _ := metadata.NewWebServer(defaultConfig(), finder, nil)
+	server, _ := metadata.NewWebServer(defaultConfig(), finder, nil, server.Policies())
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -111,7 +117,7 @@ func TestRetriesFindRoleWhenPodNotFound(t *testing.T) {
 func TestReturnRoleForPod(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPodWithRole("", "", "", "", "foo_role")), nil)
+	server, _ := newWebServer(testutil.NewStubFinder(testutil.NewPodWithRole("", "", "", "", "foo_role")), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -133,7 +139,7 @@ func TestReturnRoleForPod(t *testing.T) {
 func TestReturnErrorWhenNoPodFound(t *testing.T) {
 	defer leaktest.CheckTimeout(t, time.Second*10)()
 
-	server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+	server, _ := newWebServer(testutil.NewStubFinder(nil), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -152,7 +158,7 @@ func TestReturnErrorWhenNoPodFound(t *testing.T) {
 func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
 	defer leaktest.CheckTimeout(t, time.Second*10)()
 
-	server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(nil), nil)
+	server, _ := newWebServer(testutil.NewStubFinder(nil), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -171,7 +177,7 @@ func TestReturnNotFoundWhenPodNotFoundAndRequestingCredentials(t *testing.T) {
 func TestReturnsNotFoundResponseWithEmptyRole(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	server, _ := metadata.NewWebServer(defaultConfig(), testutil.NewStubFinder(testutil.NewPod("", "", "", "")), nil)
+	server, _ := newWebServer(testutil.NewStubFinder(testutil.NewPod("", "", "", "")), nil)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -197,7 +203,7 @@ func TestReturnsCredentials(t *testing.T) {
 			AccessKeyId: "test",
 		}, nil
 	})
-	server, _ := metadata.NewWebServer(defaultConfig(), podFinder, issuer)
+	server, _ := newWebServer(podFinder, issuer)
 	go server.Serve()
 	waitForServer(defaultConfig(), t)
 	ctx, cancel := context.WithCancel(context.Background())

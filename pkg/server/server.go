@@ -52,15 +52,27 @@ type TLSConfig struct {
 type KiamServer struct {
 	listener            net.Listener
 	server              *grpc.Server
-	cache               *k8s.PodCache
+	pods                *k8s.PodCache
+	namespaces          *k8s.NamespaceCache
 	manager             *prefetch.CredentialManager
 	credentialsProvider sts.CredentialsProvider
+	assumePolicy        AssumeRolePolicy
 	parallelFetchers    int
 }
 
-var (
-	PodNotFoundError = fmt.Errorf("pod not found")
-)
+func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
+	decision, err := k.assumePolicy.IsAllowedAssumeRole(ctx, req.Role.Name, req.Ip)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.IsAllowedAssumeRoleResponse{
+		Decision: &pb.Decision{
+			IsAllowed:   decision.IsAllowed(),
+			Explanation: decision.Explanation(),
+		},
+	}, nil
+}
 
 func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb.HealthStatus, error) {
 	return &pb.HealthStatus{Message: "ok"}, nil
@@ -68,14 +80,10 @@ func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb
 
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
 	logger := log.WithField("pod.ip", req.Ip)
-	pod, err := k.cache.FindPodForIP(req.Ip)
+	pod, err := k.pods.FindPodForIP(req.Ip)
 	if err != nil {
 		logger.Errorf("error finding pod: %s", err.Error())
 		return nil, err
-	}
-
-	if pod == nil {
-		return nil, PodNotFoundError
 	}
 
 	role := k8s.PodRole(pod)
@@ -123,12 +131,14 @@ func NewServer(config *Config) (*KiamServer, error) {
 	if err != nil {
 		log.Fatalf("couldn't create kubernetes client: %s", err.Error())
 	}
-	server.cache = k8s.NewPodCache(k8s.KubernetesSource(client), config.PodSyncInterval, config.PrefetchBufferSize)
+	server.pods = k8s.NewPodCache(k8s.KubernetesSource(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
+	server.namespaces = k8s.NewNamespaceCache(k8s.KubernetesSource(client, k8s.ResourceNamespaces), time.Minute)
 
 	stsGateway := sts.DefaultGateway()
 	credentialsCache := sts.DefaultCache(stsGateway, config.RoleBaseARN, config.SessionName)
 	server.credentialsProvider = credentialsCache
-	server.manager = prefetch.NewManager(credentialsCache, server.cache, server.cache)
+	server.manager = prefetch.NewManager(credentialsCache, server.pods, server.pods)
+	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
 
 	certificate, err := tls.LoadX509KeyPair(config.TLS.ServerCert, config.TLS.ServerKey)
 	if err != nil {
@@ -159,7 +169,8 @@ func NewServer(config *Config) (*KiamServer, error) {
 }
 
 func (s *KiamServer) Serve(ctx context.Context) {
-	s.cache.Run(ctx)
+	s.pods.Run(ctx)
+	s.namespaces.Run(ctx)
 	s.manager.Run(ctx, s.parallelFetchers)
 	s.server.Serve(s.listener)
 }

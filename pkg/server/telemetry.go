@@ -54,6 +54,14 @@ func (c *TelemetryClient) GetHealth(ctx context.Context, in *pb.GetHealthRequest
 	return c.client.GetHealth(ctx, in, opts...)
 }
 
+func (c *TelemetryClient) IsAllowedAssumeRole(ctx context.Context, in *pb.IsAllowedAssumeRoleRequest, opts ...grpc.CallOption) (*pb.IsAllowedAssumeRoleResponse, error) {
+	timer := metrics.GetOrRegisterTimer("client.IsAllowedAssumeRole", metrics.DefaultRegistry)
+	startTime := time.Now()
+	defer timer.UpdateSince(startTime)
+
+	return c.client.IsAllowedAssumeRole(ctx, in, opts...)
+}
+
 // implements the KiamServiceServer interface with timers
 type TelemetryServer struct {
 	server pb.KiamServiceServer
@@ -61,6 +69,14 @@ type TelemetryServer struct {
 
 func ServerWithTelemetry(server pb.KiamServiceServer) pb.KiamServiceServer {
 	return &TelemetryServer{server}
+}
+
+func (c *TelemetryServer) IsAllowedAssumeRole(ctx context.Context, in *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
+	timer := metrics.GetOrRegisterTimer("server.IsAllowedAssumeRole", metrics.DefaultRegistry)
+	startTime := time.Now()
+	defer timer.UpdateSince(startTime)
+
+	return c.server.IsAllowedAssumeRole(ctx, in)
 }
 
 func (c *TelemetryServer) GetPodRole(ctx context.Context, in *pb.GetPodRoleRequest) (*pb.Role, error) {

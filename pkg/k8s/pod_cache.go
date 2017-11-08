@@ -60,6 +60,10 @@ func (s *PodCache) IsActivePodsForRole(role string) (bool, error) {
 	return false, nil
 }
 
+var (
+	ErrPodNotFound = fmt.Errorf("pod not found")
+)
+
 func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 	found := make([]*v1.Pod, 0)
 
@@ -86,7 +90,7 @@ func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 	}
 
 	if len(found) == 0 {
-		return nil, nil
+		return nil, ErrPodNotFound
 	}
 
 	if len(found) == 1 {
@@ -109,6 +113,10 @@ func (s *PodCache) FindRoleFromIP(ctx context.Context, ip string) (string, error
 	return PodRole(pod), nil
 }
 
+func (s *PodCache) GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error) {
+	return s.FindPodForIP(ip)
+}
+
 // handles objects from the queue processed by the cache
 func (s *PodCache) process(obj interface{}) error {
 	deltas := obj.(cache.Deltas)
@@ -116,7 +124,11 @@ func (s *PodCache) process(obj interface{}) error {
 
 	for _, delta := range deltas {
 		pod := delta.Object.(*v1.Pod)
-		logger := log.WithFields(log.Fields{"cache.delta.type": delta.Type}).WithFields(PodFields(pod))
+		fields := log.Fields{
+			"cache.delta.type": delta.Type,
+			"cache.object":     "pod",
+		}
+		logger := log.WithFields(fields).WithFields(PodFields(pod))
 
 		role := PodRole(pod)
 		if role != "" {
@@ -147,8 +159,13 @@ func (s *PodCache) process(obj interface{}) error {
 	return nil
 }
 
-func KubernetesSource(client *kubernetes.Clientset) *cache.ListWatch {
-	return cache.NewListWatchFromClient(client.Core().RESTClient(), "pods", "", fields.Everything())
+const (
+	ResourcePods       = "pods"
+	ResourceNamespaces = "namespaces"
+)
+
+func KubernetesSource(client *kubernetes.Clientset, resource string) *cache.ListWatch {
+	return cache.NewListWatchFromClient(client.Core().RESTClient(), resource, "", fields.Everything())
 }
 
 const (
