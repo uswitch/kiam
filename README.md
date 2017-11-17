@@ -19,7 +19,7 @@ metadata:
     iam.amazonaws.com/role: reportingdb-reader
 ```
 
-Further, all namespaces must also have an annotation with a regular expression expressing which roles are permitted to be assumed within that namespace. Without the namespace annotation the pod will be unable to assume any roles. 
+Further, all namespaces must also have an annotation with a regular expression expressing which roles are permitted to be assumed within that namespace. **Without the namespace annotation the pod will be unable to assume any roles.**
 
 ```yaml
 kind: Namespace
