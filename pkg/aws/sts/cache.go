@@ -106,7 +106,12 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	c.meterCacheMiss.Mark(1)
 
 	issue := func() (interface{}, error) {
-		arn := fmt.Sprintf("%s%s", c.baseARN, role)
+	    if (strings.Index(*role, "arn:") == 0) {
+	        arn = role
+	    } else {
+	        arn = fmt.Sprintf("%s%s", c.baseARN, role)
+	    }
+		//arn := fmt.Sprintf("%s%s", c.baseARN, role)
 		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, DefaultCredentialsValidityPeriod)
 		if err != nil {
 			metrics.GetOrRegisterMeter("credentialsCache.errorIssuing", metrics.DefaultRegistry).Mark(1)
