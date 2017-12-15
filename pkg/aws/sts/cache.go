@@ -21,6 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/future"
 	"time"
+	"strings"
 )
 
 type credentialsCache struct {
@@ -106,7 +107,8 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	c.meterCacheMiss.Mark(1)
 
 	issue := func() (interface{}, error) {
-	    if (strings.Index(*role, "arn:") == 0) {
+		var arn string
+	    if (strings.Index(role, "arn:") == 0) {
 	        arn = role
 	    } else {
 	        arn = fmt.Sprintf("%s%s", c.baseARN, role)
