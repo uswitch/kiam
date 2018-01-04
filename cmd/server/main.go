@@ -24,6 +24,7 @@ import (
 	"github.com/pubnub/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/prometheus"
 	serv "github.com/uswitch/kiam/pkg/server"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -36,6 +37,8 @@ func main() {
 		statsd         string
 		statsdInterval time.Duration
 	}
+
+	var prometheusListen string
 
 	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&flags.jsonLog)
 	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&flags.logLevel, "debug", "info", "warn", "error")
@@ -55,6 +58,8 @@ func main() {
 	kingpin.Flag("cert", "Server certificate path").Required().ExistingFileVar(&serverConfig.TLS.ServerCert)
 	kingpin.Flag("key", "Server private key path").Required().ExistingFileVar(&serverConfig.TLS.ServerKey)
 	kingpin.Flag("ca", "CA path").Required().ExistingFileVar(&serverConfig.TLS.CA)
+
+	kingpin.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&prometheusListen)
 
 	kingpin.Parse()
 
@@ -91,17 +96,22 @@ func main() {
 	signal.Notify(stopChan, syscall.SIGTERM)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	server, err := serv.NewServer(serverConfig)
 	if err != nil {
 		log.Fatal("error creating listener: ", err.Error())
 	}
 
+	if prometheusListen != "" {
+		metrics := prometheus.NewServer("server", prometheusListen)
+		metrics.Listen(ctx)
+	}
+
 	go func() {
 		<-stopChan
 		log.Infof("stopping server")
 		server.Stop()
+		cancel()
 	}()
 
 	log.Infof("will serve on %s", serverConfig.BindAddress)
