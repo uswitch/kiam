@@ -15,16 +15,17 @@ package main
 
 import (
 	"context"
-	"github.com/pubnub/go-metrics-statsd"
-	"github.com/rcrowley/go-metrics"
-	log "github.com/sirupsen/logrus"
-	serv "github.com/uswitch/kiam/pkg/server"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/pubnub/go-metrics-statsd"
+	"github.com/rcrowley/go-metrics"
+	log "github.com/sirupsen/logrus"
+	serv "github.com/uswitch/kiam/pkg/server"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 func main() {
@@ -47,7 +48,8 @@ func main() {
 	kingpin.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&serverConfig.BindAddress)
 	kingpin.Flag("kubeconfig", "Path to .kube/config (or empty for in-cluster)").Default("").StringVar(&serverConfig.KubeConfig)
 	kingpin.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&serverConfig.PodSyncInterval)
-	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").Required().StringVar(&serverConfig.RoleBaseARN)
+	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").StringVar(&serverConfig.RoleBaseARN)
+	kingpin.Flag("role-base-arn-autodetect", "Use EC2 metadata service to detect ARN prefix.").BoolVar(&serverConfig.AutoDetectBaseARN)
 	kingpin.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&serverConfig.SessionName)
 
 	kingpin.Flag("cert", "Server certificate path").Required().ExistingFileVar(&serverConfig.TLS.ServerCert)
@@ -55,6 +57,10 @@ func main() {
 	kingpin.Flag("ca", "CA path").Required().ExistingFileVar(&serverConfig.TLS.CA)
 
 	kingpin.Parse()
+
+	if !serverConfig.AutoDetectBaseARN && serverConfig.RoleBaseARN == "" {
+		log.Fatal("role-base-arn not specified and not auto-detected. please specify or use --role-base-arn-autodetect")
+	}
 
 	if flags.jsonLog {
 		log.SetFormatter(&log.JSONFormatter{})
@@ -89,7 +95,7 @@ func main() {
 
 	server, err := serv.NewServer(serverConfig)
 	if err != nil {
-		log.Fatal("error creating listener:", err.Error())
+		log.Fatal("error creating listener: ", err.Error())
 	}
 
 	go func() {
