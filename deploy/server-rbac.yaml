@@ -1,0 +1,34 @@
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: kiam-server
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: kiam-read
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - pods
+  verbs:
+  - watch
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: kiam-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kiam-read
+subjects:
+- kind: ServiceAccount
+  name: kiam-server
+  namespace: kube-system

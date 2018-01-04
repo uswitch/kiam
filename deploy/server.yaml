@@ -11,6 +11,7 @@ spec:
         app: kiam
         role: server
     spec:
+      serviceAccountName: kiam-server
       nodeSelector:
         kubernetes.io/role: master
       volumes:
