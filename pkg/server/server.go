@@ -39,7 +39,7 @@ type Config struct {
 	PodSyncInterval          time.Duration
 	SessionName              string
 	RoleBaseARN              string
-	AutoDetectBaseArn        bool
+	AutoDetectBaseARN        bool
 	TLS                      *TLSConfig
 	ParallelFetcherProcesses int
 	PrefetchBufferSize       int
@@ -121,7 +121,7 @@ func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCred
 }
 
 func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {
-	if config.AutoDetectBaseArn {
+	if config.AutoDetectBaseARN {
 		log.Infof("detecting arn prefix")
 		prefix, err := sts.DetectARNPrefix()
 		if err != nil {

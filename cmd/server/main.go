@@ -49,7 +49,7 @@ func main() {
 	kingpin.Flag("kubeconfig", "Path to .kube/config (or empty for in-cluster)").Default("").StringVar(&serverConfig.KubeConfig)
 	kingpin.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&serverConfig.PodSyncInterval)
 	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").StringVar(&serverConfig.RoleBaseARN)
-	kingpin.Flag("role-base-arn-autodetect", "Use EC2 metadata service to detect ARN prefix.").BoolVar(&serverConfig.AutoDetectBaseArn)
+	kingpin.Flag("role-base-arn-autodetect", "Use EC2 metadata service to detect ARN prefix.").BoolVar(&serverConfig.AutoDetectBaseARN)
 	kingpin.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&serverConfig.SessionName)
 
 	kingpin.Flag("cert", "Server certificate path").Required().ExistingFileVar(&serverConfig.TLS.ServerCert)
@@ -58,7 +58,7 @@ func main() {
 
 	kingpin.Parse()
 
-	if !serverConfig.AutoDetectBaseArn && serverConfig.RoleBaseARN == "" {
+	if !serverConfig.AutoDetectBaseARN && serverConfig.RoleBaseARN == "" {
 		log.Fatal("role-base-arn not specified and not auto-detected. please specify or use --role-base-arn-autodetect")
 	}
 
