@@ -20,8 +20,8 @@ import (
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/future"
-	"time"
 	"strings"
+	"time"
 )
 
 type credentialsCache struct {
@@ -85,6 +85,14 @@ func (c *credentialsCache) Expiring() chan *RoleCredentials {
 	return c.expiring
 }
 
+func (c *credentialsCache) roleARN(role string) string {
+	if strings.HasPrefix(role, "arn:") {
+		return role
+	}
+
+	return fmt.Sprintf("%s%s", c.baseARN, role)
+}
+
 func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) (*Credentials, error) {
 	logger := log.WithFields(log.Fields{"pod.iam.role": role})
 	item, found := c.cache.Get(role)
@@ -107,13 +115,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	c.meterCacheMiss.Mark(1)
 
 	issue := func() (interface{}, error) {
-		var arn string
-	    if (strings.Index(role, "arn:") == 0) {
-	        arn = role
-	    } else {
-	        arn = fmt.Sprintf("%s%s", c.baseARN, role)
-	    }
-		//arn := fmt.Sprintf("%s%s", c.baseARN, role)
+		arn := c.roleARN(role)
 		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, DefaultCredentialsValidityPeriod)
 		if err != nil {
 			metrics.GetOrRegisterMeter("credentialsCache.errorIssuing", metrics.DefaultRegistry).Mark(1)
