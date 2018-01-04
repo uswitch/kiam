@@ -22,7 +22,7 @@ spec:
             secretName: kiam-server-tls
       containers:
         - name: kiam
-          image: quay.io/uswitch/kiam:v2.1
+          image: quay.io/uswitch/kiam:v2.4
           imagePullPolicy: Always
           command:
             - /server
@@ -32,7 +32,7 @@ spec:
             - --cert=/etc/kiam/tls/server.pem
             - --key=/etc/kiam/tls/server-key.pem
             - --ca=/etc/kiam/tls/ca.pem
-            - --role-base-arn=arn:aws:iam::<account-id>:role/
+            - --role-base-arn-autodetect
             - --sync=1m
           volumeMounts:
             - mountPath: /etc/ssl/certs
