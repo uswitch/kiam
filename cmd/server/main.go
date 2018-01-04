@@ -90,6 +90,11 @@ func main() {
 		go statsd.StatsD(metrics.DefaultRegistry, flags.statsdInterval, "kiam.server", addr)
 	}
 
+	if prometheusListen != "" {
+		metrics := prometheus.NewServer("server", prometheusListen)
+		metrics.Listen(ctx)
+	}
+
 	log.Infof("starting server")
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
@@ -100,11 +105,6 @@ func main() {
 	server, err := serv.NewServer(serverConfig)
 	if err != nil {
 		log.Fatal("error creating listener: ", err.Error())
-	}
-
-	if prometheusListen != "" {
-		metrics := prometheus.NewServer("server", prometheusListen)
-		metrics.Listen(ctx)
 	}
 
 	go func() {
