@@ -19,6 +19,10 @@ import (
 	"crypto/x509"
 	"fmt"
 
+	"io/ioutil"
+	"net"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/k8sc/official"
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -27,9 +31,6 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"io/ioutil"
-	"net"
-	"time"
 )
 
 type Config struct {
@@ -135,7 +136,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	server.namespaces = k8s.NewNamespaceCache(k8s.KubernetesSource(client, k8s.ResourceNamespaces), time.Minute)
 
 	stsGateway := sts.DefaultGateway()
-	credentialsCache := sts.DefaultCache(stsGateway, config.RoleBaseARN, config.SessionName)
+	credentialsCache := sts.DefaultCache(stsGateway, config.SessionName, sts.DefaultResolver(config.RoleBaseARN))
 	server.credentialsProvider = credentialsCache
 	server.manager = prefetch.NewManager(credentialsCache, server.pods, server.pods)
 	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))

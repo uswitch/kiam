@@ -16,15 +16,16 @@ package sts
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/patrickmn/go-cache"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/future"
-	"strings"
-	"time"
 )
 
 type credentialsCache struct {
+	arnResolver    ARNResolver
 	baseARN        string
 	cache          *cache.Cache
 	expiring       chan *RoleCredentials
@@ -45,9 +46,9 @@ const (
 	DefaultCacheTTL                  = 10 * time.Minute
 )
 
-func DefaultCache(gateway STSGateway, roleBaseARN, sessionName string) *credentialsCache {
+func DefaultCache(gateway STSGateway, sessionName string, resolver ARNResolver) *credentialsCache {
 	c := &credentialsCache{
-		baseARN:        roleBaseARN,
+		arnResolver:    resolver,
 		expiring:       make(chan *RoleCredentials, 1),
 		sessionName:    fmt.Sprintf("kiam-%s", sessionName),
 		meterCacheHit:  metrics.GetOrRegisterMeter("credentialsCache.cacheHit", metrics.DefaultRegistry),
@@ -85,14 +86,6 @@ func (c *credentialsCache) Expiring() chan *RoleCredentials {
 	return c.expiring
 }
 
-func (c *credentialsCache) roleARN(role string) string {
-	if strings.HasPrefix(role, "arn:") {
-		return role
-	}
-
-	return fmt.Sprintf("%s%s", c.baseARN, role)
-}
-
 func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) (*Credentials, error) {
 	logger := log.WithFields(log.Fields{"pod.iam.role": role})
 	item, found := c.cache.Get(role)
@@ -115,7 +108,11 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	c.meterCacheMiss.Mark(1)
 
 	issue := func() (interface{}, error) {
-		arn := c.roleARN(role)
+		arn, err := c.arnResolver.Resolve(ctx, role)
+		if err != nil {
+			return nil, err
+		}
+
 		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, DefaultCredentialsValidityPeriod)
 		if err != nil {
 			metrics.GetOrRegisterMeter("credentialsCache.errorIssuing", metrics.DefaultRegistry).Mark(1)

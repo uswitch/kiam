@@ -15,18 +15,25 @@ package sts
 
 import (
 	"context"
+	"fmt"
+	"strings"
 )
 
-type CredentialsProvider interface {
-	CredentialsForRole(ctx context.Context, role string) (*Credentials, error)
+type Resolver struct {
+	prefix string
 }
 
-type CredentialsCache interface {
-	CredentialsForRole(ctx context.Context, role string) (*Credentials, error)
-	Expiring() chan *RoleCredentials
+// DefaultResolver will add the prefix to any roles which
+// don't start with arn:
+func DefaultResolver(prefix string) *Resolver {
+	return &Resolver{prefix: prefix}
 }
 
-// ARNResolver encapsulates resolution of roles into ARNs.
-type ARNResolver interface {
-	Resolve(ctx context.Context, role string) (string, error)
+// Resolve converts from a role string into the absolute role arn.
+func (r *Resolver) Resolve(ctx context.Context, role string) (string, error) {
+	if strings.HasPrefix(role, "arn:") {
+		return role, nil
+	}
+
+	return fmt.Sprintf("%s%s", r.prefix, role), nil
 }
