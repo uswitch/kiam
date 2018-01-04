@@ -39,6 +39,7 @@ type Config struct {
 	PodSyncInterval          time.Duration
 	SessionName              string
 	RoleBaseARN              string
+	AutoDetectBaseArn        bool
 	TLS                      *TLSConfig
 	ParallelFetcherProcesses int
 	PrefetchBufferSize       int
@@ -119,6 +120,20 @@ func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCred
 	return translateCredentialsToProto(credentials), nil
 }
 
+func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {
+	if config.AutoDetectBaseArn {
+		log.Infof("detecting arn prefix")
+		prefix, err := sts.DetectARNPrefix()
+		if err != nil {
+			return nil, fmt.Errorf("error detecting arn prefix: %s", err)
+		}
+		log.Infof("using detected prefix: %s", prefix)
+		return sts.DefaultResolver(prefix), nil
+	}
+
+	return sts.DefaultResolver(config.RoleBaseARN), nil
+}
+
 func NewServer(config *Config) (*KiamServer, error) {
 	server := &KiamServer{parallelFetchers: config.ParallelFetcherProcesses}
 
@@ -136,7 +151,11 @@ func NewServer(config *Config) (*KiamServer, error) {
 	server.namespaces = k8s.NewNamespaceCache(k8s.KubernetesSource(client, k8s.ResourceNamespaces), time.Minute)
 
 	stsGateway := sts.DefaultGateway()
-	credentialsCache := sts.DefaultCache(stsGateway, config.SessionName, sts.DefaultResolver(config.RoleBaseARN))
+	arnResolver, err := newRoleARNResolver(config)
+	if err != nil {
+		return nil, err
+	}
+	credentialsCache := sts.DefaultCache(stsGateway, config.SessionName, arnResolver)
 	server.credentialsProvider = credentialsCache
 	server.manager = prefetch.NewManager(credentialsCache, server.pods, server.pods)
 	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
