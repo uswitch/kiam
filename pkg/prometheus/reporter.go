@@ -3,6 +3,7 @@ package prometheus
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -32,12 +33,12 @@ func NewPrometheusProvider(r metrics.Registry, subsystem string, promRegistry pr
 	}
 }
 
+var (
+	prometheusKey = regexp.MustCompile("\\W+")
+)
+
 func (c *PrometheusConfig) flattenKey(key string) string {
-	key = strings.Replace(key, " ", "_", -1)
-	key = strings.Replace(key, ".", "_", -1)
-	key = strings.Replace(key, "-", "_", -1)
-	key = strings.Replace(key, "=", "_", -1)
-	return key
+	return prometheusKey.ReplaceAllString(strings.ToLower(key), "_")
 }
 
 func (c *PrometheusConfig) gaugeFromNameAndValue(name string, val float64) {
