@@ -14,7 +14,7 @@ import (
 // PrometheusConfig provides a container with config parameters for the
 // Prometheus Exporter
 
-type PrometheusConfig struct {
+type PrometheusSyncer struct {
 	Registry      metrics.Registry // Registry to be exported
 	subsystem     string
 	promRegistry  prometheus.Registerer //Prometheus registry
@@ -22,10 +22,10 @@ type PrometheusConfig struct {
 	gauges        map[string]prometheus.Gauge
 }
 
-// NewPrometheusProvider returns a Provider that produces Prometheus metrics.
+// NewPrometheusSyncer returns a syncer to push metrics into the Prometheus registry.
 // Namespace and subsystem are applied to all produced metrics.
-func NewPrometheusProvider(r metrics.Registry, subsystem string, promRegistry prometheus.Registerer) *PrometheusConfig {
-	return &PrometheusConfig{
+func NewPrometheusSyncer(r metrics.Registry, subsystem string, promRegistry prometheus.Registerer) *PrometheusSyncer {
+	return &PrometheusSyncer{
 		subsystem:    subsystem,
 		Registry:     r,
 		promRegistry: promRegistry,
@@ -37,11 +37,11 @@ var (
 	prometheusKey = regexp.MustCompile("\\W+")
 )
 
-func (c *PrometheusConfig) flattenKey(key string) string {
+func (c *PrometheusSyncer) flattenKey(key string) string {
 	return prometheusKey.ReplaceAllString(strings.ToLower(key), "_")
 }
 
-func (c *PrometheusConfig) gaugeFromNameAndValue(name string, val float64) {
+func (c *PrometheusSyncer) gaugeFromNameAndValue(name string, val float64) {
 	key := fmt.Sprintf("%s_%s_%s", "kiam", c.subsystem, name)
 	g, ok := c.gauges[key]
 	if !ok {
@@ -57,7 +57,8 @@ func (c *PrometheusConfig) gaugeFromNameAndValue(name string, val float64) {
 	g.Set(val)
 }
 
-func (c *PrometheusConfig) UpdatePrometheusMetricsOnce() error {
+// Sync copies metrics from the metrics.Registry to prometheus.Registry
+func (c *PrometheusSyncer) Sync() error {
 	c.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:

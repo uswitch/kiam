@@ -52,13 +52,13 @@ func (s *TelemetryServer) Listen(ctx context.Context) {
 		s.server.Shutdown(ctx)
 	}()
 	go func() {
-		prom := NewPrometheusProvider(metrics.DefaultRegistry, s.subsystem, prometheus.DefaultRegisterer)
+		prom := NewPrometheusSyncer(metrics.DefaultRegistry, s.subsystem, prometheus.DefaultRegisterer)
 		refreshCounter := metrics.GetOrRegisterCounter("metrics_refresh", metrics.DefaultRegistry)
 
 		for {
 			select {
 			case _ = <-time.Tick(time.Second * 5):
-				err := prom.UpdatePrometheusMetricsOnce()
+				err := prom.Sync()
 				if err != nil {
 					log.Errorf("error updating prometheus metrics: %s", err)
 				}
