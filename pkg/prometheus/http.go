@@ -15,7 +15,8 @@ import (
 // TelemetryServer runs an HTTP service for exporting
 // metrics
 type TelemetryServer struct {
-	server *http.Server
+	server    *http.Server
+	subsystem string
 }
 
 func prometheusMetrics(w http.ResponseWriter, req *http.Request) {
@@ -32,7 +33,7 @@ func NewServer(subsystem, listenAddr string) *TelemetryServer {
 		Handler: mux,
 	}
 
-	return &TelemetryServer{server: server}
+	return &TelemetryServer{server: server, subsystem: subsystem}
 }
 
 // Listen starts an HTTP service exporting metrics. It stops
@@ -51,7 +52,7 @@ func (s *TelemetryServer) Listen(ctx context.Context) {
 		s.server.Shutdown(ctx)
 	}()
 	go func() {
-		prom := NewPrometheusProvider(metrics.DefaultRegistry, "subsystem", prometheus.DefaultRegisterer)
+		prom := NewPrometheusProvider(metrics.DefaultRegistry, s.subsystem, prometheus.DefaultRegisterer)
 		refreshCounter := metrics.GetOrRegisterCounter("metrics_refresh", metrics.DefaultRegistry)
 
 		for {
