@@ -32,13 +32,12 @@ import (
 func main() {
 	serverConfig := &serv.Config{TLS: &serv.TLSConfig{}}
 	var flags struct {
-		jsonLog        bool
-		logLevel       string
-		statsd         string
-		statsdInterval time.Duration
+		jsonLog          bool
+		logLevel         string
+		statsd           string
+		statsdInterval   time.Duration
+		prometheusListen string
 	}
-
-	var prometheusListen string
 
 	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&flags.jsonLog)
 	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&flags.logLevel, "debug", "info", "warn", "error")
@@ -59,7 +58,7 @@ func main() {
 	kingpin.Flag("key", "Server private key path").Required().ExistingFileVar(&serverConfig.TLS.ServerKey)
 	kingpin.Flag("ca", "CA path").Required().ExistingFileVar(&serverConfig.TLS.CA)
 
-	kingpin.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&prometheusListen)
+	kingpin.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&flags.prometheusListen)
 
 	kingpin.Parse()
 
@@ -92,8 +91,8 @@ func main() {
 		go statsd.StatsD(metrics.DefaultRegistry, flags.statsdInterval, "kiam.server", addr)
 	}
 
-	if prometheusListen != "" {
-		metrics := prometheus.NewServer("server", prometheusListen)
+	if flags.prometheusListen != "" {
+		metrics := prometheus.NewServer("server", flags.prometheusListen)
 		metrics.Listen(ctx)
 	}
 

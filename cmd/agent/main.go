@@ -15,17 +15,19 @@ package main
 
 import (
 	"context"
-	"github.com/pubnub/go-metrics-statsd"
-	"github.com/rcrowley/go-metrics"
-	log "github.com/sirupsen/logrus"
-	http "github.com/uswitch/kiam/pkg/aws/metadata"
-	kiamserver "github.com/uswitch/kiam/pkg/server"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/pubnub/go-metrics-statsd"
+	"github.com/rcrowley/go-metrics"
+	log "github.com/sirupsen/logrus"
+	http "github.com/uswitch/kiam/pkg/aws/metadata"
+	"github.com/uswitch/kiam/pkg/prometheus"
+	kiamserver "github.com/uswitch/kiam/pkg/server"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 type options struct {
@@ -40,6 +42,7 @@ type options struct {
 	hostInterface        string
 	serverAddress        string
 	serverAddressRefresh time.Duration
+	prometheusListen     string
 
 	certificatePath string
 	keyPath         string
@@ -85,6 +88,8 @@ func main() {
 	kingpin.Flag("key", "Agent key path").Required().ExistingFileVar(&opts.keyPath)
 	kingpin.Flag("ca", "CA certificate path").Required().ExistingFileVar(&opts.caPath)
 
+	kingpin.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&opts.prometheusListen)
+
 	kingpin.Parse()
 
 	opts.configureLogger()
@@ -107,12 +112,17 @@ func main() {
 		go statsd.StatsD(metrics.DefaultRegistry, opts.statsDInterval, "kiam.agent", addr)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if opts.prometheusListen != "" {
+		metrics := prometheus.NewServer("agent", opts.prometheusListen)
+		metrics.Listen(ctx)
+	}
+
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	config := http.NewConfig(opts.port)
 	config.AllowIPQuery = opts.allowIPQuery
