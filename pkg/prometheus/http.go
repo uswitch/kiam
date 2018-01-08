@@ -63,14 +63,6 @@ func (s *TelemetryServer) Listen(ctx context.Context) {
 				}
 				refreshCounter.Inc(1)
 
-				mets, err := prometheus.DefaultGatherer.Gather()
-				if err != nil {
-					log.Error(err)
-				}
-
-				for _, obj := range mets {
-					log.Debugf("%s", obj.GetName())
-				}
 			case _ = <-ctx.Done():
 				return
 			}

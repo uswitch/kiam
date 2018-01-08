@@ -82,6 +82,8 @@ func main() {
 		log.SetLevel(log.ErrorLevel)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	if flags.statsd != "" {
 		addr, err := net.ResolveUDPAddr("udp", flags.statsd)
 		if err != nil {
@@ -99,8 +101,6 @@ func main() {
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
-
-	ctx, cancel := context.WithCancel(context.Background())
 
 	server, err := serv.NewServer(serverConfig)
 	if err != nil {
