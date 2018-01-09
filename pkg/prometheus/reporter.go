@@ -58,7 +58,7 @@ func (c *PrometheusSyncer) gaugeFromNameAndValue(name string, val float64) {
 }
 
 // Sync copies metrics from the metrics.Registry to prometheus.Registry
-func (c *PrometheusSyncer) Sync() error {
+func (c *PrometheusSyncer) Sync() {
 	c.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:
@@ -81,5 +81,4 @@ func (c *PrometheusSyncer) Sync() error {
 			c.gaugeFromNameAndValue(name, float64(lastSample))
 		}
 	})
-	return nil
 }

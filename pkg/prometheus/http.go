@@ -59,10 +59,7 @@ func (s *TelemetryServer) Listen(ctx context.Context) {
 		for {
 			select {
 			case _ = <-time.Tick(s.sync):
-				err := prom.Sync()
-				if err != nil {
-					log.Errorf("error updating prometheus metrics: %s", err)
-				}
+				prom.Sync()
 				refreshCounter.Inc(1)
 
 			case _ = <-ctx.Done():
