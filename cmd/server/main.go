@@ -24,6 +24,7 @@ import (
 	"github.com/pubnub/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/prometheus"
 	serv "github.com/uswitch/kiam/pkg/server"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -31,10 +32,12 @@ import (
 func main() {
 	serverConfig := &serv.Config{TLS: &serv.TLSConfig{}}
 	var flags struct {
-		jsonLog        bool
-		logLevel       string
-		statsd         string
-		statsdInterval time.Duration
+		jsonLog          bool
+		logLevel         string
+		statsd           string
+		statsdInterval   time.Duration
+		prometheusListen string
+		prometheusSync   time.Duration
 	}
 
 	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&flags.jsonLog)
@@ -55,6 +58,9 @@ func main() {
 	kingpin.Flag("cert", "Server certificate path").Required().ExistingFileVar(&serverConfig.TLS.ServerCert)
 	kingpin.Flag("key", "Server private key path").Required().ExistingFileVar(&serverConfig.TLS.ServerKey)
 	kingpin.Flag("ca", "CA path").Required().ExistingFileVar(&serverConfig.TLS.CA)
+
+	kingpin.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&flags.prometheusListen)
+	kingpin.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&flags.prometheusSync)
 
 	kingpin.Parse()
 
@@ -77,6 +83,8 @@ func main() {
 		log.SetLevel(log.ErrorLevel)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	if flags.statsd != "" {
 		addr, err := net.ResolveUDPAddr("udp", flags.statsd)
 		if err != nil {
@@ -85,13 +93,15 @@ func main() {
 		go statsd.StatsD(metrics.DefaultRegistry, flags.statsdInterval, "kiam.server", addr)
 	}
 
+	if flags.prometheusListen != "" {
+		metrics := prometheus.NewServer("server", flags.prometheusListen, flags.prometheusSync)
+		metrics.Listen(ctx)
+	}
+
 	log.Infof("starting server")
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	server, err := serv.NewServer(serverConfig)
 	if err != nil {
@@ -102,6 +112,7 @@ func main() {
 		<-stopChan
 		log.Infof("stopping server")
 		server.Stop()
+		cancel()
 	}()
 
 	log.Infof("will serve on %s", serverConfig.BindAddress)
