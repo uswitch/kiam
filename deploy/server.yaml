@@ -7,6 +7,9 @@ metadata:
 spec:
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9620"
       labels:
         app: kiam
         role: server
@@ -35,6 +38,8 @@ spec:
             - --ca=/etc/kiam/tls/ca.pem
             - --role-base-arn-autodetect
             - --sync=1m
+            - --prometheus-listen-addr=0.0.0.0:9620
+            - --prometheus-sync-interval=5s
           volumeMounts:
             - mountPath: /etc/ssl/certs
               name: ssl-certs
