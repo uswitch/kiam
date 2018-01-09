@@ -37,6 +37,7 @@ func main() {
 		statsd           string
 		statsdInterval   time.Duration
 		prometheusListen string
+		prometheusSync   time.Duration
 	}
 
 	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&flags.jsonLog)
@@ -59,6 +60,7 @@ func main() {
 	kingpin.Flag("ca", "CA path").Required().ExistingFileVar(&serverConfig.TLS.CA)
 
 	kingpin.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&flags.prometheusListen)
+	kingpin.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&flags.prometheusSync)
 
 	kingpin.Parse()
 
@@ -92,7 +94,7 @@ func main() {
 	}
 
 	if flags.prometheusListen != "" {
-		metrics := prometheus.NewServer("server", flags.prometheusListen)
+		metrics := prometheus.NewServer("server", flags.prometheusListen, flags.prometheusSync)
 		metrics.Listen(ctx)
 	}
 

@@ -17,6 +17,7 @@ import (
 type TelemetryServer struct {
 	server    *http.Server
 	subsystem string
+	sync      time.Duration
 }
 
 func prometheusMetrics(w http.ResponseWriter, req *http.Request) {
@@ -24,7 +25,7 @@ func prometheusMetrics(w http.ResponseWriter, req *http.Request) {
 }
 
 // NewServer creates a prometheus text format HTTP metrics server
-func NewServer(subsystem, listenAddr string) *TelemetryServer {
+func NewServer(subsystem, listenAddr string, syncInterval time.Duration) *TelemetryServer {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -33,7 +34,7 @@ func NewServer(subsystem, listenAddr string) *TelemetryServer {
 		Handler: mux,
 	}
 
-	return &TelemetryServer{server: server, subsystem: subsystem}
+	return &TelemetryServer{server: server, subsystem: subsystem, sync: syncInterval}
 }
 
 // Listen starts an HTTP service exporting metrics. It stops
@@ -57,7 +58,7 @@ func (s *TelemetryServer) Listen(ctx context.Context) {
 
 		for {
 			select {
-			case _ = <-time.Tick(time.Second * 5):
+			case _ = <-time.Tick(s.sync):
 				err := prom.Sync()
 				if err != nil {
 					log.Errorf("error updating prometheus metrics: %s", err)

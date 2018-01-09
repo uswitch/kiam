@@ -43,6 +43,7 @@ type options struct {
 	serverAddress        string
 	serverAddressRefresh time.Duration
 	prometheusListen     string
+	prometheusSync       time.Duration
 
 	certificatePath string
 	keyPath         string
@@ -89,6 +90,7 @@ func main() {
 	kingpin.Flag("ca", "CA certificate path").Required().ExistingFileVar(&opts.caPath)
 
 	kingpin.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&opts.prometheusListen)
+	kingpin.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&opts.prometheusSync)
 
 	kingpin.Parse()
 
@@ -116,7 +118,7 @@ func main() {
 	defer cancel()
 
 	if opts.prometheusListen != "" {
-		metrics := prometheus.NewServer("agent", opts.prometheusListen)
+		metrics := prometheus.NewServer("agent", opts.prometheusListen, opts.prometheusSync)
 		metrics.Listen(ctx)
 	}
 
