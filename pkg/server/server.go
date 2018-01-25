@@ -43,6 +43,7 @@ type Config struct {
 	TLS                      *TLSConfig
 	ParallelFetcherProcesses int
 	PrefetchBufferSize       int
+	AssumeRoleArn            string
 }
 
 type TLSConfig struct {
@@ -150,7 +151,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	server.pods = k8s.NewPodCache(k8s.KubernetesSource(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
 	server.namespaces = k8s.NewNamespaceCache(k8s.KubernetesSource(client, k8s.ResourceNamespaces), time.Minute)
 
-	stsGateway := sts.DefaultGateway()
+	stsGateway := sts.DefaultGateway(config.AssumeRoleArn)
 	arnResolver, err := newRoleARNResolver(config)
 	if err != nil {
 		return nil, err
