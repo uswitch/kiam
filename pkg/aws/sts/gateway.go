@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/rcrowley/go-metrics"
@@ -31,8 +32,15 @@ type DefaultSTSGateway struct {
 	session *session.Session
 }
 
-func DefaultGateway() *DefaultSTSGateway {
-	return &DefaultSTSGateway{session: session.Must(session.NewSession())}
+func DefaultGateway(assumeRoleArn string) *DefaultSTSGateway {
+	if assumeRoleArn == "" {
+		return &DefaultSTSGateway{session: session.Must(session.NewSession())}
+	} else {
+		session := session.Must(session.NewSession(&aws.Config{
+			Credentials: stscreds.NewCredentials(session.Must(session.NewSession()), assumeRoleArn),
+		}))
+		return &DefaultSTSGateway{session: session}
+	}
 }
 
 func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
