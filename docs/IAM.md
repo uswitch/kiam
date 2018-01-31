@@ -46,7 +46,7 @@ in the AWS Console, and the `assume_role_policy` in Terraform.
       "Sid": "",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::<account-id>:role/<cluster-node-role-nae>"
+        "AWS": "arn:aws:iam::<account-id>:role/<cluster-node-role-name>"
       },
       "Action": "sts:AssumeRole"
     }
