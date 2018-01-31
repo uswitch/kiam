@@ -29,7 +29,7 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem server.json | cfssljson -bare server
 3. Create Agent pair
 
 ```
-cfssl gencert -ca=ca.pem -ca-key=ca-key.pem server.json | cfssljson -bare agent
+cfssl gencert -ca=ca.pem -ca-key=ca-key.pem agent.json | cfssljson -bare agent
 ```
 
 ## Store in Kubernetes
