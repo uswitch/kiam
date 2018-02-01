@@ -37,3 +37,15 @@ func TestUsesAbsoluteARN(t *testing.T) {
 		t.Error("unexpected role, was:", role)
 	}
 }
+
+func TestExtractsBaseFromInstanceArn(t *testing.T) {
+	prefix, _ := sts.BaseArn("arn:aws:iam::account-id:instance-profile/instance-role-name")
+	if prefix != "arn:aws:iam::account-id:role/" {
+		t.Error("unexpected prefix, was: ", prefix)
+	}
+
+	prefix, _ = sts.BaseArn("arn:aws:iam::account-id:instance-profile/mypath/instance-role-name")
+	if prefix != "arn:aws:iam::account-id:role/" {
+		t.Error("unexpected prefix, was: ", prefix)
+	}
+}
