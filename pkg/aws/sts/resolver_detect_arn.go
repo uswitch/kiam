@@ -37,9 +37,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-// DetectARNPrefix uses the EC2 metadata API to determine the
-// current prefix.
-func DetectARNPrefix() (string, error) {
+// InstanceProfileArn uses the EC2 metadata API to find the role for
+// the instance.
+func InstanceProfileArn() (string, error) {
 	sess := session.Must(session.NewSession())
 	svc := ec2metadata.New(sess)
 	if !svc.Available() {
@@ -51,13 +51,28 @@ func DetectARNPrefix() (string, error) {
 		return "", fmt.Errorf("error accessing iam info: %s", err)
 	}
 
+	return info.InstanceProfileArn, nil
+}
+
+// BaseArn calculates the base arn given an instance's arn
+func BaseArn(instanceProfileArn string) (string, error) {
 	// instance profile arn will be of the form:
 	// arn:aws:iam::account-id:instance-profile/role-name
 	// so we use the instance-profile prefix as the prefix for our roles
-	parts := strings.Split(strings.Replace(info.InstanceProfileArn, "instance-profile", "role", 1), "/")
-	if len(parts) != 2 {
-		return "", fmt.Errorf("unexpected instance arn format: %s", info.InstanceProfileArn)
+
+	parts := strings.Split(instanceProfileArn, ":")
+	accountPrefix := strings.Join(parts[0:5], ":")
+
+	return fmt.Sprintf("%s:role/", accountPrefix), nil
+}
+
+// DetectARNPrefix uses the EC2 metadata API to determine the
+// current prefix.
+func DetectARNPrefix() (string, error) {
+	instanceArn, err := InstanceProfileArn()
+	if err != nil {
+		return "", err
 	}
 
-	return fmt.Sprintf("%s/", parts[0]), nil
+	return BaseArn(instanceArn)
 }
