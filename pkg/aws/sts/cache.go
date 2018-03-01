@@ -25,14 +25,15 @@ import (
 )
 
 type credentialsCache struct {
-	arnResolver    ARNResolver
-	baseARN        string
-	cache          *cache.Cache
-	expiring       chan *RoleCredentials
-	sessionName    string
-	meterCacheHit  metrics.Meter
-	meterCacheMiss metrics.Meter
-	gateway        STSGateway
+	arnResolver     ARNResolver
+	baseARN         string
+	cache           *cache.Cache
+	expiring        chan *RoleCredentials
+	sessionName     string
+	sessionDuration time.Duration
+	meterCacheHit   metrics.Meter
+	meterCacheMiss  metrics.Meter
+	gateway         STSGateway
 }
 
 type RoleCredentials struct {
@@ -41,19 +42,19 @@ type RoleCredentials struct {
 }
 
 const (
-	DefaultPurgeInterval             = 1 * time.Minute
-	DefaultCredentialsValidityPeriod = 15 * time.Minute
-	DefaultCacheTTL                  = 10 * time.Minute
+	DefaultPurgeInterval = 1 * time.Minute
+	DefaultCacheTTL      = 10 * time.Minute
 )
 
-func DefaultCache(gateway STSGateway, sessionName string, resolver ARNResolver) *credentialsCache {
+func DefaultCache(gateway STSGateway, sessionName string, sessionDuration time.Duration, resolver ARNResolver) *credentialsCache {
 	c := &credentialsCache{
-		arnResolver:    resolver,
-		expiring:       make(chan *RoleCredentials, 1),
-		sessionName:    fmt.Sprintf("kiam-%s", sessionName),
-		meterCacheHit:  metrics.GetOrRegisterMeter("credentialsCache.cacheHit", metrics.DefaultRegistry),
-		meterCacheMiss: metrics.GetOrRegisterMeter("credentialsCache.cacheMiss", metrics.DefaultRegistry),
-		gateway:        gateway,
+		arnResolver:     resolver,
+		expiring:        make(chan *RoleCredentials, 1),
+		sessionName:     fmt.Sprintf("kiam-%s", sessionName),
+		sessionDuration: sessionDuration,
+		meterCacheHit:   metrics.GetOrRegisterMeter("credentialsCache.cacheHit", metrics.DefaultRegistry),
+		meterCacheMiss:  metrics.GetOrRegisterMeter("credentialsCache.cacheMiss", metrics.DefaultRegistry),
+		gateway:         gateway,
 	}
 	c.cache = cache.New(DefaultCacheTTL, DefaultPurgeInterval)
 	c.cache.OnEvicted(c.evicted)
@@ -113,7 +114,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 			return nil, err
 		}
 
-		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, DefaultCredentialsValidityPeriod)
+		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, c.sessionDuration)
 		if err != nil {
 			metrics.GetOrRegisterMeter("credentialsCache.errorIssuing", metrics.DefaultRegistry).Mark(1)
 			logger.Errorf("error requesting credentials: %s", err.Error())

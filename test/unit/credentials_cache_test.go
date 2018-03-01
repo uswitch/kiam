@@ -35,7 +35,7 @@ func (s *stubGateway) Issue(ctx context.Context, roleARN, sessionName string, ex
 
 func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
 	stubGateway := &stubGateway{c: &sts.Credentials{Code: "foo"}}
-	cache := sts.DefaultCache(stubGateway, "session", sts.DefaultResolver("prefix:"))
+	cache := sts.DefaultCache(stubGateway, "session", 15*time.Minute, sts.DefaultResolver("prefix:"))
 	ctx := context.Background()
 
 	creds, _ := cache.CredentialsForRole(ctx, "role")
