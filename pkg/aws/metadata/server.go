@@ -71,7 +71,10 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 		roleFinder: finder,
 		clientIP:   clientIP,
 	}
-	router.Handle("/{version}/meta-data/iam/security-credentials/", adapt(withMeter("roleName", r)))
+
+	securityCredsHandler := adapt(withMeter("roleName", r))
+	router.Handle("/{version}/meta-data/iam/security-credentials", securityCredsHandler)
+	router.Handle("/{version}/meta-data/iam/security-credentials/", securityCredsHandler)
 
 	c := &credentialsHandler{
 		roleFinder:          finder,
