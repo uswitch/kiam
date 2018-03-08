@@ -17,16 +17,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"testing"
+	"time"
+
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/metadata"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"github.com/vmg/backoff"
-	"io/ioutil"
-	"net/http"
-	"testing"
-	"time"
 )
 
 func TestParseAddress(t *testing.T) {
@@ -134,6 +135,19 @@ func TestReturnRoleForPod(t *testing.T) {
 	if string(body) != "foo_role" {
 		t.Error("expected foo_role in body, was", string(body))
 	}
+
+	// The AWS API allows requests to resources both with and without the trailing slash
+	body, status, err = get(context.Background(), "/latest/meta-data/iam/security-credentials")
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if status != http.StatusOK {
+		t.Error("expected 200 response, was", status)
+	}
+	if string(body) != "foo_role" {
+		t.Error("expected foo_role in body, was", string(body))
+	}
+
 }
 
 func TestReturnErrorWhenNoPodFound(t *testing.T) {
