@@ -54,6 +54,7 @@ func main() {
 	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").StringVar(&serverConfig.RoleBaseARN)
 	kingpin.Flag("role-base-arn-autodetect", "Use EC2 metadata service to detect ARN prefix.").BoolVar(&serverConfig.AutoDetectBaseARN)
 	kingpin.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&serverConfig.SessionName)
+	kingpin.Flag("session-duration", "Requested session duration for STS Tokens.").Default("15m").DurationVar(&serverConfig.SessionDuration)
 	kingpin.Flag("assume-role-arn", "IAM Role to assume before processing requests").Default("").StringVar(&serverConfig.AssumeRoleArn)
 
 	kingpin.Flag("cert", "Server certificate path").Required().ExistingFileVar(&serverConfig.TLS.ServerCert)
