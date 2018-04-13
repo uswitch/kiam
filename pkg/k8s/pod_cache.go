@@ -16,13 +16,14 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"time"
 )
 
 type PodCache struct {
@@ -123,7 +124,25 @@ func (s *PodCache) process(obj interface{}) error {
 	deltaMeter := metrics.GetOrRegisterMeter("PodCache.processDelta", metrics.DefaultRegistry)
 
 	for _, delta := range deltas {
-		pod := delta.Object.(*v1.Pod)
+		pod, isPod := delta.Object.(*v1.Pod)
+		if !isPod {
+			// DeletedFinalStateUnknown indicates that the object was deleted
+			// kubernetes' client code suggests this could be because we
+			// missed the delete event from a closed watcher, but picked it up
+			// through a subsequent re-list
+			deleted, isDeleted := obj.(cache.DeletedFinalStateUnknown)
+			if !isDeleted {
+				log.Errorf("process received unexpected object: %+v", deleted)
+				continue
+			}
+
+			// our store is configured with DeletionHandlingMetaNamespaceKeyFunc
+			// that can handle the object's identity
+			log.Debugf("deleting object, received cache.DeletedFinalStateUnknown")
+			s.store.Delete(delta.Object)
+			continue
+		}
+
 		fields := log.Fields{
 			"cache.delta.type": delta.Type,
 			"cache.object":     "pod",
@@ -198,23 +217,22 @@ func podRoleIndex(obj interface{}) ([]string, error) {
 // pods and can announce Pods. When announcing Pods via the channel it will drop events if the buffer
 // is full- bufferSize determines how many.
 func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration, bufferSize int) *PodCache {
-	PodCache := &PodCache{stop: make(chan struct{}), pods: make(chan *v1.Pod, bufferSize)}
+	podCache := &PodCache{stop: make(chan struct{}), pods: make(chan *v1.Pod, bufferSize)}
 	indexers := cache.Indexers{
 		indexPodIP:   podIPIndex,
 		indexPodRole: podRoleIndex,
 	}
-	store := cache.NewIndexer(cache.DeletionHandlingMetaNamespaceKeyFunc, indexers)
-	PodCache.store = store
+	podCache.store = cache.NewIndexer(cache.DeletionHandlingMetaNamespaceKeyFunc, indexers)
 	config := &cache.Config{
-		Queue:            cache.NewDeltaFIFO(cache.MetaNamespaceKeyFunc, nil, PodCache.store),
+		Queue:            cache.NewDeltaFIFO(cache.MetaNamespaceKeyFunc, nil, podCache.store),
 		ListerWatcher:    source,
 		ObjectType:       &v1.Pod{},
 		FullResyncPeriod: syncInterval,
 		RetryOnError:     false,
-		Process:          PodCache.process,
+		Process:          podCache.process,
 	}
-	PodCache.cacheController = cache.New(config)
-	return PodCache
+	podCache.cacheController = cache.New(config)
+	return podCache
 }
 
 func (s *PodCache) Run(ctx context.Context) {
