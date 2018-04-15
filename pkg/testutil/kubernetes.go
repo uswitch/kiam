@@ -15,10 +15,11 @@ package testutil
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/uswitch/kiam/pkg/k8s"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 const (
@@ -32,7 +33,7 @@ func NewNamespace(name, roleRegexp string) *v1.Namespace {
 			Name: name,
 		},
 	}
-	n.Annotations = map[string]string{k8s.AnnotationName: roleRegexp}
+	n.Annotations = map[string]string{k8s.AnnotationPermittedKey: roleRegexp}
 	return n
 }
 
@@ -56,6 +57,6 @@ func NewPod(namespace, name, ip, phase string) *v1.Pod {
 
 func NewPodWithRole(namespace, name, ip, phase, role string) *v1.Pod {
 	pod := NewPod(namespace, name, ip, phase)
-	pod.ObjectMeta.Annotations = map[string]string{k8s.IAMRoleKey: role}
+	pod.ObjectMeta.Annotations = map[string]string{k8s.AnnotationIAMRoleKey: role}
 	return pod
 }

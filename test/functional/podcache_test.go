@@ -16,11 +16,12 @@ package kiam
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/testutil"
 	kt "k8s.io/client-go/tools/cache/testing"
-	"testing"
-	"time"
 )
 
 const bufferSize = 10
@@ -34,9 +35,6 @@ func TestFindsRunningPod(t *testing.T) {
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role"))
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 	c.Run(ctx)
-
-	// we'll take to wait for the delta to be processed
-	<-c.Pods()
 
 	found, _ := c.FindPodForIP("192.168.0.1")
 	if found == nil {
@@ -57,9 +55,6 @@ func TestFindRoleActive(t *testing.T) {
 	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "running_role"))
 	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 	c.Run(ctx)
-	for i := 0; i < 2; i++ {
-		<-c.Pods()
-	}
 
 	active, _ := c.IsActivePodsForRole("failed_role")
 	if active {
@@ -80,11 +75,10 @@ func BenchmarkFindPodsByIP(b *testing.B) {
 
 	source := kt.NewFakeControllerSource()
 	c := k8s.NewPodCache(source, time.Second, bufferSize)
-	c.Run(ctx)
 	for i := 0; i < 1000; i++ {
 		source.Add(testutil.NewPodWithRole("ns", fmt.Sprintf("name-%d", i), fmt.Sprintf("ip-%d", i), "Running", "foo_role"))
-		<-c.Pods() // wait for delta
 	}
+	c.Run(ctx)
 
 	b.StartTimer()
 
@@ -100,17 +94,15 @@ func BenchmarkIsActiveRole(b *testing.B) {
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
-	c := k8s.NewPodCache(source, time.Second, bufferSize)
-	c.Run(ctx)
-
 	// we setup a simulation to approximate usage patterns: many pods with a handful using the same role:
 	// 1000 pods but 10 pods per-role. the implementation of the cache degrades as the number of running
 	// pods per role increases: there are more slice operations as the number of cache hits increases.
 	for i := 0; i < 1000; i++ {
 		role := i % 100
 		source.Add(testutil.NewPodWithRole("ns", fmt.Sprintf("name-%d", i), fmt.Sprintf("ip-%d", i), "Running", fmt.Sprintf("role-%d", role)))
-		<-c.Pods()
 	}
+	c := k8s.NewPodCache(source, time.Second, bufferSize)
+	c.Run(ctx)
 
 	b.StartTimer()
 

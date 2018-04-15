@@ -151,7 +151,7 @@ func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Conte
 		return nil, err
 	}
 
-	expression := ns.GetAnnotations()[k8s.AnnotationName]
+	expression := ns.GetAnnotations()[k8s.AnnotationPermittedKey]
 	if expression == "" {
 		return &namespacePolicyForbidden{expression: "(empty)", role: role}, nil
 	}
