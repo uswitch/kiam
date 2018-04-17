@@ -31,6 +31,27 @@ type PodCache struct {
 	controller cache.Controller
 }
 
+// NewPodCache creates the cache object that uses a watcher to listen for Pod events. The cache indexes pods by their
+// IP address so that Kiam can identify which role a Pod should assume. It periodically syncs the list of
+// pods and can announce Pods. When announcing Pods via the channel it will drop events if the buffer
+// is full- bufferSize determines how many.
+func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration, bufferSize int) *PodCache {
+	indexers := cache.Indexers{
+		indexPodIP:   podIPIndex,
+		indexPodRole: podRoleIndex,
+	}
+	pods := make(chan *v1.Pod, bufferSize)
+	podHandler := &podHandler{pods}
+	indexer, controller := cache.NewIndexerInformer(source, &v1.Pod{}, syncInterval, podHandler, indexers)
+	podCache := &PodCache{
+		pods:       pods,
+		indexer:    indexer,
+		controller: controller,
+	}
+
+	return podCache
+}
+
 // ErrMultipleRunningPods indicates that multiple pods were found. This is
 // an error as we expect IP addresses to not overlap
 var ErrMultipleRunningPods = fmt.Errorf("multiple running pods found")
@@ -155,27 +176,6 @@ func podRoleIndex(obj interface{}) ([]string, error) {
 	}
 
 	return []string{role}, nil
-}
-
-// NewPodCache creates the cache object that uses a watcher to listen for Pod events. The cache indexes pods by their
-// IP address so that Kiam can identify which role a Pod should assume. It periodically syncs the list of
-// pods and can announce Pods. When announcing Pods via the channel it will drop events if the buffer
-// is full- bufferSize determines how many.
-func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration, bufferSize int) *PodCache {
-	indexers := cache.Indexers{
-		indexPodIP:   podIPIndex,
-		indexPodRole: podRoleIndex,
-	}
-	pods := make(chan *v1.Pod, bufferSize)
-	podHandler := &podHandler{pods}
-	indexer, controller := cache.NewIndexerInformer(source, &v1.Pod{}, syncInterval, podHandler, indexers)
-	podCache := &PodCache{
-		pods:       pods,
-		indexer:    indexer,
-		controller: controller,
-	}
-
-	return podCache
 }
 
 // Run starts the controller processing updates. Blocks until the cache has synced
