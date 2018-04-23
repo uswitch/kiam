@@ -24,8 +24,15 @@ func PodFields(pod *v1.Pod) logrus.Fields {
 		"pod.status.ip":       pod.Status.PodIP,
 		"pod.namespace":       pod.ObjectMeta.Namespace,
 		"pod.name":            pod.ObjectMeta.Name,
-		"pod.iam.role":        pod.ObjectMeta.Annotations[IAMRoleKey],
+		"pod.iam.role":        pod.ObjectMeta.Annotations[AnnotationIAMRoleKey],
 		"resource.version":    pod.ObjectMeta.ResourceVersion,
 		"generation.metadata": pod.ObjectMeta.Generation,
+	}
+}
+
+func namespaceFields(n *v1.Namespace) logrus.Fields {
+	return logrus.Fields{
+		"namespace":           n.Name,
+		"namespace.permitted": n.GetAnnotations()[AnnotationPermittedKey],
 	}
 }

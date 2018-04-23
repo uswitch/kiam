@@ -149,8 +149,8 @@ func NewServer(config *Config) (*KiamServer, error) {
 	if err != nil {
 		log.Fatalf("couldn't create kubernetes client: %s", err.Error())
 	}
-	server.pods = k8s.NewPodCache(k8s.KubernetesSource(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
-	server.namespaces = k8s.NewNamespaceCache(k8s.KubernetesSource(client, k8s.ResourceNamespaces), time.Minute)
+	server.pods = k8s.NewPodCache(k8s.NewListWatch(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
+	server.namespaces = k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 
 	stsGateway := sts.DefaultGateway(config.AssumeRoleArn)
 	arnResolver, err := newRoleARNResolver(config)
@@ -190,13 +190,21 @@ func NewServer(config *Config) (*KiamServer, error) {
 	return server, nil
 }
 
-func (s *KiamServer) Serve(ctx context.Context) {
-	s.pods.Run(ctx)
-	s.namespaces.Run(ctx)
-	s.manager.Run(ctx, s.parallelFetchers)
-	s.server.Serve(s.listener)
+// Serve starts the server, starting all components and listening for gRPC
+func (k *KiamServer) Serve(ctx context.Context) {
+	k.manager.Run(ctx, k.parallelFetchers)
+	err := k.pods.Run(ctx)
+	if err != nil {
+		log.Fatalf("error starting pod cache: %s", err)
+	}
+	err = k.namespaces.Run(ctx)
+	if err != nil {
+		log.Fatalf("error starting namespace cache: %s", err)
+	}
+	k.server.Serve(k.listener)
 }
 
-func (s *KiamServer) Stop() {
-	s.server.GracefulStop()
+// Stop performs a graceful shutdown of the gRPC server
+func (k *KiamServer) Stop() {
+	k.server.GracefulStop()
 }

@@ -16,35 +16,63 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"github.com/rcrowley/go-metrics"
+	"time"
+
+	metrics "github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"time"
 )
 
+// PodCache implements a cache, allowing lookups by their IP address
 type PodCache struct {
-	store           cache.Store
-	cacheController cache.Controller
-	stop            chan struct{}
-	pods            chan *v1.Pod
+	pods       chan *v1.Pod
+	indexer    cache.Indexer
+	controller cache.Controller
 }
 
-func (s *PodCache) Pods() <-chan *v1.Pod {
-	return s.pods
+// NewPodCache creates the cache object that uses a watcher to listen for Pod events. The cache indexes pods by their
+// IP address so that Kiam can identify which role a Pod should assume. It periodically syncs the list of
+// pods and can announce Pods. When announcing Pods via the channel it will drop events if the buffer
+// is full- bufferSize determines how many.
+func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration, bufferSize int) *PodCache {
+	indexers := cache.Indexers{
+		indexPodIP:   podIPIndex,
+		indexPodRole: podRoleIndex,
+	}
+	pods := make(chan *v1.Pod, bufferSize)
+	podHandler := &podHandler{pods}
+	indexer, controller := cache.NewIndexerInformer(source, &v1.Pod{}, syncInterval, podHandler, indexers)
+	podCache := &PodCache{
+		pods:       pods,
+		indexer:    indexer,
+		controller: controller,
+	}
+
+	return podCache
 }
 
-var MultipleRunningPodsErr = fmt.Errorf("multiple running pods found")
+// ErrMultipleRunningPods indicates that multiple pods were found. This is
+// an error as we expect IP addresses to not overlap
+var ErrMultipleRunningPods = fmt.Errorf("multiple running pods found")
 
+// IsPodCompleted returns true for Pods that are Pending or Running.
 func IsPodCompleted(pod *v1.Pod) bool {
 	return pod.Status.Phase == v1.PodSucceeded || pod.Status.Phase == v1.PodFailed
 }
 
+// Pods can be used to watch pods as they're added to the cache, part
+// of the PodAnnouncer interface
+func (s *PodCache) Pods() <-chan *v1.Pod {
+	return s.pods
+}
+
+// IsActivePodsForRole returns whether there are any uncompleted pods
+// using the provided role. This is used to identify whether the
+// role credentials should be maintained. Part of the PodAnnouncer
+// interface
 func (s *PodCache) IsActivePodsForRole(role string) (bool, error) {
-	indexer, _ := s.store.(cache.Indexer)
-	items, err := indexer.ByIndex(indexPodRole, role)
+	items, err := s.indexer.ByIndex(indexPodRole, role)
 	if err != nil {
 		return false, err
 	}
@@ -61,14 +89,19 @@ func (s *PodCache) IsActivePodsForRole(role string) (bool, error) {
 }
 
 var (
+	// ErrPodNotFound is returned when there's no matching Pod in the cache.
 	ErrPodNotFound = fmt.Errorf("pod not found")
+	// ErrWaitingForSync indicates there was an error while waiting for the cache
+	// to perform a sync with the api server.
+	ErrWaitingForSync = fmt.Errorf("error waiting for cache sync")
 )
 
+// FindPodForIP returns the Pod identified by the provided IP address. The
+// Pod must be active (i.e. pending or running)
 func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 	found := make([]*v1.Pod, 0)
 
-	indexer, _ := s.store.(cache.Indexer)
-	items, err := indexer.ByIndex(indexPodIP, ip)
+	items, err := s.indexer.ByIndex(indexPodIP, ip)
 	if err != nil {
 		return nil, err
 	}
@@ -97,9 +130,11 @@ func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 		return found[0], nil
 	}
 
-	return nil, MultipleRunningPodsErr
+	return nil, ErrMultipleRunningPods
 }
 
+// FindRoleFromIP returns the IAM role, if specified, for the Pod identified
+// with the IP address
 func (s *PodCache) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
 	pod, err := s.FindPodForIP(ip)
 	if err != nil {
@@ -113,59 +148,9 @@ func (s *PodCache) FindRoleFromIP(ctx context.Context, ip string) (string, error
 	return PodRole(pod), nil
 }
 
+// GetPodByIP returns the Pod with the provided IP address
 func (s *PodCache) GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error) {
 	return s.FindPodForIP(ip)
-}
-
-// handles objects from the queue processed by the cache
-func (s *PodCache) process(obj interface{}) error {
-	deltas := obj.(cache.Deltas)
-	deltaMeter := metrics.GetOrRegisterMeter("PodCache.processDelta", metrics.DefaultRegistry)
-
-	for _, delta := range deltas {
-		pod := delta.Object.(*v1.Pod)
-		fields := log.Fields{
-			"cache.delta.type": delta.Type,
-			"cache.object":     "pod",
-		}
-		logger := log.WithFields(fields).WithFields(PodFields(pod))
-
-		role := PodRole(pod)
-		if role != "" {
-			select {
-			case s.pods <- pod:
-				logger.Debugf("announced pod")
-			default:
-				metrics.GetOrRegisterMeter("PodCache.dropAnnounce", metrics.DefaultRegistry).Mark(1)
-				logger.Warnf("pods announcement full, dropping")
-			}
-		}
-
-		logger.Debugf("processing delta")
-		switch delta.Type {
-		case cache.Sync:
-			s.store.Add(delta.Object)
-		case cache.Added:
-			s.store.Add(delta.Object)
-		case cache.Updated:
-			s.store.Update(delta.Object)
-		case cache.Deleted:
-			s.store.Delete(delta.Object)
-		}
-
-		deltaMeter.Mark(1)
-	}
-
-	return nil
-}
-
-const (
-	ResourcePods       = "pods"
-	ResourceNamespaces = "namespaces"
-)
-
-func KubernetesSource(client *kubernetes.Clientset, resource string) *cache.ListWatch {
-	return cache.NewListWatchFromClient(client.Core().RESTClient(), resource, "", fields.Everything())
 }
 
 const (
@@ -193,43 +178,87 @@ func podRoleIndex(obj interface{}) ([]string, error) {
 	return []string{role}, nil
 }
 
-// Creates the cache object that uses a watcher to listen for Pod events. The cache indexes pods by their
-// IP address so that Kiam can identify which role a Pod should assume. It periodically syncs the list of
-// pods and can announce Pods. When announcing Pods via the channel it will drop events if the buffer
-// is full- bufferSize determines how many.
-func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration, bufferSize int) *PodCache {
-	PodCache := &PodCache{stop: make(chan struct{}), pods: make(chan *v1.Pod, bufferSize)}
-	indexers := cache.Indexers{
-		indexPodIP:   podIPIndex,
-		indexPodRole: podRoleIndex,
-	}
-	store := cache.NewIndexer(cache.DeletionHandlingMetaNamespaceKeyFunc, indexers)
-	PodCache.store = store
-	config := &cache.Config{
-		Queue:            cache.NewDeltaFIFO(cache.MetaNamespaceKeyFunc, nil, PodCache.store),
-		ListerWatcher:    source,
-		ObjectType:       &v1.Pod{},
-		FullResyncPeriod: syncInterval,
-		RetryOnError:     false,
-		Process:          PodCache.process,
-	}
-	PodCache.cacheController = cache.New(config)
-	return PodCache
-}
-
-func (s *PodCache) Run(ctx context.Context) {
-	go func() {
-		<-ctx.Done()
-		log.Infof("stopping cache controller")
-		close(s.stop)
-	}()
-
-	go s.cacheController.Run(s.stop)
+// Run starts the controller processing updates. Blocks until the cache has synced
+func (s *PodCache) Run(ctx context.Context) error {
+	go s.controller.Run(ctx.Done())
 	log.Infof("started cache controller")
+
+	ok := cache.WaitForCacheSync(ctx.Done(), s.controller.HasSynced)
+	if !ok {
+		return ErrWaitingForSync
+	}
+
+	return nil
 }
 
+// PodRole returns the IAM role specified in the annotation for the Pod
 func PodRole(pod *v1.Pod) string {
-	return pod.ObjectMeta.Annotations[IAMRoleKey]
+	return pod.ObjectMeta.Annotations[AnnotationIAMRoleKey]
 }
 
-const IAMRoleKey = "iam.amazonaws.com/role"
+// AnnotationIAMRoleKey is the key for the annotation specifying the IAM Role
+const AnnotationIAMRoleKey = "iam.amazonaws.com/role"
+
+type podHandler struct {
+	pods chan<- *v1.Pod
+}
+
+func (o *podHandler) announce(pod *v1.Pod) {
+	logger := log.WithFields(PodFields(pod))
+	if IsPodCompleted(pod) {
+		return
+	}
+	if PodRole(pod) == "" {
+		return
+	}
+
+	select {
+	case o.pods <- pod:
+		logger.Debugf("announced pod")
+	default:
+		metrics.GetOrRegisterMeter("PodCache.dropAnnounce", metrics.DefaultRegistry).Mark(1)
+		logger.Warnf("pods announcement full, dropping")
+	}
+}
+
+func (o *podHandler) OnAdd(obj interface{}) {
+	pod, isPod := obj.(*v1.Pod)
+	if !isPod {
+		log.Errorf("OnAdd unexpected object: %+v", obj)
+		return
+	}
+	log.WithFields(PodFields(pod)).Debugf("added pod")
+
+	o.announce(pod)
+}
+
+func (o *podHandler) OnDelete(obj interface{}) {
+	pod, isPod := obj.(*v1.Pod)
+	if !isPod {
+		deletedObj, isDeleted := obj.(cache.DeletedFinalStateUnknown)
+		if !isDeleted {
+			log.Errorf("OnDelete unexpected object: %+v", obj)
+			return
+		}
+
+		pod, isPod = deletedObj.Obj.(*v1.Pod)
+		if !isPod {
+			log.Errorf("OnDelete unexpected DeletedFinalStateUnknown object: %+v", deletedObj.Obj)
+		}
+		log.WithFields(PodFields(pod)).Debugf("deleted pod")
+		return
+	}
+
+	log.WithFields(PodFields(pod)).Debugf("deleted pod")
+	return
+}
+
+func (o *podHandler) OnUpdate(old, new interface{}) {
+	pod, isPod := new.(*v1.Pod)
+	if !isPod {
+		log.Errorf("OnUpdate unexpected object: %+v", new)
+		return
+	}
+
+	log.WithFields(PodFields(pod)).Debugf("updated pod")
+}
