@@ -16,6 +16,7 @@ package main
 import (
 	"fmt"
 	"github.com/coreos/go-iptables/iptables"
+	"strings"
 )
 
 type rules struct {
@@ -42,14 +43,19 @@ func (r *rules) Add() error {
 }
 
 func (r *rules) ruleSpec() []string {
-	return []string{
+	rules := []string{
 		"-p", "tcp",
 		"-d", metadataAddress,
 		"--dport", "80",
 		"-j", "DNAT",
 		"--to-destination", r.kiamAddress(),
-		"-i", r.hostInterface,
 	}
+	if strings.HasPrefix(r.hostInterface, "!") {
+		rules = append(rules, "!")
+	}
+	rules = append(rules, "-i", strings.TrimPrefix(r.hostInterface, "!"))
+	
+	return rules
 }
 
 func (r *rules) Remove() error {
