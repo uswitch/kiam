@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
@@ -62,7 +63,23 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
 	}
 
-	if foundRole == "" && c.defaultRole != requestedRole {
+	if foundRole == "" && c.defaultRole == requestedRole {
+		metrics.GetOrRegisterMeter("credentialsHandler.defaultRole", metrics.DefaultRegistry).Mark(1)
+		resp, err := http.Get(fmt.Sprintf("http://169.254.169.254/latest/meta-data/iam/security-credentials/%s", c.defaultRole))
+		if err != nil {
+			return resp.StatusCode, err
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+		w.Write(body)
+
+		return resp.StatusCode, nil
+	}
+
+	if foundRole == "" {
 		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
 		return http.StatusNotFound, EmptyRoleError
 	}
