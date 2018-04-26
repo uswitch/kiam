@@ -54,6 +54,25 @@ func InstanceProfileArn() (string, error) {
 	return info.InstanceProfileArn, nil
 }
 
+// RoleName parses out the role name from the instance profile arn
+func RoleName(instanceProfileArn string) (string, error) {
+	parts := strings.Split(instanceProfileArn, "/")
+
+	roleName := strings.Join(parts[1:], "/")
+	return roleName, nil
+}
+
+// DetectRoleName uses the EC2 metadata API to detect the name of the 
+// role from the instance profile
+func DetectRoleName() (string, error) {
+	instanceArn, err := InstanceProfileArn()
+	if err != nil {
+		return "", err
+	}
+
+	return RoleName(instanceArn)
+}
+
 // BaseArn calculates the base arn given an instance's arn
 func BaseArn(instanceProfileArn string) (string, error) {
 	// instance profile arn will be of the form:

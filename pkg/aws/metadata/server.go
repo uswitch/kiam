@@ -39,13 +39,15 @@ type ServerConfig struct {
 	ListenPort       int
 	MetadataEndpoint string
 	AllowIPQuery     bool
+	DefaultRole      string
 }
 
-func NewConfig(port int) *ServerConfig {
+func NewConfig(port int, defaultRole string) *ServerConfig {
 	return &ServerConfig{
 		MetadataEndpoint: "http://169.254.169.254",
 		ListenPort:       port,
 		AllowIPQuery:     false,
+		DefaultRole:      defaultRole,
 	}
 }
 
@@ -70,6 +72,7 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 	r := &roleHandler{
 		roleFinder: finder,
 		clientIP:   clientIP,
+		defaultRole: config.DefaultRole,
 	}
 
 	securityCredsHandler := adapt(withMeter("roleName", r))
@@ -81,6 +84,7 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 		credentialsProvider: credentials,
 		clientIP:            clientIP,
 		policy:              policy,
+		defaultRole:		 config.DefaultRole,
 	}
 	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", c)))
 

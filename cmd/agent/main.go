@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	http "github.com/uswitch/kiam/pkg/aws/metadata"
 	"github.com/uswitch/kiam/pkg/prometheus"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	kiamserver "github.com/uswitch/kiam/pkg/server"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -34,6 +35,8 @@ type options struct {
 	jsonLog              bool
 	logLevel             string
 	port                 int
+	defaultRole          string
+	defaultRoleDetect    bool
 	allowIPQuery         bool
 	statsD               string
 	statsDInterval       time.Duration
@@ -74,8 +77,10 @@ func main() {
 	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&opts.logLevel, "debug", "info", "warn", "error")
 
 	kingpin.Flag("port", "HTTP port").Default("3100").IntVar(&opts.port)
+	kingpin.Flag("default-role", "Default role to use if no annotation is present").Default("").StringVar(&opts.defaultRole)
+	kingpin.Flag("default-role-autodetect", "Look for the instance profile on the").Default("false").BoolVar(&opts.defaultRoleDetect)
 	kingpin.Flag("allow-ip-query", "Allow client IP to be specified with ?ip. Development use only.").Default("false").BoolVar(&opts.allowIPQuery)
-
+    
 	kingpin.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&opts.statsD)
 	kingpin.Flag("statsd-interval", "Interval to publish to StatsD").Default("10s").DurationVar(&opts.statsDInterval)
 
@@ -126,7 +131,14 @@ func main() {
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
 
-	config := http.NewConfig(opts.port)
+	if opts.defaultRole == "" && opts.defaultRoleDetect {
+		roleName, err := sts.DetectRoleName()
+		if err != nil {
+			log.Fatalf("error creating agent http server: %s", err.Error())
+		}
+		opts.defaultRole = roleName
+	}
+	config := http.NewConfig(opts.port, opts.defaultRole)
 	config.AllowIPQuery = opts.allowIPQuery
 
 	gateway, err := kiamserver.NewGateway(opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath)

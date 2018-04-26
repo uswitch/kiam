@@ -33,12 +33,18 @@ type credentialsHandler struct {
 	credentialsProvider sts.CredentialsProvider
 	clientIP            clientIPFunc
 	policy              server.AssumeRolePolicy
+	defaultRole         string
 }
 
 func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	credentialTimings := metrics.GetOrRegisterTimer("credentialsHandler", metrics.DefaultRegistry)
 	startTime := time.Now()
 	defer credentialTimings.UpdateSince(startTime)
+
+	requestedRole := mux.Vars(req)["role"]
+	if requestedRole == "" {
+		return http.StatusBadRequest, fmt.Errorf("no role specified")
+	}
 
 	err := req.ParseForm()
 	if err != nil {
@@ -56,14 +62,9 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
 	}
 
-	if foundRole == "" {
+	if foundRole == "" && c.defaultRole != requestedRole {
 		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
 		return http.StatusNotFound, EmptyRoleError
-	}
-
-	requestedRole := mux.Vars(req)["role"]
-	if requestedRole == "" {
-		return http.StatusBadRequest, fmt.Errorf("no role specified")
 	}
 
 	decision, err := c.policy.IsAllowedAssumeRole(ctx, requestedRole, ip)

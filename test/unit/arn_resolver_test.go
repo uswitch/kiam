@@ -49,3 +49,15 @@ func TestExtractsBaseFromInstanceArn(t *testing.T) {
 		t.Error("unexpected prefix, was: ", prefix)
 	}
 }
+
+func TestExtractsRoleNameFromInstanceArn(t *testing.T) {
+	roleName, _ := sts.RoleName("arn:aws:iam::account-id:instance-profile/instance-role-name")
+	if roleName != "instance-role-name" {
+		t.Error("unexpected role name, was: ", roleName)
+	}
+
+	roleName, _ = sts.RoleName("arn:aws:iam::account-id:instance-profile/mypath/instance-role-name")
+	if roleName != "mypath/instance-role-name" {
+		t.Error("unexpected role name, was: ", roleName)
+	}
+}

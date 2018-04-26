@@ -23,8 +23,9 @@ import (
 )
 
 type roleHandler struct {
-	roleFinder k8s.RoleFinder
-	clientIP   clientIPFunc
+	roleFinder  k8s.RoleFinder
+	clientIP    clientIPFunc
+	defaultRole string
 }
 
 func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
@@ -46,6 +47,12 @@ func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *ht
 	if err != nil {
 		metrics.GetOrRegisterMeter("roleNameHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
 		return http.StatusInternalServerError, err
+	}
+
+	if role == "" && h.defaultRole != "" {
+		metrics.GetOrRegisterMeter("roleNameHandler.defaultRole", metrics.DefaultRegistry).Mark(1)
+		fmt.Fprint(w, h.defaultRole)
+		return http.StatusOK, nil
 	}
 
 	if role == "" {
