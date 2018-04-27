@@ -13,6 +13,7 @@ go get -u github.com/cloudflare/cfssl/cmd/...
 ```
 
 ## Generate certs
+Sample cert json data provided in the [docs directory.](https://github.com/uswitch/kiam/tree/master/docs)
 
 1. Create the Certificate Authority Cert and Key
 
