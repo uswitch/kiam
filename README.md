@@ -42,7 +42,15 @@ Please also make note of how to configure IAM in your AWS account; notes in [doc
 Kiam is split into two processes that run independently.
 
 ### Agent
-This is the process that would typically be deployed as a DaemonSet to ensure that Pods have no access to the AWS Metadata API. Instead, the agent runs an HTTP proxy which intercepts credentials requests and passes on anything else. 
+This is the process that would typically be deployed as a DaemonSet to ensure that Pods have no access to the AWS Metadata API. Instead, the agent runs an HTTP proxy which intercepts credentials requests and passes on anything else. An DNAT iptables [rule](cmd/agent/iptables.go) is required to intercept the traffic. The agent is capable of adding and removing the required rule for you through use of the `--iptables` [flag](cmd/agent/main.go). This is the name of the interface where pod traffic originates and it is different for the various CNI implementations. The flag also supports the `!` prefix for inverted matches should you need to match all but one interface.
+
+##### Typical CNI Interface Names #####
+
+| CNI | Interface | Notes |
+|-----|-----------|-------|
+| [cni-ipvlan-vpc-k8s](https://github.com/lyft/cni-ipvlan-vpc-k8s) | `!eth0` | This CNI plugin attaches multiple ENIs to the instance. Typically eth1-ethN (N depends on the instance type) are used for pods which leaves eth0 for the kubernetes control plane. The ! prefix on the interface name inverts the match so metadata service traffic from all interfaces except eth0 will be sent to the kiam agent. |
+| [weave](https://www.weave.works/docs/net/latest/kubernetes/kube-addon/) | `weave` |   |
+
 
 ### Server
 This process is responsible for connecting to the Kubernetes API Servers to watch Pods and communicating with AWS STS to request credentials. It also maintains a cache of credentials for roles currently in use by running pods- ensuring that credentials are refreshed every few minutes and stored in advance of Pods needing them.
