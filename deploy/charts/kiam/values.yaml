@@ -26,7 +26,7 @@ agent:
   podLabels: {}
   image:
     repository: quay.io/uswitch/kiam
-    tag: v2.5
+    tag: v2.6
     pullPolicy: IfNotPresent
   ## Strategy for DaemonSet updates (requires Kubernetes 1.6+)
   ## Ref: https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/
@@ -88,7 +88,7 @@ server:
   podAnnotations: {}
   image:
     repository: quay.io/uswitch/kiam
-    tag: v2.5
+    tag: v2.6
     pullPolicy: Always
   ## Strategy for DaemonSet updates (requires Kubernetes 1.6+)
   ## Ref: https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/
@@ -139,6 +139,9 @@ server:
   ##
   cache:
     syncInterval: 1m
+  ## IAM role for the server to assume
+  ##
+  assumeRoleArn: null
 
 rbac:
   ## If true, create & use RBAC resources

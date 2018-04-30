@@ -74,6 +74,7 @@ Parameter | Description | Default
 `agent.updateStrategy` | Strategy for agent DaemonSet updates (requires Kubernetes 1.6+) | `OnDelete`
 `rbac.create` | If `true`, create & use RBAC resources | `false`
 `rbac.serviceAccountName` | Existing service account to use (ignored if `rbac.create=true`) | `default`
+`server.assumeRoleArn` | IAM role for the server to assume before processing requests | `null`
 `server.cache.syncInterval` | Pod cache synchronization interval | `1m`
 `server.extraArgs` | Additional server container arguments | `{}`
 `server.extraEnv` | Additional server container environment variables | `{}`
