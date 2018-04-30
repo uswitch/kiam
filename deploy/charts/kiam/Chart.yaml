@@ -9,6 +9,6 @@ keywords:
 sources:
 - https://github.com/uswitch/kiam
 maintainers:
-- name: xxx
-  email: xxx@example.com
+- name: Kit Ewbank
+  email: Kit_Ewbank@hotmail.com
 engine: gotpl
