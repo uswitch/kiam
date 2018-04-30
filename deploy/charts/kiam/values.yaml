@@ -26,7 +26,7 @@ agent:
   podLabels: {}
   image:
     repository: quay.io/uswitch/kiam
-    tag: v2.6
+    tag: v2.7
     pullPolicy: IfNotPresent
   ## Strategy for DaemonSet updates (requires Kubernetes 1.6+)
   ## Ref: https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/
@@ -88,7 +88,7 @@ server:
   podAnnotations: {}
   image:
     repository: quay.io/uswitch/kiam
-    tag: v2.6
+    tag: v2.7
     pullPolicy: Always
   ## Strategy for DaemonSet updates (requires Kubernetes 1.6+)
   ## Ref: https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/
@@ -142,6 +142,9 @@ server:
   ## IAM role for the server to assume
   ##
   assumeRoleArn: null
+  ## Session duration for STS tokens
+  ##
+  sessionDuration: 15m
 
 rbac:
   ## If true, create & use RBAC resources

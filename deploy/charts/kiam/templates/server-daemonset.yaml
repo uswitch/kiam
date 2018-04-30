@@ -63,6 +63,7 @@ spec:
             {{- if .Values.server.assumeRoleArn }}
             - --assume-role-arn={{ .Values.server.assumeRoleArn }}
             {{- end }}
+            - --session-duration={{ .Values.server.sessionDuration }}
             - --sync={{ .Values.server.cache.syncInterval }}
             - --prometheus-listen-addr=0.0.0.0:{{ .Values.server.prometheus.port }}
             - --prometheus-sync-interval={{ .Values.server.prometheus.syncInterval }}
