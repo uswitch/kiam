@@ -50,6 +50,7 @@ This is the process that would typically be deployed as a DaemonSet to ensure th
 |-----|-----------|-------|
 | [cni-ipvlan-vpc-k8s](https://github.com/lyft/cni-ipvlan-vpc-k8s) | `!eth0` | This CNI plugin attaches multiple ENIs to the instance. Typically eth1-ethN (N depends on the instance type) are used for pods which leaves eth0 for the kubernetes control plane. The ! prefix on the interface name inverts the match so metadata service traffic from all interfaces except eth0 will be sent to the kiam agent. |
 | [weave](https://www.weave.works/docs/net/latest/kubernetes/kube-addon/) | `weave` |   |
+| [calico/canal](https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/flannel) | `cali+` |   |
 
 
 ### Server
