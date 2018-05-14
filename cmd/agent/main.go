@@ -44,6 +44,7 @@ type options struct {
 	serverAddressRefresh time.Duration
 	prometheusListen     string
 	prometheusSync       time.Duration
+	disableUserData      bool
 
 	certificatePath string
 	keyPath         string
@@ -89,6 +90,8 @@ func main() {
 	kingpin.Flag("key", "Agent key path").Required().ExistingFileVar(&opts.keyPath)
 	kingpin.Flag("ca", "CA certificate path").Required().ExistingFileVar(&opts.caPath)
 
+	kingpin.Flag("disable-user-data", "Disable the user-data endpoint").Default("false").BoolVar(&opts.disableUserData)
+
 	kingpin.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&opts.prometheusListen)
 	kingpin.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&opts.prometheusSync)
 
@@ -128,6 +131,7 @@ func main() {
 
 	config := http.NewConfig(opts.port)
 	config.AllowIPQuery = opts.allowIPQuery
+	config.DisableUserData = opts.disableUserData
 
 	gateway, err := kiamserver.NewGateway(opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath)
 	if err != nil {
