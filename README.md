@@ -57,8 +57,9 @@ This is the process that would typically be deployed as a DaemonSet to ensure th
 This process is responsible for connecting to the Kubernetes API Servers to watch Pods and communicating with AWS STS to request credentials. It also maintains a cache of credentials for roles currently in use by running pods- ensuring that credentials are refreshed every few minutes and stored in advance of Pods needing them.
 
 ## Building locally
-If you want to build and run locally you can
-
+If you want to build and run locally:
+- `go version` >= 1.9
+- run the following
 ```
 $ mkdir -p $GOPATH/src/github.com/uswitch
 $ git clone git@github.com:uswitch/kiam.git $GOPATH/src/github.com/uswitch/kiam
