@@ -37,6 +37,9 @@ spec:
           args:
             - --iptables
             - --host-interface=cali+
+            # if you are using kube-router as the CNI, comment the line above
+            # and uncomment the following line 
+            # - --host-interface=kube-bridge
             - --json-log
             - --port=8181
             - --cert=/etc/kiam/tls/agent.pem
