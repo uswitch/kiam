@@ -3,6 +3,10 @@ kiam runs as an agent on each node in your Kubernetes cluster and allows cluster
 
 Docker images are available at [https://quay.io/repository/uswitch/kiam](https://quay.io/repository/uswitch/kiam).
 
+For more information about Kiam's origin, design and performance in our production clusters:
+
+* [Iterating for Security and Reliability](https://medium.com/@pingles/kiam-iterating-for-security-and-reliability-5e793ab93ec3)
+
 ## Overview
 From the [AWS documentation on IAM roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html):
 
