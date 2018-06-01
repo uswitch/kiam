@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.8
+1st June 2018
+
+Notable changes:
+
+* [#62](https://github.com/uswitch/kiam/pull/62) Documented interfaces to specify when using Kiam with amazon-vpc-cni.
+* [#76](https://github.com/uswitch/kiam/pull/76) Wait for balancer to have addresses in Gateway. This helps prevent the following errors being reported by the health check command:
+```
+WARN[0000] error checking health: rpc error: code = Unavailable desc = there is no address available 
+```
+
+Thanks to the following people for contributing in this release:
+
+* [sp-joseluis-ledesma](https://github.com/sp-joseluis-ledesma)
+* [ripter](https://github.com/ripta)
+
 ## v2.7
 30th April 2018
 
