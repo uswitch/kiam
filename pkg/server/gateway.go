@@ -45,7 +45,7 @@ type GatewayConfig struct {
 	TLS     *TLSConfig
 }
 
-func NewGateway(address string, refresh time.Duration, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
+func NewGateway(ctx context.Context, address string, refresh time.Duration, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
 	}
@@ -78,6 +78,11 @@ func NewGateway(address string, refresh time.Duration, caFile, certificateFile, 
 	conn, err := grpc.Dial(address, dialOpts...)
 	if err != nil {
 		return nil, err
+	}
+
+	_, _, err = balancer.Get(ctx, grpc.BalancerGetOptions{BlockingWait: true})
+	if err != nil {
+		return nil, fmt.Errorf("error waiting for address being available in the balancer: %v", err)
 	}
 
 	client := pb.NewKiamServiceClient(conn)

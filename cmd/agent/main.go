@@ -42,6 +42,7 @@ type options struct {
 	hostInterface        string
 	serverAddress        string
 	serverAddressRefresh time.Duration
+	timeoutKiamGateway   time.Duration
 	prometheusListen     string
 	prometheusSync       time.Duration
 
@@ -85,6 +86,7 @@ func main() {
 
 	kingpin.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&opts.serverAddress)
 	kingpin.Flag("server-address-refresh", "Interval to refresh server service endpoints").Default("10s").DurationVar(&opts.serverAddressRefresh)
+	kingpin.Flag("gateway-timeout-creation", "Timeout to create the kiam gateway ").Default("50ms").DurationVar(&opts.timeoutKiamGateway)
 	kingpin.Flag("cert", "Agent certificate path").Required().ExistingFileVar(&opts.certificatePath)
 	kingpin.Flag("key", "Agent key path").Required().ExistingFileVar(&opts.keyPath)
 	kingpin.Flag("ca", "CA certificate path").Required().ExistingFileVar(&opts.caPath)
@@ -129,7 +131,10 @@ func main() {
 	config := http.NewConfig(opts.port)
 	config.AllowIPQuery = opts.allowIPQuery
 
-	gateway, err := kiamserver.NewGateway(opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath)
+	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
+	defer cancelCtxGateway()
+
+	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
