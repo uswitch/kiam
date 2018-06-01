@@ -31,6 +31,7 @@ type credentialsCache struct {
 	expiring        chan *RoleCredentials
 	sessionName     string
 	sessionDuration time.Duration
+	cacheTTL        time.Duration
 	meterCacheHit   metrics.Meter
 	meterCacheMiss  metrics.Meter
 	gateway         STSGateway
@@ -43,7 +44,6 @@ type RoleCredentials struct {
 
 const (
 	DefaultPurgeInterval = 1 * time.Minute
-	DefaultCacheTTL      = 10 * time.Minute
 )
 
 func DefaultCache(gateway STSGateway, sessionName string, sessionDuration time.Duration, resolver ARNResolver) *credentialsCache {
@@ -52,11 +52,12 @@ func DefaultCache(gateway STSGateway, sessionName string, sessionDuration time.D
 		expiring:        make(chan *RoleCredentials, 1),
 		sessionName:     fmt.Sprintf("kiam-%s", sessionName),
 		sessionDuration: sessionDuration,
+		cacheTTL:        sessionDuration - 5*time.Minute,
 		meterCacheHit:   metrics.GetOrRegisterMeter("credentialsCache.cacheHit", metrics.DefaultRegistry),
 		meterCacheMiss:  metrics.GetOrRegisterMeter("credentialsCache.cacheMiss", metrics.DefaultRegistry),
 		gateway:         gateway,
 	}
-	c.cache = cache.New(DefaultCacheTTL, DefaultPurgeInterval)
+	c.cache = cache.New(c.cacheTTL, DefaultPurgeInterval)
 	c.cache.OnEvicted(c.evicted)
 
 	metrics.NewRegisteredFunctionalGauge("credentialsCache.size", metrics.DefaultRegistry, func() int64 { return int64(c.cache.ItemCount()) })
@@ -125,7 +126,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 		return credentials, err
 	}
 	f := future.New(issue)
-	c.cache.Set(role, f, DefaultCacheTTL)
+	c.cache.Set(role, f, c.cacheTTL)
 
 	val, err := f.Get(ctx)
 	if err != nil {
