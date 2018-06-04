@@ -16,7 +16,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	metrics "github.com/rcrowley/go-metrics"
@@ -194,7 +193,7 @@ func (s *PodCache) Run(ctx context.Context) error {
 
 // PodRole returns the IAM role specified in the annotation for the Pod
 func PodRole(pod *v1.Pod) string {
-	return strings.TrimPrefix(pod.ObjectMeta.Annotations[AnnotationIAMRoleKey], "/")
+	return pod.ObjectMeta.Annotations[AnnotationIAMRoleKey]
 }
 
 // AnnotationIAMRoleKey is the key for the annotation specifying the IAM Role
