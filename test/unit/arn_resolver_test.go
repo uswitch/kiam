@@ -29,11 +29,27 @@ func TestAddsPrefix(t *testing.T) {
 	}
 }
 
-func TestAddsPrefixWithSlash(t *testing.T) {
+func TestAddsPrefixWithRoleBeginningWithSlash(t *testing.T) {
 	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
 	role, _ := resolver.Resolve(context.Background(), "/myrole")
 
 	if role != "arn:aws:iam::account-id:role/myrole" {
+		t.Error("unexpected role, was:", role)
+	}
+}
+func TestAddsPrefixWithRoleBeginningWithPathWithoutSlash(t *testing.T) {
+	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
+	role, _ := resolver.Resolve(context.Background(), "kiam/myrole")
+
+	if role != "arn:aws:iam::account-id:role/kiam/myrole" {
+		t.Error("unexpected role, was:", role)
+	}
+}
+func TestAddsPrefixWithRoleBeginningWithSlashPath(t *testing.T) {
+	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
+	role, _ := resolver.Resolve(context.Background(), "/kiam/myrole")
+
+	if role != "arn:aws:iam::account-id:role/kiam/myrole" {
 		t.Error("unexpected role, was:", role)
 	}
 }
