@@ -27,7 +27,10 @@ type Credentials struct {
 	LastUpdated     string
 }
 
-const timeLayout = "2006-01-02T15:04:05Z"
+const (
+	timeLayout            = "2006-01-02T15:04:05Z"
+	AWSMinSessionDuration = 15 * time.Minute
+)
 
 func NewCredentials(accessKey, secretKey, token string, expiry time.Time) *Credentials {
 	return &Credentials{
