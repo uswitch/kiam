@@ -33,10 +33,10 @@ metadata:
     iam.amazonaws.com/permitted: ".*"
 ```
 
-When your process starts an AWS SDK library will normally use a chain of credential providers (environment variables, instance metadata, config files etc.) to determine which credentials to use. kiam intercepts the metadata requests and uses the [Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) to retrieve temporary role credentials. 
+When your process starts an AWS SDK library will normally use a chain of credential providers (environment variables, instance metadata, config files etc.) to determine which credentials to use. kiam intercepts the metadata requests and uses the [Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) to retrieve temporary role credentials.
 
 ## Deploying to Kubernetes
-Please see the `deploy` directory for example manifests for deploying to Kubernetes. 
+Please see the `deploy` directory for example manifests for deploying to Kubernetes.
 
 TLS assets must be created to mutually authenticate the agents and server processes; notes are in [docs/TLS.md](docs/TLS.md).
 
@@ -55,7 +55,7 @@ This is the process that would typically be deployed as a DaemonSet to ensure th
 | [amazon-vpc-cni-k8s](https://github.com/aws/amazon-vpc-cni-k8s) and [cni-ipvlan-vpc-k8s](https://github.com/lyft/cni-ipvlan-vpc-k8s) | `!eth0` | This CNI plugin attaches multiple ENIs to the instance. Typically eth1-ethN (N depends on the instance type) are used for pods which leaves eth0 for the kubernetes control plane. The ! prefix on the interface name inverts the match so metadata service traffic from all interfaces except eth0 will be sent to the kiam agent. *Requires kiam v2.7 or newer.* |
 | [weave](https://www.weave.works/docs/net/latest/kubernetes/kube-addon/) | `weave` |   |
 | [calico/canal](https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/flannel) | `cali+` |   |
-| [kube-router](https://www.kube-router.io/docs/l) | `kube-bridge` | This is the default bridge interface that all the pods are connected to when using kube-router |
+| [kube-router](https://www.kube-router.io/docs) | `kube-bridge` | This is the default bridge interface that all the pods are connected to when using kube-router |
 
 
 ### Server
@@ -102,4 +102,3 @@ Other improvements/changes we made were (largely driven out of how we have our s
 
 1. Use structured logging to improve the integration into our ELK setup with pod names, roles, access key ids etc.
 1. Use metrics to track response times, cache hit rates etc.
-
