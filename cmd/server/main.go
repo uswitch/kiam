@@ -24,6 +24,7 @@ import (
 	"github.com/pubnub/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/prometheus"
 	serv "github.com/uswitch/kiam/pkg/server"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -68,6 +69,10 @@ func main() {
 
 	if !serverConfig.AutoDetectBaseARN && serverConfig.RoleBaseARN == "" {
 		log.Fatal("role-base-arn not specified and not auto-detected. please specify or use --role-base-arn-autodetect")
+	}
+
+	if serverConfig.SessionDuration < sts.AWSMinSessionDuration {
+		log.Fatal("session-duration should be at least 15 minutes")
 	}
 
 	if flags.jsonLog {
