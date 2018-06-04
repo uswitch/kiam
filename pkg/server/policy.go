@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/uswitch/kiam/pkg/k8s"
 	pb "github.com/uswitch/kiam/proto"
@@ -110,7 +111,8 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 		return nil, err
 	}
 
-	annotatedRole := k8s.PodRole(pod)
+	annotatedRole := strings.TrimPrefix(k8s.PodRole(pod), "/")
+
 	if annotatedRole != role {
 		return &forbidden{requested: role, annotated: annotatedRole}, nil
 	}
