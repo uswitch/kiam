@@ -17,8 +17,8 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strings"
 
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	pb "github.com/uswitch/kiam/proto"
 )
@@ -110,8 +110,10 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+	ARNresolver := sts.DefaultResolver("")
 
-	annotatedRole := strings.TrimPrefix(k8s.PodRole(pod), "/")
+	annotatedRole, _ := ARNresolver.Resolve(ctx, k8s.PodRole(pod))
+	role, _ = ARNresolver.Resolve(ctx, role)
 
 	if annotatedRole != role {
 		return &forbidden{requested: role, annotated: annotatedRole}, nil
@@ -143,6 +145,10 @@ func (f *namespacePolicyForbidden) Explanation() string {
 }
 
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
+
+	ARNresolver := sts.DefaultResolver("")
+	role, _ = ARNresolver.Resolve(ctx, role)
+
 	pod, err := p.pods.GetPodByIP(ctx, podIP)
 	if err != nil {
 		return nil, err
