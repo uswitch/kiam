@@ -15,54 +15,32 @@ package future
 
 import (
 	"context"
-	"sync"
-	"time"
 )
 
-type result struct {
-	val interface{}
-	err error
-}
-
 type Future struct {
-	val       interface{}
-	err       error
-	completed bool
-	sync.Mutex
+	val  interface{}
+	err  error
+	done chan struct{}
 }
 
 type FutureFn func() (interface{}, error)
 
-func (f *Future) isComplete() bool {
-	f.Lock()
-	defer f.Unlock()
-	return f.completed
-}
-
 func (f *Future) Get(ctx context.Context) (interface{}, error) {
-	for {
-		if f.isComplete() {
-			return f.val, f.err
-		}
-
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(time.Millisecond):
-			// loop and check again
-		}
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-f.done:
+		return f.val, f.err
 	}
 }
 
 func New(f FutureFn) *Future {
-	future := &Future{}
+	future := &Future{
+		done: make(chan struct{}),
+	}
 	go func() {
-		val, err := f()
-		future.Lock()
-		future.val = val
-		future.err = err
-		future.completed = true
-		future.Unlock()
+		future.val, future.err = f()
+		close(future.done)
 	}()
 	return future
 }
