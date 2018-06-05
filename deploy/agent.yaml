@@ -32,7 +32,8 @@ spec:
       containers:
         - name: kiam
           securityContext:
-            privileged: true
+            capabilities:
+              add: ["NET_ADMIN"]
           image: quay.io/uswitch/kiam:v2.8
           command:
             - /agent
