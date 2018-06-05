@@ -20,6 +20,8 @@ spec:
       volumes:
         - name: ssl-certs
           hostPath:
+            # for AWS linux or RHEL distros
+            #path: /etc/pki/ca-trust/extracted/pem/
             path: /usr/share/ca-certificates
         - name: tls
           secret:
