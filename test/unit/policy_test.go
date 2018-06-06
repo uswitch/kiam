@@ -17,6 +17,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/uswitch/kiam/pkg/testutil"
@@ -26,7 +27,8 @@ func TestRequestedRolePolicy(t *testing.T) {
 	p := testutil.NewPodWithRole("namespace", "name", "192.168.0.1", testutil.PhaseRunning, "myrole")
 	f := testutil.NewStubFinder(p)
 
-	policy := server.NewRequestingAnnotatedRolePolicy(f)
+	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
+	policy := server.NewRequestingAnnotatedRolePolicy(f, arnResolver)
 	decision, err := policy.IsAllowedAssumeRole(context.Background(), "myrole", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -36,7 +38,7 @@ func TestRequestedRolePolicy(t *testing.T) {
 		t.Error("role was same, should have been permitted:", decision.Explanation())
 	}
 
-	policy = server.NewRequestingAnnotatedRolePolicy(f)
+	policy = server.NewRequestingAnnotatedRolePolicy(f, arnResolver)
 	decision, err = policy.IsAllowedAssumeRole(context.Background(), "/myrole", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -58,10 +60,11 @@ func TestRequestedRolePolicy(t *testing.T) {
 }
 
 func TestRequestedRolePolicyWithSlash(t *testing.T) {
+	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
 	p := testutil.NewPodWithRole("namespace", "name", "192.168.0.1", testutil.PhaseRunning, "/myrole")
 	f := testutil.NewStubFinder(p)
 
-	policy := server.NewRequestingAnnotatedRolePolicy(f)
+	policy := server.NewRequestingAnnotatedRolePolicy(f, arnResolver)
 	decision, err := policy.IsAllowedAssumeRole(context.Background(), "myrole", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -71,7 +74,7 @@ func TestRequestedRolePolicyWithSlash(t *testing.T) {
 		t.Error("role was same, should have been permitted:", decision.Explanation())
 	}
 
-	policy = server.NewRequestingAnnotatedRolePolicy(f)
+	policy = server.NewRequestingAnnotatedRolePolicy(f, arnResolver)
 	decision, err = policy.IsAllowedAssumeRole(context.Background(), "/myrole", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -93,8 +96,9 @@ func TestRequestedRolePolicyWithSlash(t *testing.T) {
 }
 
 func TestErrorWhenPodNotFound(t *testing.T) {
+	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
 	f := testutil.NewStubFinder(nil)
-	policy := server.NewRequestingAnnotatedRolePolicy(f)
+	policy := server.NewRequestingAnnotatedRolePolicy(f, arnResolver)
 
 	_, err := policy.IsAllowedAssumeRole(context.Background(), "myrole", "192.168.0.1")
 	if err == nil {
@@ -117,7 +121,7 @@ func TestErrorWhenPodNotFound(t *testing.T) {
 }
 
 func TestNamespacePolicy(t *testing.T) {
-	n := testutil.NewNamespace("red", "^red.*$")
+	n := testutil.NewNamespace("red", "^red.*$|^.red.*$")
 	nf := testutil.NewNamespaceFinder(n)
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
 	pf := testutil.NewStubFinder(p)
@@ -154,7 +158,7 @@ func TestNamespacePolicy(t *testing.T) {
 }
 
 func TestNamespacePolicyWithSlash(t *testing.T) {
-	n := testutil.NewNamespace("red", "^red.*$")
+	n := testutil.NewNamespace("red", "^red.*$|^.red.*$")
 	nf := testutil.NewNamespaceFinder(n)
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	pf := testutil.NewStubFinder(p)

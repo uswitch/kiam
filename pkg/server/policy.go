@@ -86,11 +86,12 @@ func Policies(p ...AssumeRolePolicy) *CompositeAssumeRolePolicy {
 // RequestingAnnotatedRolePolicy ensures the pod is requesting the role that it's
 // currently annotated with.
 type RequestingAnnotatedRolePolicy struct {
-	pods k8s.PodGetter
+	pods     k8s.PodGetter
+	resolver sts.ARNResolver
 }
 
-func NewRequestingAnnotatedRolePolicy(p k8s.PodGetter) *RequestingAnnotatedRolePolicy {
-	return &RequestingAnnotatedRolePolicy{pods: p}
+func NewRequestingAnnotatedRolePolicy(p k8s.PodGetter, resolver sts.ARNResolver) *RequestingAnnotatedRolePolicy {
+	return &RequestingAnnotatedRolePolicy{pods: p, resolver: resolver}
 }
 
 type forbidden struct {
@@ -110,10 +111,9 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	ARNresolver := sts.DefaultResolver("")
 
-	annotatedRole, _ := ARNresolver.Resolve(ctx, k8s.PodRole(pod))
-	role, _ = ARNresolver.Resolve(ctx, role)
+	annotatedRole, _ := p.resolver.Resolve(ctx, k8s.PodRole(pod))
+	role, _ = p.resolver.Resolve(ctx, role)
 
 	if annotatedRole != role {
 		return &forbidden{requested: role, annotated: annotatedRole}, nil
@@ -145,9 +145,6 @@ func (f *namespacePolicyForbidden) Explanation() string {
 }
 
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-
-	ARNresolver := sts.DefaultResolver("")
-	role, _ = ARNresolver.Resolve(ctx, role)
 
 	pod, err := p.pods.GetPodByIP(ctx, podIP)
 	if err != nil {
