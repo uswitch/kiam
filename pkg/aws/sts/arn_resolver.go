@@ -14,7 +14,6 @@
 package sts
 
 import (
-	"context"
 	"fmt"
 	"strings"
 )
@@ -30,10 +29,14 @@ func DefaultResolver(prefix string) *Resolver {
 }
 
 // Resolve converts from a role string into the absolute role arn.
-func (r *Resolver) Resolve(ctx context.Context, role string) (string, error) {
-	if strings.HasPrefix(role, "arn:") {
-		return role, nil
+func (r *Resolver) Resolve(role string) string {
+	if strings.HasPrefix(role, "/") {
+		role = strings.TrimPrefix(role, "/")
 	}
 
-	return fmt.Sprintf("%s%s", r.prefix, role), nil
+	if strings.HasPrefix(role, "arn:") {
+		return role
+	}
+
+	return fmt.Sprintf("%s%s", r.prefix, role)
 }

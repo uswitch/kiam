@@ -28,5 +28,5 @@ type CredentialsCache interface {
 
 // ARNResolver encapsulates resolution of roles into ARNs.
 type ARNResolver interface {
-	Resolve(ctx context.Context, role string) (string, error)
+	Resolve(role string) string
 }

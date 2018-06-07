@@ -42,7 +42,8 @@ func TestParseAddress(t *testing.T) {
 }
 
 func newWebServer(finder *testutil.StubFinder, creds sts.CredentialsProvider) (*metadata.Server, error) {
-	policy := server.Policies(server.NewRequestingAnnotatedRolePolicy(finder))
+	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
+	policy := server.Policies(server.NewRequestingAnnotatedRolePolicy(finder, arnResolver))
 	return metadata.NewWebServer(defaultConfig(), finder, creds, policy)
 }
 

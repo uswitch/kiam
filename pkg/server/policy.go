@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	pb "github.com/uswitch/kiam/proto"
 )
@@ -85,11 +86,12 @@ func Policies(p ...AssumeRolePolicy) *CompositeAssumeRolePolicy {
 // RequestingAnnotatedRolePolicy ensures the pod is requesting the role that it's
 // currently annotated with.
 type RequestingAnnotatedRolePolicy struct {
-	pods k8s.PodGetter
+	pods     k8s.PodGetter
+	resolver sts.ARNResolver
 }
 
-func NewRequestingAnnotatedRolePolicy(p k8s.PodGetter) *RequestingAnnotatedRolePolicy {
-	return &RequestingAnnotatedRolePolicy{pods: p}
+func NewRequestingAnnotatedRolePolicy(p k8s.PodGetter, resolver sts.ARNResolver) *RequestingAnnotatedRolePolicy {
+	return &RequestingAnnotatedRolePolicy{pods: p, resolver: resolver}
 }
 
 type forbidden struct {
@@ -110,7 +112,9 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 		return nil, err
 	}
 
-	annotatedRole := k8s.PodRole(pod)
+	annotatedRole := p.resolver.Resolve(k8s.PodRole(pod))
+	role = p.resolver.Resolve(role)
+
 	if annotatedRole != role {
 		return &forbidden{requested: role, annotated: annotatedRole}, nil
 	}
@@ -141,6 +145,7 @@ func (f *namespacePolicyForbidden) Explanation() string {
 }
 
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
+
 	pod, err := p.pods.GetPodByIP(ctx, podIP)
 	if err != nil {
 		return nil, err
