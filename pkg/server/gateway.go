@@ -18,14 +18,16 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"time"
+
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/naming"
-	"io/ioutil"
-	"time"
 )
 
 // Client to interact with KiamServer, exposing k8s.RoleFinder and sts.CredentialsProvider interfaces
@@ -38,13 +40,6 @@ const (
 	RetryInterval = 10 * time.Millisecond
 )
 
-// Creates a client suitable for interacting with a remote server. It can
-// be closed cleanly
-type GatewayConfig struct {
-	Address string
-	TLS     *TLSConfig
-}
-
 func NewGateway(ctx context.Context, address string, refresh time.Duration, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
@@ -52,37 +47,47 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 
 	certificate, err := tls.LoadX509KeyPair(certificateFile, keyFile)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error loading keypair: %v", err)
 	}
 	certPool := x509.NewCertPool()
 	ca, err := ioutil.ReadFile(caFile)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading SSL cert: %v, err")
 	}
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
 		return nil, fmt.Errorf("error appending certs from ca")
 	}
+
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing hostname: %v", err)
+	}
+
 	creds := credentials.NewTLS(&tls.Config{
-		ServerName:   address,
+		ServerName:   host,
 		Certificates: []tls.Certificate{certificate},
 		RootCAs:      certPool,
 	})
 
 	resolver, err := naming.NewDNSResolverWithFreq(refresh)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating DNS resolver: %v", err)
 	}
 
 	balancer := grpc.RoundRobin(resolver)
-	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(creds), grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...)), grpc.WithBalancer(balancer)}
+	dialOpts := []grpc.DialOption{
+		grpc.WithTransportCredentials(creds),
+		grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...)),
+		grpc.WithBalancer(balancer),
+	}
 	conn, err := grpc.Dial(address, dialOpts...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error dialing grpc server: %v", err)
 	}
 
 	_, _, err = balancer.Get(ctx, grpc.BalancerGetOptions{BlockingWait: true})
 	if err != nil {
-		return nil, fmt.Errorf("error waiting for address being available in the balancer: %v", err)
+		return nil, fmt.Errorf("error waiting for address to be available in the balancer: %v", err)
 	}
 
 	client := pb.NewKiamServiceClient(conn)
