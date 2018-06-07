@@ -14,7 +14,6 @@
 package kiam
 
 import (
-	"context"
 	"testing"
 
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -22,7 +21,7 @@ import (
 
 func TestAddsPrefix(t *testing.T) {
 	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
-	role, _ := resolver.Resolve(context.Background(), "myrole")
+	role := resolver.Resolve("myrole")
 
 	if role != "arn:aws:iam::account-id:role/myrole" {
 		t.Error("unexpected role, was:", role)
@@ -31,7 +30,7 @@ func TestAddsPrefix(t *testing.T) {
 
 func TestAddsPrefixWithRoleBeginningWithSlash(t *testing.T) {
 	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
-	role, _ := resolver.Resolve(context.Background(), "/myrole")
+	role := resolver.Resolve("/myrole")
 
 	if role != "arn:aws:iam::account-id:role/myrole" {
 		t.Error("unexpected role, was:", role)
@@ -39,7 +38,7 @@ func TestAddsPrefixWithRoleBeginningWithSlash(t *testing.T) {
 }
 func TestAddsPrefixWithRoleBeginningWithPathWithoutSlash(t *testing.T) {
 	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
-	role, _ := resolver.Resolve(context.Background(), "kiam/myrole")
+	role := resolver.Resolve("kiam/myrole")
 
 	if role != "arn:aws:iam::account-id:role/kiam/myrole" {
 		t.Error("unexpected role, was:", role)
@@ -47,7 +46,7 @@ func TestAddsPrefixWithRoleBeginningWithPathWithoutSlash(t *testing.T) {
 }
 func TestAddsPrefixWithRoleBeginningWithSlashPath(t *testing.T) {
 	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
-	role, _ := resolver.Resolve(context.Background(), "/kiam/myrole")
+	role := resolver.Resolve("/kiam/myrole")
 
 	if role != "arn:aws:iam::account-id:role/kiam/myrole" {
 		t.Error("unexpected role, was:", role)
@@ -56,7 +55,7 @@ func TestAddsPrefixWithRoleBeginningWithSlashPath(t *testing.T) {
 
 func TestUsesAbsoluteARN(t *testing.T) {
 	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
-	role, _ := resolver.Resolve(context.Background(), "arn:aws:iam::some-other-account:role/another-role")
+	role := resolver.Resolve("arn:aws:iam::some-other-account:role/another-role")
 
 	if role != "arn:aws:iam::some-other-account:role/another-role" {
 		t.Error("unexpected role, was:", role)
