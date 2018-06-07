@@ -31,6 +31,10 @@ func DefaultResolver(prefix string) *Resolver {
 
 // Resolve converts from a role string into the absolute role arn.
 func (r *Resolver) Resolve(ctx context.Context, role string) (string, error) {
+	if strings.HasPrefix(role, "/") {
+		role = strings.TrimPrefix(role, "/")
+	}
+
 	if strings.HasPrefix(role, "arn:") {
 		return role, nil
 	}
