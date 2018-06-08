@@ -32,6 +32,16 @@ pipeline:
       - ${DRONE_COMMIT_SHA}
       - ${DRONE_COMMIT_BRANCH}
 
+  docker-pull-request:
+    when:
+      event: pull_request
+    image: plugins/docker
+    registry: quay.io
+    repo: quay.io/uswitch/kiam
+    secrets: [ docker_username, docker_password ]
+    tags:
+      - pr${DRONE_PULL_REQUEST}
+
   docker-tagged:
     when:
       event: tag
