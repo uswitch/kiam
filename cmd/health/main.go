@@ -15,9 +15,9 @@ package main
 
 import (
 	"context"
+	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	kiamserver "github.com/uswitch/kiam/pkg/server"
-	"github.com/vmg/backoff"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"time"
 )

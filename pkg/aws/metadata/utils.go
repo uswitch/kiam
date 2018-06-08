@@ -15,9 +15,9 @@ package metadata
 
 import (
 	"context"
+	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/k8s"
-	"github.com/vmg/backoff"
 	"time"
 )
 
