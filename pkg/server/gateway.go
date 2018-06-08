@@ -22,6 +22,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	pb "github.com/uswitch/kiam/proto"
@@ -52,7 +53,7 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 	certPool := x509.NewCertPool()
 	ca, err := ioutil.ReadFile(caFile)
 	if err != nil {
-		return nil, fmt.Errorf("error reading SSL cert: %v, err")
+		return nil, fmt.Errorf("error reading SSL cert: %v", err)
 	}
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
 		return nil, fmt.Errorf("error appending certs from ca")
@@ -85,10 +86,16 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 		return nil, fmt.Errorf("error dialing grpc server: %v", err)
 	}
 
-	_, _, err = balancer.Get(ctx, grpc.BalancerGetOptions{BlockingWait: true})
-	if err != nil {
-		return nil, fmt.Errorf("error waiting for address to be available in the balancer: %v", err)
+	lookupAddress := func() error {
+		// BlockingWait for the BalancerGetOptions appears to have no effect
+		// so we wrap in a retry loop to provide the same behaviour
+		_, _, err := balancer.Get(ctx, grpc.BalancerGetOptions{})
+		if err != nil {
+			return fmt.Errorf("error waiting for address to be available in the balancer: %v", err)
+		}
+		return nil
 	}
+	err = backoff.Retry(lookupAddress, backoff.WithContext(backoff.NewConstantBackOff(50*time.Millisecond), ctx))
 
 	client := pb.NewKiamServiceClient(conn)
 	return &KiamGateway{conn: conn, client: ClientWithTelemetry(client)}, nil

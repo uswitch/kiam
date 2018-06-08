@@ -21,6 +21,9 @@ override the number of retries (setting them to more than 0) with a `grpc.Client
 Other default options are: retry on `ResourceExhausted` and `Unavailable` gRPC codes, use a 50ms
 linear backoff with 10% jitter.
 
+For chained interceptors, the retry interceptor will call every interceptor that follows it
+whenever when a retry happens.
+
 Please see examples for more advanced use.
 
 #### Example:
@@ -29,17 +32,10 @@ Please see examples for more advanced use.
 <summary>Click to expand code.</summary>
 
 ```go
-client := pb_testproto.NewTestServiceClient(cc)
-	pong, err := client.Ping(
-	    newCtx(5*time.Second),
-	    &pb_testproto.PingRequest{},
-	    grpc_retry.WithMax(3),
-	    grpc_retry.WithPerRetryTimeout(1*time.Second))
-	if err != nil {
-	    return err
-	}
-	fmt.Printf("got pong: %v", pong)
-	return nil
+grpc.Dial("myservice.example.com",
+    grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor()),
+    grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor()),
+)
 ```
 
 </details>
@@ -51,27 +47,13 @@ client := pb_testproto.NewTestServiceClient(cc)
 
 ```go
 opts := []grpc_retry.CallOption{
-	    grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100 * time.Millisecond)),
-	    grpc_retry.WithCodes(codes.NotFound, codes.Aborted),
-	}
-	return grpc.Dial("myservice.example.com",
-	    grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
-	    grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
-	)
-```
-
-</details>
-
-#### Example:
-
-<details>
-<summary>Click to expand code.</summary>
-
-```go
-return grpc.Dial("myservice.example.com",
-	    grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor()),
-	    grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor()),
-	)
+    grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100 * time.Millisecond)),
+    grpc_retry.WithCodes(codes.NotFound, codes.Aborted),
+}
+grpc.Dial("myservice.example.com",
+    grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
+    grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
+)
 ```
 
 </details>
@@ -83,20 +65,17 @@ return grpc.Dial("myservice.example.com",
 
 ```go
 client := pb_testproto.NewTestServiceClient(cc)
-	stream, err := client.PingList(newCtx(1*time.Second), &pb_testproto.PingRequest{}, grpc_retry.WithMax(3))
-	if err != nil {
-	    return err
-	}
-	for {
-	    pong, err := stream.Recv() // retries happen here
-	    if err == io.EOF {
-	        break
-	    } else if err != nil {
-	        return err
-	    }
-	    fmt.Printf("got pong: %v", pong)
-	}
-	return nil
+stream, _ := client.PingList(newCtx(1*time.Second), &pb_testproto.PingRequest{}, grpc_retry.WithMax(3))
+
+for {
+    pong, err := stream.Recv() // retries happen here
+    if err == io.EOF {
+        break
+    } else if err != nil {
+        return
+    }
+    fmt.Printf("got pong: %v", pong)
+}
 ```
 
 </details>
@@ -127,10 +106,10 @@ client := pb_testproto.NewTestServiceClient(cc)
   * [func WithPerRetryTimeout(timeout time.Duration) CallOption](#WithPerRetryTimeout)
 
 #### <a name="pkg-examples">Examples</a>
-* [Package (Deadlinecall)](#example__deadlinecall)
-* [Package (Dialcomplex)](#example__dialcomplex)
-* [Package (Dialsimple)](#example__dialsimple)
-* [Package (Simplecall)](#example__simplecall)
+* [WithPerRetryTimeout](#example_WithPerRetryTimeout)
+* [Package (Initialization)](#example__initialization)
+* [Package (InitializationWithOptions)](#example__initializationWithOptions)
+* [Package (SimpleCall)](#example__simpleCall)
 
 #### <a name="pkg-files">Package files</a>
 [backoff.go](./backoff.go) [doc.go](./doc.go) [options.go](./options.go) [retry.go](./retry.go) 
@@ -179,7 +158,7 @@ changed through options (e.g. WithMax) on creation of the interceptor or on call
 ``` go
 type BackoffFunc func(attempt uint) time.Duration
 ```
-BackoffFunc denotes a family of functions that controll the backoff duration between call retries.
+BackoffFunc denotes a family of functions that control the backoff duration between call retries.
 
 They are called with an identifier of the attempt, and should return a time the system client should
 hold off for. If the time returned is longer than the `context.Context.Deadline` of the request
@@ -203,11 +182,11 @@ For example waitBetween=1s and jitter=0.10 can generate waits between 900ms and 
 ## <a name="CallOption">type</a> [CallOption](./options.go#L94-L97)
 ``` go
 type CallOption struct {
-    grpc.CallOption // anonymously implement it, without knowing the private fields.
+    grpc.EmptyCallOption // make sure we implement private after() and before() fields so we don't panic.
     // contains filtered or unexported fields
 }
 ```
-callOption is a grpc.CallOption that is local to grpc_retry.
+CallOption is a grpc.CallOption that is local to grpc_retry.
 
 ### <a name="Disable">func</a> [Disable](./options.go#L40)
 ``` go
@@ -253,6 +232,24 @@ of the retry calls (including the initial one) will have a deadline of now + 3s.
 
 A value of 0 disables the timeout overrides completely and returns to each retry call using the
 parent `context.Deadline`.
+
+#### Example:
+
+<details>
+<summary>Click to expand code.</summary>
+
+```go
+client := pb_testproto.NewTestServiceClient(cc)
+pong, _ := client.Ping(
+    newCtx(5*time.Second),
+    &pb_testproto.PingRequest{},
+    grpc_retry.WithMax(3),
+    grpc_retry.WithPerRetryTimeout(1*time.Second))
+
+fmt.Printf("got pong: %v", pong)
+```
+
+</details>
 
 - - -
 Generated by [godoc2ghmd](https://github.com/GandalfUK/godoc2ghmd)

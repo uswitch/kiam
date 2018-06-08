@@ -7,6 +7,11 @@ Kiam is split into two processes:
 
 To ensure that only agents and servers can communicate with each other they use mutual TLS authentication. These are not automatically generated so you'll need to create the certificates and store in secrets that only Server and Agent processes can access.
 
+## Breaking Change in v3.0
+In 3.0 a fix was made to the [TLS ServerName configuration](https://github.com/uswitch/kiam/pull/86). This changed the validation to only check the host (rather than the address). The configuration for the server certificate has been updated. 
+
+**If you generated your own certificates you will need to additively update them to include only the host to avoid breaking server/agent communication**.
+
 ## Install the helper tool
 ```
 go get -u github.com/cloudflare/cfssl/cmd/...

@@ -103,10 +103,13 @@ func Check(t ErrorReporter) func() {
 
 // CheckTimeout is the same as Check, but with a configurable timeout
 func CheckTimeout(t ErrorReporter, dur time.Duration) func() {
-	ctx, cancel := context.WithTimeout(context.Background(), dur)
+	ctx, cancel := context.WithCancel(context.Background())
 	fn := CheckContext(ctx, t)
 	return func() {
+		timer := time.AfterFunc(dur, cancel)
 		fn()
+		// Remember to clean up the timer and context
+		timer.Stop()
 		cancel()
 	}
 }
