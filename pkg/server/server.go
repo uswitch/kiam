@@ -39,6 +39,7 @@ type Config struct {
 	PodSyncInterval          time.Duration
 	SessionName              string
 	SessionDuration          time.Duration
+	SessionRefresh           time.Duration
 	RoleBaseARN              string
 	AutoDetectBaseARN        bool
 	TLS                      *TLSConfig
@@ -157,7 +158,12 @@ func NewServer(config *Config) (*KiamServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	credentialsCache := sts.DefaultCache(stsGateway, config.SessionName, config.SessionDuration, arnResolver)
+	credentialsCache := sts.DefaultCache(
+		stsGateway, config.SessionName,
+		config.SessionDuration,
+		config.SessionRefresh,
+		arnResolver,
+	)
 	server.credentialsProvider = credentialsCache
 	server.manager = prefetch.NewManager(credentialsCache, server.pods, server.pods)
 	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))

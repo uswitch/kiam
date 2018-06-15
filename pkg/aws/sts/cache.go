@@ -46,13 +46,19 @@ const (
 	DefaultPurgeInterval = 1 * time.Minute
 )
 
-func DefaultCache(gateway STSGateway, sessionName string, sessionDuration time.Duration, resolver ARNResolver) *credentialsCache {
+func DefaultCache(
+	gateway STSGateway,
+	sessionName string,
+	sessionDuration time.Duration,
+	sessionRefresh time.Duration,
+	resolver ARNResolver,
+) *credentialsCache {
 	c := &credentialsCache{
 		arnResolver:     resolver,
 		expiring:        make(chan *RoleCredentials, 1),
 		sessionName:     fmt.Sprintf("kiam-%s", sessionName),
 		sessionDuration: sessionDuration,
-		cacheTTL:        sessionDuration - 5*time.Minute,
+		cacheTTL:        sessionDuration - sessionRefresh,
 		meterCacheHit:   metrics.GetOrRegisterMeter("credentialsCache.cacheHit", metrics.DefaultRegistry),
 		meterCacheMiss:  metrics.GetOrRegisterMeter("credentialsCache.cacheMiss", metrics.DefaultRegistry),
 		gateway:         gateway,
