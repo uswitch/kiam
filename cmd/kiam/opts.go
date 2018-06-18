@@ -15,13 +15,12 @@ package main
 
 import (
 	"context"
-	"net"
+	"fmt"
 	"time"
 
-	statsd "github.com/pubnub/go-metrics-statsd"
-	metrics "github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/prometheus"
+	"github.com/uswitch/kiam/pkg/statsd"
 )
 
 type logOptions struct {
@@ -52,27 +51,31 @@ func (o *logOptions) configureLogger() {
 }
 
 type telemetryOptions struct {
-	statsd           string
-	statsdInterval   time.Duration
+	statsD           string
+	statsDInterval   time.Duration
+	statsDPrefix     string
 	prometheusListen string
 	prometheusSync   time.Duration
 }
 
 func (o *telemetryOptions) bind(parser parser) {
-	parser.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&o.statsd)
-	parser.Flag("statsd-interval", "Interval to publish to StatsD").Default("10s").DurationVar(&o.statsdInterval)
+	parser.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&o.statsD)
+	parser.Flag("statsd-prefix", "statsd namespace to use").Default("kiam").StringVar(&o.statsDPrefix)
+	parser.Flag("statsd-interval", "Interval to publish to StatsD").Default("100ms").DurationVar(&o.statsDInterval)
 
 	parser.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&o.prometheusListen)
 	parser.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&o.prometheusSync)
 }
 
 func (o telemetryOptions) start(ctx context.Context, identifier string) {
-	if o.statsd != "" {
-		addr, err := net.ResolveUDPAddr("udp", o.statsd)
-		if err != nil {
-			log.Fatal("error parsing statsd address:", err.Error())
-		}
-		go statsd.StatsD(metrics.DefaultRegistry, o.statsdInterval, "kiam."+identifier, addr)
+	err := statsd.New(
+		o.statsD,
+		fmt.Sprintf("%s.%s", o.statsDPrefix, identifier),
+		o.statsDInterval,
+	)
+
+	if err != nil {
+		log.Fatalf("Error initing statsd: %v", err)
 	}
 
 	if o.prometheusListen != "" {

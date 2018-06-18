@@ -26,6 +26,7 @@ import (
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
+	"github.com/uswitch/kiam/pkg/statsd"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -119,6 +120,7 @@ func (g *KiamGateway) Close() {
 
 // GetRole returns the role for the identified Pod
 func (g *KiamGateway) GetRole(ctx context.Context, ip string) (string, error) {
+	defer statsd.Client.NewTiming().Send("gateway.rpc.GetRole")
 	role, err := g.client.GetPodRole(ctx, &pb.GetPodRoleRequest{Ip: ip})
 	if err != nil {
 		return "", err
@@ -128,6 +130,7 @@ func (g *KiamGateway) GetRole(ctx context.Context, ip string) (string, error) {
 
 // GetCredentials returns the credentials for the identified Pod
 func (g *KiamGateway) GetCredentials(ctx context.Context, ip, role string) (*sts.Credentials, error) {
+	defer statsd.Client.NewTiming().Send("gateway.rpc.GetCredentials")
 	credentials, err := g.client.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: ip, Role: role})
 	if err != nil {
 		return nil, err
@@ -145,6 +148,7 @@ func (g *KiamGateway) GetCredentials(ctx context.Context, ip, role string) (*sts
 
 // Health is used to check the gRPC client connection
 func (g *KiamGateway) Health(ctx context.Context) (string, error) {
+	defer statsd.Client.NewTiming().Send("gateway.rpc.Health")
 	status, err := g.client.GetHealth(ctx, &pb.GetHealthRequest{})
 	if err != nil {
 		return "", err

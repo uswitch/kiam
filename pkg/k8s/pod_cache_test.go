@@ -19,9 +19,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 	kt "k8s.io/client-go/tools/cache/testing"
 )
+
+func init() {
+	statsd.New("", "", time.Millisecond)
+}
 
 const bufferSize = 10
 

@@ -15,11 +15,12 @@ package metadata
 
 import (
 	"context"
-	"fmt"
-	"github.com/rcrowley/go-metrics"
-	log "github.com/sirupsen/logrus"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 // interface for request handlers
@@ -71,27 +72,6 @@ func withMeter(name string, h handler) handler {
 
 func (m *metricHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	status, err := m.h.Handle(ctx, w, r)
-	getResponseMeter(m.name, status).Mark(1)
+	responses.With(prometheus.Labels{"code": strconv.Itoa(status), "handler": m.name})
 	return status, err
-}
-
-func getResponseMeter(name string, result int) metrics.Meter {
-	bucket := getStatusBucket(result)
-	return metrics.GetOrRegisterMeter(fmt.Sprintf("handlerResponse-%s.%s", name, bucket), metrics.DefaultRegistry)
-}
-
-func getStatusBucket(status int) string {
-	if status >= 200 && status < 300 {
-		return "2xx"
-	}
-	if status >= 300 && status < 400 {
-		return "3xx"
-	}
-	if status >= 400 && status < 500 {
-		return "4xx"
-	}
-	if status >= 500 && status < 600 {
-		return "5xx"
-	}
-	return "unknown"
 }

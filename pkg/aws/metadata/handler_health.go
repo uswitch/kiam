@@ -16,10 +16,11 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"github.com/rcrowley/go-metrics"
 	"io/ioutil"
 	"net/http"
-	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/uswitch/kiam/pkg/statsd"
 )
 
 type healthHandler struct {
@@ -27,9 +28,9 @@ type healthHandler struct {
 }
 
 func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
-	healthTimer := metrics.GetOrRegisterTimer("healthHandler", metrics.DefaultRegistry)
-	started := time.Now()
-	defer healthTimer.UpdateSince(started)
+	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("health"))
+	defer timer.ObserveDuration()
+	defer statsd.Client.NewTiming().Send("handler.health")
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/latest/meta-data/instance-id", h.endpoint), nil)
 	if err != nil {
