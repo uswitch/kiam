@@ -16,6 +16,12 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"strings"
+	"time"
+
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
@@ -23,11 +29,6 @@ import (
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/server"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"strings"
-	"time"
 )
 
 type Server struct {
@@ -39,6 +40,7 @@ type ServerConfig struct {
 	ListenPort       int
 	MetadataEndpoint string
 	AllowIPQuery     bool
+	DisableUserData  bool
 }
 
 func NewConfig(port int) *ServerConfig {
@@ -46,6 +48,7 @@ func NewConfig(port int) *ServerConfig {
 		MetadataEndpoint: "http://169.254.169.254",
 		ListenPort:       port,
 		AllowIPQuery:     false,
+		DisableUserData:  false,
 	}
 }
 
@@ -83,6 +86,10 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 		policy:              policy,
 	}
 	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", c)))
+
+	if config.DisableUserData {
+		router.Handle("/{version}/user-data", http.NotFoundHandler())
+	}
 
 	metadataURL, err := url.Parse(config.MetadataEndpoint)
 	if err != nil {
