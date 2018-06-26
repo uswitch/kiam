@@ -15,11 +15,12 @@ package main
 
 import (
 	"context"
+	"time"
+
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	kiamserver "github.com/uswitch/kiam/pkg/server"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"time"
 )
 
 type options struct {
@@ -34,19 +35,23 @@ type options struct {
 	timeout              time.Duration
 }
 
+func (o *options) bind(parser *kingpin.Application) {
+	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
+	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
+
+	parser.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&o.serverAddress)
+	parser.Flag("server-address-refresh", "Interval to refresh server service endpoints").Default("10s").DurationVar(&o.serverAddressRefresh)
+	parser.Flag("gateway-timeout-creation", "Timeout to create the kiam gateway ").Default("50ms").DurationVar(&o.timeoutKiamGateway)
+	parser.Flag("cert", "Agent certificate path").Required().ExistingFileVar(&o.certificatePath)
+	parser.Flag("key", "Agent key path").Required().ExistingFileVar(&o.keyPath)
+	parser.Flag("ca", "CA certificate path").Required().ExistingFileVar(&o.caPath)
+
+	parser.Flag("timeout", "Timeout for health check").Default("1s").DurationVar(&o.timeout)
+}
+
 func main() {
 	opts := &options{}
-	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&opts.jsonLog)
-	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&opts.logLevel, "debug", "info", "warn", "error")
-
-	kingpin.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&opts.serverAddress)
-	kingpin.Flag("server-address-refresh", "Interval to refresh server service endpoints").Default("10s").DurationVar(&opts.serverAddressRefresh)
-	kingpin.Flag("gateway-timeout-creation", "Timeout to create the kiam gateway ").Default("50ms").DurationVar(&opts.timeoutKiamGateway)
-	kingpin.Flag("cert", "Agent certificate path").Required().ExistingFileVar(&opts.certificatePath)
-	kingpin.Flag("key", "Agent key path").Required().ExistingFileVar(&opts.keyPath)
-	kingpin.Flag("ca", "CA certificate path").Required().ExistingFileVar(&opts.caPath)
-
-	kingpin.Flag("timeout", "Timeout for health check").Default("1s").DurationVar(&opts.timeout)
+	opts.bind(kingpin.CommandLine)
 
 	kingpin.Parse()
 

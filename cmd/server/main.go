@@ -30,41 +30,56 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
+type options struct {
+	jsonLog          bool
+	logLevel         string
+	statsd           string
+	statsdInterval   time.Duration
+	prometheusListen string
+	prometheusSync   time.Duration
+}
+
+func (o *options) bind(parser *kingpin.Application) {
+	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
+	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
+
+	parser.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&o.statsd)
+	parser.Flag("statsd-interval", "Interval to publish to StatsD").Default("10s").DurationVar(&o.statsdInterval)
+
+	parser.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&o.prometheusListen)
+	parser.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&o.prometheusSync)
+}
+
+type serverOptions struct {
+	*serv.Config
+}
+
+func (o *serverOptions) bind(parser *kingpin.Application) {
+	parser.Flag("fetchers", "Number of parallel fetcher go routines").Default("8").IntVar(&o.ParallelFetcherProcesses)
+	parser.Flag("prefetch-buffer-size", "How many Pod events to hold in memory between the Pod watcher and Prefetch manager.").Default("1000").IntVar(&o.PrefetchBufferSize)
+	parser.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&o.BindAddress)
+	parser.Flag("kubeconfig", "Path to .kube/config (or empty for in-cluster)").Default("").StringVar(&o.KubeConfig)
+	parser.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&o.PodSyncInterval)
+	parser.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").StringVar(&o.RoleBaseARN)
+	parser.Flag("role-base-arn-autodetect", "Use EC2 metadata service to detect ARN prefix.").BoolVar(&o.AutoDetectBaseARN)
+	parser.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&o.SessionName)
+	parser.Flag("session-duration", "Requested session duration for STS Tokens.").Default("15m").DurationVar(&o.SessionDuration)
+	parser.Flag("session-refresh", "How soon STS Tokens should be refreshed before their expiration.").Default("5m").DurationVar(&o.SessionRefresh)
+	parser.Flag("assume-role-arn", "IAM Role to assume before processing requests").Default("").StringVar(&o.AssumeRoleArn)
+
+	parser.Flag("cert", "Server certificate path").Required().ExistingFileVar(&o.TLS.ServerCert)
+	parser.Flag("key", "Server private key path").Required().ExistingFileVar(&o.TLS.ServerKey)
+	parser.Flag("ca", "CA path").Required().ExistingFileVar(&o.TLS.CA)
+}
+
 func main() {
 	serverConfig := &serv.Config{TLS: &serv.TLSConfig{}}
-	var flags struct {
-		jsonLog          bool
-		logLevel         string
-		statsd           string
-		statsdInterval   time.Duration
-		prometheusListen string
-		prometheusSync   time.Duration
-	}
 
-	kingpin.Flag("json-log", "Output log in JSON").BoolVar(&flags.jsonLog)
-	kingpin.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&flags.logLevel, "debug", "info", "warn", "error")
+	var opts options
+	opts.bind(kingpin.CommandLine)
 
-	kingpin.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&flags.statsd)
-	kingpin.Flag("statsd-interval", "Interval to publish to StatsD").Default("10s").DurationVar(&flags.statsdInterval)
-
-	kingpin.Flag("fetchers", "Number of parallel fetcher go routines").Default("8").IntVar(&serverConfig.ParallelFetcherProcesses)
-	kingpin.Flag("prefetch-buffer-size", "How many Pod events to hold in memory between the Pod watcher and Prefetch manager.").Default("1000").IntVar(&serverConfig.PrefetchBufferSize)
-	kingpin.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&serverConfig.BindAddress)
-	kingpin.Flag("kubeconfig", "Path to .kube/config (or empty for in-cluster)").Default("").StringVar(&serverConfig.KubeConfig)
-	kingpin.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&serverConfig.PodSyncInterval)
-	kingpin.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").StringVar(&serverConfig.RoleBaseARN)
-	kingpin.Flag("role-base-arn-autodetect", "Use EC2 metadata service to detect ARN prefix.").BoolVar(&serverConfig.AutoDetectBaseARN)
-	kingpin.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&serverConfig.SessionName)
-	kingpin.Flag("session-duration", "Requested session duration for STS Tokens.").Default("15m").DurationVar(&serverConfig.SessionDuration)
-	kingpin.Flag("session-refresh", "How soon STS Tokens should be refreshed before their expiration.").Default("5m").DurationVar(&serverConfig.SessionRefresh)
-	kingpin.Flag("assume-role-arn", "IAM Role to assume before processing requests").Default("").StringVar(&serverConfig.AssumeRoleArn)
-
-	kingpin.Flag("cert", "Server certificate path").Required().ExistingFileVar(&serverConfig.TLS.ServerCert)
-	kingpin.Flag("key", "Server private key path").Required().ExistingFileVar(&serverConfig.TLS.ServerKey)
-	kingpin.Flag("ca", "CA path").Required().ExistingFileVar(&serverConfig.TLS.CA)
-
-	kingpin.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&flags.prometheusListen)
-	kingpin.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&flags.prometheusSync)
+	serverOpts := serverOptions{serverConfig}
+	serverOpts.bind(kingpin.CommandLine)
 
 	kingpin.Parse()
 
@@ -76,11 +91,11 @@ func main() {
 		log.Fatal("session-duration should be at least 15 minutes")
 	}
 
-	if flags.jsonLog {
+	if opts.jsonLog {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 
-	switch flags.logLevel {
+	switch opts.logLevel {
 	case "debug":
 		log.SetLevel(log.DebugLevel)
 	case "info":
@@ -93,16 +108,16 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	if flags.statsd != "" {
-		addr, err := net.ResolveUDPAddr("udp", flags.statsd)
+	if opts.statsd != "" {
+		addr, err := net.ResolveUDPAddr("udp", opts.statsd)
 		if err != nil {
 			log.Fatal("error parsing statsd address:", err.Error())
 		}
-		go statsd.StatsD(metrics.DefaultRegistry, flags.statsdInterval, "kiam.server", addr)
+		go statsd.StatsD(metrics.DefaultRegistry, opts.statsdInterval, "kiam.server", addr)
 	}
 
-	if flags.prometheusListen != "" {
-		metrics := prometheus.NewServer("server", flags.prometheusListen, flags.prometheusSync)
+	if opts.prometheusListen != "" {
+		metrics := prometheus.NewServer("server", opts.prometheusListen, opts.prometheusSync)
 		metrics.Listen(ctx)
 	}
 
