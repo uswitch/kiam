@@ -23,29 +23,19 @@ import (
 )
 
 type healthCommand struct {
-	jsonLog              bool
-	logLevel             string
-	serverAddress        string
-	serverAddressRefresh time.Duration
-	timeoutKiamGateway   time.Duration
-	certificatePath      string
-	keyPath              string
-	caPath               string
-	timeout              time.Duration
+	logOptions
+	tlsOptions
+	clientOptions
+
+	timeout time.Duration
 }
 
-func (o *healthCommand) Bind(parser parser) {
-	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
-	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
+func (cmd *healthCommand) Bind(parser parser) {
+	cmd.logOptions.bind(parser)
+	cmd.tlsOptions.bind(parser)
+	cmd.clientOptions.bind(parser)
 
-	parser.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&o.serverAddress)
-	parser.Flag("server-address-refresh", "Interval to refresh server service endpoints").Default("10s").DurationVar(&o.serverAddressRefresh)
-	parser.Flag("gateway-timeout-creation", "Timeout to create the kiam gateway ").Default("50ms").DurationVar(&o.timeoutKiamGateway)
-	parser.Flag("cert", "Agent certificate path").Required().ExistingFileVar(&o.certificatePath)
-	parser.Flag("key", "Agent key path").Required().ExistingFileVar(&o.keyPath)
-	parser.Flag("ca", "CA certificate path").Required().ExistingFileVar(&o.caPath)
-
-	parser.Flag("timeout", "Timeout for health check").Default("1s").DurationVar(&o.timeout)
+	parser.Flag("timeout", "Timeout for health check").Default("1s").DurationVar(&cmd.timeout)
 }
 
 func (opts *healthCommand) Run() {

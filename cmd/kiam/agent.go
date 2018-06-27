@@ -19,7 +19,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/pubnub/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
@@ -30,49 +29,30 @@ import (
 )
 
 type agentCommand struct {
-	jsonLog              bool
-	logLevel             string
-	port                 int
-	allowIPQuery         bool
-	statsD               string
-	statsDInterval       time.Duration
-	iptables             bool
-	hostIP               string
-	hostInterface        string
-	serverAddress        string
-	serverAddressRefresh time.Duration
-	timeoutKiamGateway   time.Duration
-	prometheusListen     string
-	prometheusSync       time.Duration
+	logOptions
+	telemetryOptions
+	tlsOptions
+	clientOptions
 
-	certificatePath string
-	keyPath         string
-	caPath          string
+	port          int
+	allowIPQuery  bool
+	iptables      bool
+	hostIP        string
+	hostInterface string
 }
 
-func (o *agentCommand) Bind(parser parser) {
-	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
-	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
+func (cmd *agentCommand) Bind(parser parser) {
+	cmd.logOptions.bind(parser)
+	cmd.telemetryOptions.bind(parser)
+	cmd.tlsOptions.bind(parser)
+	cmd.clientOptions.bind(parser)
 
-	parser.Flag("port", "HTTP port").Default("3100").IntVar(&o.port)
-	parser.Flag("allow-ip-query", "Allow client IP to be specified with ?ip. Development use only.").Default("false").BoolVar(&o.allowIPQuery)
+	parser.Flag("port", "HTTP port").Default("3100").IntVar(&cmd.port)
+	parser.Flag("allow-ip-query", "Allow client IP to be specified with ?ip. Development use only.").Default("false").BoolVar(&cmd.allowIPQuery)
 
-	parser.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&o.statsD)
-	parser.Flag("statsd-interval", "Interval to publish to StatsD").Default("10s").DurationVar(&o.statsDInterval)
-
-	parser.Flag("iptables", "Add IPTables rules").Default("false").BoolVar(&o.iptables)
-	parser.Flag("host", "Host IP address.").Envar("HOST_IP").Required().StringVar(&o.hostIP)
-	parser.Flag("host-interface", "Network interface for pods to configure IPTables.").Default("docker0").StringVar(&o.hostInterface)
-
-	parser.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&o.serverAddress)
-	parser.Flag("server-address-refresh", "Interval to refresh server service endpoints").Default("10s").DurationVar(&o.serverAddressRefresh)
-	parser.Flag("gateway-timeout-creation", "Timeout to create the kiam gateway ").Default("50ms").DurationVar(&o.timeoutKiamGateway)
-	parser.Flag("cert", "Agent certificate path").Required().ExistingFileVar(&o.certificatePath)
-	parser.Flag("key", "Agent key path").Required().ExistingFileVar(&o.keyPath)
-	parser.Flag("ca", "CA certificate path").Required().ExistingFileVar(&o.caPath)
-
-	parser.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&o.prometheusListen)
-	parser.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&o.prometheusSync)
+	parser.Flag("iptables", "Add IPTables rules").Default("false").BoolVar(&cmd.iptables)
+	parser.Flag("host", "Host IP address.").Envar("HOST_IP").Required().StringVar(&cmd.hostIP)
+	parser.Flag("host-interface", "Network interface for pods to configure IPTables.").Default("docker0").StringVar(&cmd.hostInterface)
 }
 
 func (o *agentCommand) configureLogger() {
@@ -105,12 +85,12 @@ func (opts *agentCommand) Run() {
 		defer rules.Remove()
 	}
 
-	if opts.statsD != "" {
-		addr, err := net.ResolveUDPAddr("udp", opts.statsD)
+	if opts.statsd != "" {
+		addr, err := net.ResolveUDPAddr("udp", opts.statsd)
 		if err != nil {
 			log.Fatal("error parsing statsd address:", err.Error())
 		}
-		go statsd.StatsD(metrics.DefaultRegistry, opts.statsDInterval, "kiam.agent", addr)
+		go statsd.StatsD(metrics.DefaultRegistry, opts.statsdInterval, "kiam.agent", addr)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

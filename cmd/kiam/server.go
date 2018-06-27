@@ -19,7 +19,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/pubnub/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
@@ -30,27 +29,19 @@ import (
 )
 
 type serverCommand struct {
-	jsonLog          bool
-	logLevel         string
-	statsd           string
-	statsdInterval   time.Duration
-	prometheusListen string
-	prometheusSync   time.Duration
+	logOptions
+	telemetryOptions
+	tlsOptions
 
-	*serv.Config
+	serv.Config
 }
 
-func (o *serverCommand) Bind(parser parser) {
-	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
-	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
+func (cmd *serverCommand) Bind(parser parser) {
+	cmd.logOptions.bind(parser)
+	cmd.telemetryOptions.bind(parser)
+	cmd.tlsOptions.bind(parser)
 
-	parser.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&o.statsd)
-	parser.Flag("statsd-interval", "Interval to publish to StatsD").Default("10s").DurationVar(&o.statsdInterval)
-
-	parser.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&o.prometheusListen)
-	parser.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&o.prometheusSync)
-
-	serverOpts := &serverOptions{o.Config}
+	serverOpts := serverOptions{&cmd.Config}
 	serverOpts.bind(parser)
 }
 
@@ -70,20 +61,14 @@ func (o *serverOptions) bind(parser parser) {
 	parser.Flag("session-duration", "Requested session duration for STS Tokens.").Default("15m").DurationVar(&o.SessionDuration)
 	parser.Flag("session-refresh", "How soon STS Tokens should be refreshed before their expiration.").Default("5m").DurationVar(&o.SessionRefresh)
 	parser.Flag("assume-role-arn", "IAM Role to assume before processing requests").Default("").StringVar(&o.AssumeRoleArn)
-
-	parser.Flag("cert", "Server certificate path").Required().ExistingFileVar(&o.TLS.ServerCert)
-	parser.Flag("key", "Server private key path").Required().ExistingFileVar(&o.TLS.ServerKey)
-	parser.Flag("ca", "CA path").Required().ExistingFileVar(&o.TLS.CA)
 }
 
 func (opts *serverCommand) Run() {
-	serverConfig := opts.Config
-
-	if !serverConfig.AutoDetectBaseARN && serverConfig.RoleBaseARN == "" {
+	if !opts.AutoDetectBaseARN && opts.RoleBaseARN == "" {
 		log.Fatal("role-base-arn not specified and not auto-detected. please specify or use --role-base-arn-autodetect")
 	}
 
-	if serverConfig.SessionDuration < sts.AWSMinSessionDuration {
+	if opts.SessionDuration < sts.AWSMinSessionDuration {
 		log.Fatal("session-duration should be at least 15 minutes")
 	}
 
@@ -122,7 +107,8 @@ func (opts *serverCommand) Run() {
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
 
-	server, err := serv.NewServer(serverConfig)
+	opts.Config.TLS = serv.TLSConfig{ServerCert: opts.certificatePath, ServerKey: opts.keyPath, CA: opts.caPath}
+	server, err := serv.NewServer(&opts.Config)
 	if err != nil {
 		log.Fatal("error creating listener: ", err.Error())
 	}
@@ -134,7 +120,7 @@ func (opts *serverCommand) Run() {
 		cancel()
 	}()
 
-	log.Infof("will serve on %s", serverConfig.BindAddress)
+	log.Infof("will serve on %s", opts.BindAddress)
 
 	server.Serve(ctx)
 
