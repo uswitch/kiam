@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package main
+package health
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-type options struct {
+type Options struct {
 	jsonLog              bool
 	logLevel             string
 	serverAddress        string
@@ -35,7 +35,11 @@ type options struct {
 	timeout              time.Duration
 }
 
-func (o *options) bind(parser *kingpin.Application) {
+type parser interface {
+	Flag(name, help string) *kingpin.FlagClause
+}
+
+func (o *Options) Bind(parser parser) {
 	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
 	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
 
@@ -49,12 +53,7 @@ func (o *options) bind(parser *kingpin.Application) {
 	parser.Flag("timeout", "Timeout for health check").Default("1s").DurationVar(&o.timeout)
 }
 
-func main() {
-	opts := &options{}
-	opts.bind(kingpin.CommandLine)
-
-	kingpin.Parse()
-
+func (opts *Options) Run() {
 	if opts.jsonLog {
 		log.SetFormatter(&log.JSONFormatter{})
 	}

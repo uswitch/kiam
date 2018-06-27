@@ -1,9 +1,6 @@
 .PHONY: test clean all
 
-all: bin/health bin/kiam
-
-bin/health: $(shell find . -name '*.go') proto/service.pb.go
-	go build -o bin/health cmd/health/*.go
+all: bin/kiam
 
 bin/kiam: $(shell find . -name '*.go') proto/service.pb.go
 	go build -o bin/kiam cmd/kiam/*.go

@@ -15,6 +15,7 @@ package main
 
 import (
 	"github.com/uswitch/kiam/cmd/agent"
+	"github.com/uswitch/kiam/cmd/health"
 	"github.com/uswitch/kiam/cmd/server"
 	serv "github.com/uswitch/kiam/pkg/server"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -31,10 +32,16 @@ func main() {
 	serverOpts := &server.Options{Config: &serv.Config{TLS: &serv.TLSConfig{}}}
 	serverOpts.Bind(serverParser)
 
+	healthParser := rootParser.Command("health", "run the health check")
+	healthOpts := &health.Options{}
+	healthOpts.Bind(healthParser)
+
 	switch kingpin.Parse() {
 	case "agent":
 		agentOpts.Run()
 	case "server":
 		serverOpts.Run()
+	case "health":
+		healthOpts.Run()
 	}
 }
