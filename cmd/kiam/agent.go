@@ -55,23 +55,6 @@ func (cmd *agentCommand) Bind(parser parser) {
 	parser.Flag("host-interface", "Network interface for pods to configure IPTables.").Default("docker0").StringVar(&cmd.hostInterface)
 }
 
-func (o *agentCommand) configureLogger() {
-	if o.jsonLog {
-		log.SetFormatter(&log.JSONFormatter{})
-	}
-
-	switch o.logLevel {
-	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "info":
-		log.SetLevel(log.InfoLevel)
-	case "warn":
-		log.SetLevel(log.WarnLevel)
-	case "error":
-		log.SetLevel(log.ErrorLevel)
-	}
-}
-
 func (opts *agentCommand) Run() {
 	opts.configureLogger()
 

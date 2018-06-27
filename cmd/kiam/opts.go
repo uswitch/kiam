@@ -15,6 +15,8 @@ package main
 
 import (
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type logOptions struct {
@@ -25,6 +27,23 @@ type logOptions struct {
 func (o *logOptions) bind(parser parser) {
 	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
 	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
+}
+
+func (o *logOptions) configureLogger() {
+	if o.jsonLog {
+		log.SetFormatter(&log.JSONFormatter{})
+	}
+
+	switch o.logLevel {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	}
 }
 
 type telemetryOptions struct {

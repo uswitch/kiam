@@ -64,27 +64,14 @@ func (o *serverOptions) bind(parser parser) {
 }
 
 func (opts *serverCommand) Run() {
+	opts.configureLogger()
+
 	if !opts.AutoDetectBaseARN && opts.RoleBaseARN == "" {
 		log.Fatal("role-base-arn not specified and not auto-detected. please specify or use --role-base-arn-autodetect")
 	}
 
 	if opts.SessionDuration < sts.AWSMinSessionDuration {
 		log.Fatal("session-duration should be at least 15 minutes")
-	}
-
-	if opts.jsonLog {
-		log.SetFormatter(&log.JSONFormatter{})
-	}
-
-	switch opts.logLevel {
-	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "info":
-		log.SetLevel(log.InfoLevel)
-	case "warn":
-		log.SetLevel(log.WarnLevel)
-	case "error":
-		log.SetLevel(log.ErrorLevel)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

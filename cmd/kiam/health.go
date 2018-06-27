@@ -39,20 +39,7 @@ func (cmd *healthCommand) Bind(parser parser) {
 }
 
 func (opts *healthCommand) Run() {
-	if opts.jsonLog {
-		log.SetFormatter(&log.JSONFormatter{})
-	}
-
-	switch opts.logLevel {
-	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "info":
-		log.SetLevel(log.InfoLevel)
-	case "warn":
-		log.SetLevel(log.WarnLevel)
-	case "error":
-		log.SetLevel(log.ErrorLevel)
-	}
+	opts.configureLogger()
 
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
