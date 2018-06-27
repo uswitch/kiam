@@ -11,12 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package main
+package agent
 
 import (
 	"fmt"
-	"github.com/coreos/go-iptables/iptables"
 	"strings"
+
+	"github.com/coreos/go-iptables/iptables"
 )
 
 type rules struct {
@@ -54,7 +55,7 @@ func (r *rules) ruleSpec() []string {
 		rules = append(rules, "!")
 	}
 	rules = append(rules, "-i", strings.TrimPrefix(r.hostInterface, "!"))
-	
+
 	return rules
 }
 
