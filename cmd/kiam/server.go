@@ -15,16 +15,12 @@ package main
 
 import (
 	"context"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/pubnub/go-metrics-statsd"
-	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
-	"github.com/uswitch/kiam/pkg/prometheus"
 	serv "github.com/uswitch/kiam/pkg/server"
 )
 
@@ -76,18 +72,7 @@ func (opts *serverCommand) Run() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	if opts.statsd != "" {
-		addr, err := net.ResolveUDPAddr("udp", opts.statsd)
-		if err != nil {
-			log.Fatal("error parsing statsd address:", err.Error())
-		}
-		go statsd.StatsD(metrics.DefaultRegistry, opts.statsdInterval, "kiam.server", addr)
-	}
-
-	if opts.prometheusListen != "" {
-		metrics := prometheus.NewServer("server", opts.prometheusListen, opts.prometheusSync)
-		metrics.Listen(ctx)
-	}
+	opts.telemetryOptions.start(ctx, "server")
 
 	log.Infof("starting server")
 	stopChan := make(chan os.Signal)

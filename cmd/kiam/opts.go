@@ -14,9 +14,14 @@
 package main
 
 import (
+	"context"
+	"net"
 	"time"
 
+	statsd "github.com/pubnub/go-metrics-statsd"
+	metrics "github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/prometheus"
 )
 
 type logOptions struct {
@@ -59,6 +64,21 @@ func (o *telemetryOptions) bind(parser parser) {
 
 	parser.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&o.prometheusListen)
 	parser.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&o.prometheusSync)
+}
+
+func (o telemetryOptions) start(ctx context.Context, identifier string) {
+	if o.statsd != "" {
+		addr, err := net.ResolveUDPAddr("udp", o.statsd)
+		if err != nil {
+			log.Fatal("error parsing statsd address:", err.Error())
+		}
+		go statsd.StatsD(metrics.DefaultRegistry, o.statsdInterval, "kiam."+identifier, addr)
+	}
+
+	if o.prometheusListen != "" {
+		metrics := prometheus.NewServer(identifier, o.prometheusListen, o.prometheusSync)
+		metrics.Listen(ctx)
+	}
 }
 
 type tlsOptions struct {
