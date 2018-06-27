@@ -34,10 +34,12 @@ spec:
           securityContext:
             capabilities:
               add: ["NET_ADMIN"]
-          image: quay.io/uswitch/kiam:v2.8
+          image: quay.io/uswitch/kiam:master # USE A TAGGED RELEASE IN PRODUCTION
+          imagePullPolicy: Always
           command:
-            - /agent
+            - /kiam
           args:
+            - agent
             - --iptables
             - --host-interface=cali+
             - --json-log

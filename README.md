@@ -46,7 +46,7 @@ Please also make note of how to configure IAM in your AWS account; notes in [doc
 Kiam is split into two processes that run independently.
 
 ### Agent
-This is the process that would typically be deployed as a DaemonSet to ensure that Pods have no access to the AWS Metadata API. Instead, the agent runs an HTTP proxy which intercepts credentials requests and passes on anything else. An DNAT iptables [rule](cmd/agent/iptables.go) is required to intercept the traffic. The agent is capable of adding and removing the required rule for you through use of the `--iptables` [flag](cmd/agent/main.go). This is the name of the interface where pod traffic originates and it is different for the various CNI implementations. The flag also supports the `!` prefix for inverted matches should you need to match all but one interface.
+This is the process that would typically be deployed as a DaemonSet to ensure that Pods have no access to the AWS Metadata API. Instead, the agent runs an HTTP proxy which intercepts credentials requests and passes on anything else. An DNAT iptables [rule](cmd/kiam/iptables.go) is required to intercept the traffic. The agent is capable of adding and removing the required rule for you through use of the `--iptables` [flag](cmd/kiam/agent.go). This is the name of the interface where pod traffic originates and it is different for the various CNI implementations. The flag also supports the `!` prefix for inverted matches should you need to match all but one interface.
 
 ##### Typical CNI Interface Names #####
 

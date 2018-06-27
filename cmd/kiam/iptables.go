@@ -15,8 +15,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/coreos/go-iptables/iptables"
 	"strings"
+
+	"github.com/coreos/go-iptables/iptables"
 )
 
 type rules struct {
@@ -54,7 +55,7 @@ func (r *rules) ruleSpec() []string {
 		rules = append(rules, "!")
 	}
 	rules = append(rules, "-i", strings.TrimPrefix(r.hostInterface, "!"))
-	
+
 	return rules
 }
 
