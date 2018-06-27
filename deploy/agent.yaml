@@ -36,8 +36,9 @@ spec:
               add: ["NET_ADMIN"]
           image: quay.io/uswitch/kiam:v2.8
           command:
-            - /agent
+            - /kiam
           args:
+            - agent
             - --iptables
             - --host-interface=cali+
             - --json-log

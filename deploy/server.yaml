@@ -31,8 +31,9 @@ spec:
           image: quay.io/uswitch/kiam:v2.8
           imagePullPolicy: Always
           command:
-            - /server
+            - /kiam
           args:
+            - server
             - --json-log
             - --bind=0.0.0.0:443
             - --cert=/etc/kiam/tls/server.pem
@@ -50,7 +51,8 @@ spec:
           livenessProbe:
             exec:
               command:
-              - /health
+              - /kiam
+              - health
               - --cert=/etc/kiam/tls/server.pem
               - --key=/etc/kiam/tls/server-key.pem
               - --ca=/etc/kiam/tls/ca.pem
@@ -63,7 +65,8 @@ spec:
           readinessProbe:
             exec:
               command:
-              - /health
+              - /kiam
+              - health
               - --cert=/etc/kiam/tls/server.pem
               - --key=/etc/kiam/tls/server-key.pem
               - --ca=/etc/kiam/tls/ca.pem

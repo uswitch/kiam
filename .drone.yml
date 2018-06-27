@@ -4,22 +4,20 @@ workspace:
 
 pipeline:
   test:
-    image: golang:1.9
+    image: golang:1.10
     commands:
       - go test test/unit/*_test.go
       - go test test/functional/*_test.go
 
   benchmarks:
-    image: golang:1.9
+    image: golang:1.10
     commands:
       - go test -run=XX -bench=. test/unit/*.go
 
   build:
-    image: golang:1.9
+    image: golang:1.10
     commands:
-      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/agent cmd/agent/*.go
-      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/server cmd/server/*.go
-      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/health cmd/health/*.go
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/kiam cmd/kiam/*.go
 
   docker:
     when:
