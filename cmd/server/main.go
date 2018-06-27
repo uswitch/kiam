@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package main
+package server
 
 import (
 	"context"
@@ -30,16 +30,22 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-type options struct {
+type Options struct {
 	jsonLog          bool
 	logLevel         string
 	statsd           string
 	statsdInterval   time.Duration
 	prometheusListen string
 	prometheusSync   time.Duration
+
+	*serv.Config
 }
 
-func (o *options) bind(parser *kingpin.Application) {
+type parser interface {
+	Flag(name, help string) *kingpin.FlagClause
+}
+
+func (o *Options) Bind(parser parser) {
 	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
 	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
 
@@ -48,13 +54,16 @@ func (o *options) bind(parser *kingpin.Application) {
 
 	parser.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&o.prometheusListen)
 	parser.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&o.prometheusSync)
+
+	serverOpts := &serverOptions{o.Config}
+	serverOpts.bind(parser)
 }
 
 type serverOptions struct {
 	*serv.Config
 }
 
-func (o *serverOptions) bind(parser *kingpin.Application) {
+func (o *serverOptions) bind(parser parser) {
 	parser.Flag("fetchers", "Number of parallel fetcher go routines").Default("8").IntVar(&o.ParallelFetcherProcesses)
 	parser.Flag("prefetch-buffer-size", "How many Pod events to hold in memory between the Pod watcher and Prefetch manager.").Default("1000").IntVar(&o.PrefetchBufferSize)
 	parser.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&o.BindAddress)
@@ -72,16 +81,8 @@ func (o *serverOptions) bind(parser *kingpin.Application) {
 	parser.Flag("ca", "CA path").Required().ExistingFileVar(&o.TLS.CA)
 }
 
-func main() {
-	serverConfig := &serv.Config{TLS: &serv.TLSConfig{}}
-
-	var opts options
-	opts.bind(kingpin.CommandLine)
-
-	serverOpts := serverOptions{serverConfig}
-	serverOpts.bind(kingpin.CommandLine)
-
-	kingpin.Parse()
+func (opts *Options) Run() {
+	serverConfig := opts.Config
 
 	if !serverConfig.AutoDetectBaseARN && serverConfig.RoleBaseARN == "" {
 		log.Fatal("role-base-arn not specified and not auto-detected. please specify or use --role-base-arn-autodetect")
