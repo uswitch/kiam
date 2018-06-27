@@ -42,7 +42,7 @@ type Config struct {
 	SessionRefresh           time.Duration
 	RoleBaseARN              string
 	AutoDetectBaseARN        bool
-	TLS                      *TLSConfig
+	TLS                      TLSConfig
 	ParallelFetcherProcesses int
 	PrefetchBufferSize       int
 	AssumeRoleArn            string

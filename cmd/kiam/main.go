@@ -14,20 +14,19 @@
 package main
 
 import (
-	serv "github.com/uswitch/kiam/pkg/server"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 func main() {
 	rootParser := kingpin.CommandLine
 
-	agent := &agentCommand{}
+	var agent agentCommand
 	agent.Bind(rootParser.Command("agent", "run the agent"))
 
-	server := &serverCommand{Config: &serv.Config{TLS: &serv.TLSConfig{}}}
+	var server serverCommand
 	server.Bind(rootParser.Command("server", "run the server"))
 
-	health := &healthCommand{}
+	var health healthCommand
 	health.Bind(rootParser.Command("health", "run the health check"))
 
 	switch kingpin.Parse() {
