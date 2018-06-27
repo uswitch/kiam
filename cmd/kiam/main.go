@@ -14,9 +14,6 @@
 package main
 
 import (
-	"github.com/uswitch/kiam/cmd/agent"
-	"github.com/uswitch/kiam/cmd/health"
-	"github.com/uswitch/kiam/cmd/server"
 	serv "github.com/uswitch/kiam/pkg/server"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -24,24 +21,25 @@ import (
 func main() {
 	rootParser := kingpin.CommandLine
 
-	agentParser := rootParser.Command("agent", "run the agent")
-	agentOpts := &agent.Options{}
-	agentOpts.Bind(agentParser)
+	agent := &agentCommand{}
+	agent.Bind(rootParser.Command("agent", "run the agent"))
 
-	serverParser := rootParser.Command("server", "run the server")
-	serverOpts := &server.Options{Config: &serv.Config{TLS: &serv.TLSConfig{}}}
-	serverOpts.Bind(serverParser)
+	server := &serverCommand{Config: &serv.Config{TLS: &serv.TLSConfig{}}}
+	server.Bind(rootParser.Command("server", "run the server"))
 
-	healthParser := rootParser.Command("health", "run the health check")
-	healthOpts := &health.Options{}
-	healthOpts.Bind(healthParser)
+	health := &healthCommand{}
+	health.Bind(rootParser.Command("health", "run the health check"))
 
 	switch kingpin.Parse() {
 	case "agent":
-		agentOpts.Run()
+		agent.Run()
 	case "server":
-		serverOpts.Run()
+		server.Run()
 	case "health":
-		healthOpts.Run()
+		health.Run()
 	}
+}
+
+type parser interface {
+	Flag(name, help string) *kingpin.FlagClause
 }

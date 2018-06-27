@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package health
+package main
 
 import (
 	"context"
@@ -20,10 +20,9 @@ import (
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	kiamserver "github.com/uswitch/kiam/pkg/server"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-type Options struct {
+type healthCommand struct {
 	jsonLog              bool
 	logLevel             string
 	serverAddress        string
@@ -35,11 +34,7 @@ type Options struct {
 	timeout              time.Duration
 }
 
-type parser interface {
-	Flag(name, help string) *kingpin.FlagClause
-}
-
-func (o *Options) Bind(parser parser) {
+func (o *healthCommand) Bind(parser parser) {
 	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
 	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
 
@@ -53,7 +48,7 @@ func (o *Options) Bind(parser parser) {
 	parser.Flag("timeout", "Timeout for health check").Default("1s").DurationVar(&o.timeout)
 }
 
-func (opts *Options) Run() {
+func (opts *healthCommand) Run() {
 	if opts.jsonLog {
 		log.SetFormatter(&log.JSONFormatter{})
 	}

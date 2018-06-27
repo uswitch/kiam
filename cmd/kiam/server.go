@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package server
+package main
 
 import (
 	"context"
@@ -27,10 +27,9 @@ import (
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/prometheus"
 	serv "github.com/uswitch/kiam/pkg/server"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-type Options struct {
+type serverCommand struct {
 	jsonLog          bool
 	logLevel         string
 	statsd           string
@@ -41,11 +40,7 @@ type Options struct {
 	*serv.Config
 }
 
-type parser interface {
-	Flag(name, help string) *kingpin.FlagClause
-}
-
-func (o *Options) Bind(parser parser) {
+func (o *serverCommand) Bind(parser parser) {
 	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
 	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
 
@@ -81,7 +76,7 @@ func (o *serverOptions) bind(parser parser) {
 	parser.Flag("ca", "CA path").Required().ExistingFileVar(&o.TLS.CA)
 }
 
-func (opts *Options) Run() {
+func (opts *serverCommand) Run() {
 	serverConfig := opts.Config
 
 	if !serverConfig.AutoDetectBaseARN && serverConfig.RoleBaseARN == "" {

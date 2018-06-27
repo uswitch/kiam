@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package agent
+package main
 
 import (
 	"context"
@@ -27,10 +27,9 @@ import (
 	http "github.com/uswitch/kiam/pkg/aws/metadata"
 	"github.com/uswitch/kiam/pkg/prometheus"
 	kiamserver "github.com/uswitch/kiam/pkg/server"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-type Options struct {
+type agentCommand struct {
 	jsonLog              bool
 	logLevel             string
 	port                 int
@@ -51,11 +50,7 @@ type Options struct {
 	caPath          string
 }
 
-type parser interface {
-	Flag(name, help string) *kingpin.FlagClause
-}
-
-func (o *Options) Bind(parser parser) {
+func (o *agentCommand) Bind(parser parser) {
 	parser.Flag("json-log", "Output log in JSON").BoolVar(&o.jsonLog)
 	parser.Flag("level", "Log level: debug, info, warn, error.").Default("info").EnumVar(&o.logLevel, "debug", "info", "warn", "error")
 
@@ -80,7 +75,7 @@ func (o *Options) Bind(parser parser) {
 	parser.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&o.prometheusSync)
 }
 
-func (o *Options) configureLogger() {
+func (o *agentCommand) configureLogger() {
 	if o.jsonLog {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
@@ -97,7 +92,7 @@ func (o *Options) configureLogger() {
 	}
 }
 
-func (opts *Options) Run() {
+func (opts *agentCommand) Run() {
 	opts.configureLogger()
 
 	if opts.iptables {
