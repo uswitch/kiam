@@ -181,7 +181,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 		return nil, err
 	}
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
-		return nil, fmt.Errorf("failed to append client certs")
+		return nil, fmt.Errorf("failed to append CA cert to certPool")
 	}
 	creds := credentials.NewTLS(&tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
