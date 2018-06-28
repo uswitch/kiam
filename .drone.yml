@@ -6,18 +6,17 @@ pipeline:
   test:
     image: golang:1.10
     commands:
-      - go test test/unit/*_test.go
-      - go test test/functional/*_test.go
+      - make test
 
   benchmarks:
     image: golang:1.10
     commands:
-      - go test -run=XX -bench=. test/unit/*.go
+      - make bench
 
   build:
     image: golang:1.10
     commands:
-      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/kiam cmd/kiam/*.go
+      - make build-linux
 
   docker:
     when:
