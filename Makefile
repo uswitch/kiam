@@ -3,7 +3,7 @@ BIN = bin/kiam
 BIN_LINUX = $(BIN)-linux-$(ARCH)
 BIN_DARWIN = $(BIN)-darwin-$(ARCH)
 
-SOURCES := $(shell find . -not -path '*vendor*' -iname '*.go') proto/service.pb.go
+SOURCES := $(shell find . -iname '*.go') proto/service.pb.go
 
 .PHONY: test clean all
 
