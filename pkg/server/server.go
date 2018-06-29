@@ -31,6 +31,11 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/record"
 )
 
 type Config struct {
@@ -150,6 +155,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	if err != nil {
 		log.Fatalf("couldn't create kubernetes client: %s", err.Error())
 	}
+
 	server.pods = k8s.NewPodCache(k8s.NewListWatch(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
 	server.namespaces = k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 
@@ -213,4 +219,15 @@ func (k *KiamServer) Serve(ctx context.Context) {
 // Stop performs a graceful shutdown of the gRPC server
 func (k *KiamServer) Stop() {
 	k.server.GracefulStop()
+}
+
+func eventRecorder(kubeClient *kubernetes.Clientset) record.EventRecorder {
+	source := v1.EventSource{Component: "kiam.server"}
+	sink := &typedcorev1.EventSinkImpl{
+		Interface: kubeClient.CoreV1().Events(""),
+	}
+	broadcaster := record.NewBroadcaster()
+	broadcaster.StartRecordingToSink(sink)
+
+	return broadcaster.NewRecorder(scheme.Scheme, source)
 }
