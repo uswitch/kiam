@@ -17,14 +17,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/rcrowley/go-metrics"
-	"github.com/uswitch/kiam/pkg/k8s"
+	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"time"
 )
 
 type roleHandler struct {
-	roleFinder k8s.RoleFinder
-	clientIP   clientIPFunc
+	client   server.Client
+	clientIP clientIPFunc
 }
 
 func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
@@ -42,7 +42,7 @@ func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *ht
 		return http.StatusInternalServerError, err
 	}
 
-	role, err := findRole(ctx, h.roleFinder, ip)
+	role, err := findRole(ctx, h.client, ip)
 	if err != nil {
 		metrics.GetOrRegisterMeter("roleNameHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
 		return http.StatusInternalServerError, err

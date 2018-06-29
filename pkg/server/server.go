@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+// Config controls the setup of the gRPC server
 type Config struct {
 	BindAddress              string
 	KubeConfig               string
@@ -48,12 +49,14 @@ type Config struct {
 	AssumeRoleArn            string
 }
 
+// TLSConfig controls TLS
 type TLSConfig struct {
 	ServerCert string
 	ServerKey  string
 	CA         string
 }
 
+// KiamServer is the gRPC server. Construct with NewServer.
 type KiamServer struct {
 	listener            net.Listener
 	server              *grpc.Server
@@ -65,6 +68,14 @@ type KiamServer struct {
 	parallelFetchers    int
 }
 
+// GetPodCredentials returns credentials for the Pod, according to the role it's
+// annotated with. It will additionally check policy before returning credentials.
+func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCredentialsRequest) (*pb.Credentials, error) {
+	return nil, nil
+}
+
+// IsAllowedAssumeRole checks policy to ensure the role can be assumed. Deprecated and will
+// be removed in a future release.
 func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
 	decision, err := k.assumePolicy.IsAllowedAssumeRole(ctx, req.Role.Name, req.Ip)
 	if err != nil {
@@ -79,10 +90,12 @@ func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedA
 	}, nil
 }
 
+// GetHealth returns ok to allow a command to ensure the sever is operating well
 func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb.HealthStatus, error) {
 	return &pb.HealthStatus{Message: "ok"}, nil
 }
 
+// GetPodRole determines which role a Pod is annotated with
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
 	logger := log.WithField("pod.ip", req.Ip)
 	pod, err := k.pods.FindPodForIP(req.Ip)
@@ -110,6 +123,8 @@ func translateCredentialsToProto(credentials *sts.Credentials) *pb.Credentials {
 	}
 }
 
+// GetRoleCredentials returns the credentials for the role. Deprecated and will be
+// removed in a future release.
 func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCredentialsRequest) (*pb.Credentials, error) {
 	logger := log.WithField("pod.iam.role", req.Role.Name)
 
@@ -137,6 +152,7 @@ func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {
 	return sts.DefaultResolver(config.RoleBaseARN), nil
 }
 
+// NewServer constructs a new server.
 func NewServer(config *Config) (*KiamServer, error) {
 	server := &KiamServer{parallelFetchers: config.ParallelFetcherProcesses}
 
@@ -190,7 +206,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	})
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
-	pb.RegisterKiamServiceServer(grpcServer, ServerWithTelemetry(server))
+	pb.RegisterKiamServiceServer(grpcServer, server)
 	server.server = grpcServer
 
 	return server, nil

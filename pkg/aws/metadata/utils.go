@@ -17,7 +17,7 @@ import (
 	"context"
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/kiam/pkg/k8s"
+	"github.com/uswitch/kiam/pkg/server"
 	"time"
 )
 
@@ -25,12 +25,12 @@ const (
 	retryInterval = time.Millisecond * 5
 )
 
-func findRole(ctx context.Context, finder k8s.RoleFinder, ip string) (string, error) {
+func findRole(ctx context.Context, client server.Client, ip string) (string, error) {
 	logger := log.WithField("pod.ip", ip)
 
 	roleCh := make(chan string, 1)
 	op := func() error {
-		role, err := finder.FindRoleFromIP(ctx, ip)
+		role, err := client.GetRole(ctx, ip)
 		if err != nil {
 			logger.Warnf("error finding role for pod: %s", err.Error())
 			return err

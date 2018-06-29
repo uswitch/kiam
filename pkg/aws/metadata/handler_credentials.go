@@ -20,19 +20,15 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
-	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
-	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"time"
 )
 
 type credentialsHandler struct {
-	roleFinder          k8s.RoleFinder
-	credentialsProvider sts.CredentialsProvider
-	clientIP            clientIPFunc
-	policy              server.AssumeRolePolicy
+	clientIP clientIPFunc
+	client   server.Client
 }
 
 func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
@@ -50,35 +46,14 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 		return http.StatusInternalServerError, err
 	}
 
-	foundRole, err := findRole(ctx, c.roleFinder, ip)
-	if err != nil {
-		metrics.GetOrRegisterMeter("credentialsHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
-		return http.StatusInternalServerError, fmt.Errorf("error finding pod for ip %s: %s", ip, err.Error())
-	}
-
-	if foundRole == "" {
-		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
-		return http.StatusNotFound, EmptyRoleError
-	}
-
 	requestedRole := mux.Vars(req)["role"]
 	if requestedRole == "" {
 		return http.StatusBadRequest, fmt.Errorf("no role specified")
 	}
 
-	decision, err := c.policy.IsAllowedAssumeRole(ctx, requestedRole, ip)
-	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error checking assume role permissions: %s", err.Error())
-	}
-
-	if !decision.IsAllowed() {
-		return http.StatusForbidden, fmt.Errorf("assume role forbidden: %s", decision.Explanation())
-	}
-
-	credentials, err := c.credentialsForRole(ctx, requestedRole)
-	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("unexpected error: %s", ctx.Err().Error())
-	}
+	// TODO
+	// Call GetCredentials
+	credentials, _ := c.fetchCredentials(ctx, ip, requestedRole)
 
 	err = json.NewEncoder(w).Encode(credentials)
 	if err != nil {
@@ -90,15 +65,11 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 	return http.StatusOK, nil
 }
 
-func (c *credentialsHandler) credentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
+func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requestedRole string) (*sts.Credentials, error) {
 	credsCh := make(chan *sts.Credentials, 1)
 	op := func() error {
-		credentials, err := c.credentialsProvider.CredentialsForRole(ctx, role)
-		if err != nil {
-			log.WithField("pod.iam.role", role).Warnf("error getting credentials for role: %s", err.Error())
-			return err
-		}
-		credsCh <- credentials
+		//TODO
+		// Implement call for credentials
 		return nil
 	}
 

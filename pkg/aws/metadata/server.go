@@ -20,8 +20,6 @@ import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
 	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/kiam/pkg/aws/sts"
-	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"net/http/httputil"
@@ -49,15 +47,15 @@ func NewConfig(port int) *ServerConfig {
 	}
 }
 
-func NewWebServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider, policy server.AssumeRolePolicy) (*Server, error) {
-	http, err := buildHTTPServer(config, finder, credentials, policy)
+func NewWebServer(config *ServerConfig, client server.Client) (*Server, error) {
+	http, err := buildHTTPServer(config, client)
 	if err != nil {
 		return nil, err
 	}
 	return &Server{cfg: config, server: http}, nil
 }
 
-func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials sts.CredentialsProvider, policy server.AssumeRolePolicy) (*http.Server, error) {
+func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, error) {
 	router := mux.NewRouter()
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
@@ -68,8 +66,8 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 	clientIP := buildClientIP(config)
 
 	r := &roleHandler{
-		roleFinder: finder,
-		clientIP:   clientIP,
+		client:   client,
+		clientIP: clientIP,
 	}
 
 	securityCredsHandler := adapt(withMeter("roleName", r))
@@ -77,10 +75,8 @@ func buildHTTPServer(config *ServerConfig, finder k8s.RoleFinder, credentials st
 	router.Handle("/{version}/meta-data/iam/security-credentials/", securityCredsHandler)
 
 	c := &credentialsHandler{
-		roleFinder:          finder,
-		credentialsProvider: credentials,
-		clientIP:            clientIP,
-		policy:              policy,
+		clientIP: clientIP,
+		client:   client,
 	}
 	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", c)))
 
