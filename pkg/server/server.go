@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/reference"
 )
 
 type Config struct {
@@ -64,6 +65,7 @@ type KiamServer struct {
 	server              *grpc.Server
 	pods                *k8s.PodCache
 	namespaces          *k8s.NamespaceCache
+	eventRecorder       record.EventRecorder
 	manager             *prefetch.CredentialManager
 	credentialsProvider sts.CredentialsProvider
 	assumePolicy        AssumeRolePolicy
@@ -97,8 +99,15 @@ func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) 
 	}
 
 	role := k8s.PodRole(pod)
+	ref, err := reference.GetReference(scheme.Scheme, pod)
+	if err != nil {
+		logger.Errorf("error getting reference for pod %q: %s", pod.Name, err)
+		return nil, err
+	}
 
 	logger.WithField("pod.iam.role", role).Infof("found role")
+	k.eventRecorder.Event(ref, v1.EventTypeNormal, "KiamRoleFound",
+		fmt.Sprintf("Role: %q found for pod: %q", role, pod.Name))
 
 	return &pb.Role{Name: role}, nil
 }
@@ -158,6 +167,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 
 	server.pods = k8s.NewPodCache(k8s.NewListWatch(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
 	server.namespaces = k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
+	server.eventRecorder = eventRecorder(client)
 
 	stsGateway := sts.DefaultGateway(config.AssumeRoleArn)
 	arnResolver, err := newRoleARNResolver(config)
