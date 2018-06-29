@@ -14,8 +14,9 @@
 package metadata
 
 import (
-	log "github.com/sirupsen/logrus"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type statusWriter struct {
@@ -48,6 +49,11 @@ func loggingHandler(handler http.Handler) http.Handler {
 			"headers": w.Header(),
 			"status":  statusWriter.statusCode,
 		}
-		log.WithFields(requestFields(req)).WithFields(fields).Infof("processed request")
+		logger := log.WithFields(requestFields(req)).WithFields(fields)
+		if statusWriter.statusCode < 400 {
+			logger.Debug("processed request")
+		} else {
+			logger.Info("processed request")
+		}
 	})
 }
