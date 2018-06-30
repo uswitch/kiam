@@ -5,7 +5,6 @@ import (
 
 	auth "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 type MockReviewer struct {
@@ -56,7 +55,6 @@ func (m *MockReviewer) CreateReview(token string) (*KiamReview, error) {
 func NewMockReviewer(namespace, name string) *MockReviewer {
 	return &MockReviewer{
 		&TokenReviewer{
-			Client:    fake.NewSimpleClientset(),
 			Namespace: namespace,
 			Name:      name,
 		},
