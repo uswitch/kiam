@@ -33,25 +33,35 @@ import (
 
 // Client to interact with KiamServer, exposing k8s.RoleFinder and sts.CredentialsProvider interfaces
 type KiamGateway struct {
-	conn   *grpc.ClientConn
-	client pb.KiamServiceClient
+	conn                *grpc.ClientConn
+	client              pb.KiamServiceClient
+	serviceAccountToken string
 }
 
 const (
 	RetryInterval = 10 * time.Millisecond
 )
 
-func NewGateway(ctx context.Context, address string, refresh time.Duration, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
+type KiamGatewayConfig struct {
+	Address             string
+	Refresh             time.Duration
+	CaFile              string
+	CertificateFile     string
+	KeyFile             string
+	ServiceAccountToken string
+}
+
+func NewGateway(ctx context.Context, config *KiamGatewayConfig) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
 	}
 
-	certificate, err := tls.LoadX509KeyPair(certificateFile, keyFile)
+	certificate, err := tls.LoadX509KeyPair(config.CertificateFile, config.KeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("error loading keypair: %v", err)
 	}
 	certPool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile(caFile)
+	ca, err := ioutil.ReadFile(config.CaFile)
 	if err != nil {
 		return nil, fmt.Errorf("error reading SSL cert: %v", err)
 	}
@@ -59,7 +69,7 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 		return nil, fmt.Errorf("error appending certs from ca")
 	}
 
-	host, _, err := net.SplitHostPort(address)
+	host, _, err := net.SplitHostPort(config.Address)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing hostname: %v", err)
 	}
@@ -70,7 +80,7 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 		RootCAs:      certPool,
 	})
 
-	resolver, err := naming.NewDNSResolverWithFreq(refresh)
+	resolver, err := naming.NewDNSResolverWithFreq(config.Refresh)
 	if err != nil {
 		return nil, fmt.Errorf("error creating DNS resolver: %v", err)
 	}
@@ -81,7 +91,7 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 		grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...)),
 		grpc.WithBalancer(balancer),
 	}
-	conn, err := grpc.Dial(address, dialOpts...)
+	conn, err := grpc.Dial(config.Address, dialOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing grpc server: %v", err)
 	}
@@ -98,7 +108,7 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 	err = backoff.Retry(lookupAddress, backoff.WithContext(backoff.NewConstantBackOff(50*time.Millisecond), ctx))
 
 	client := pb.NewKiamServiceClient(conn)
-	return &KiamGateway{conn: conn, client: ClientWithTelemetry(client)}, nil
+	return &KiamGateway{conn: conn, client: ClientWithTelemetry(client), serviceAccountToken: config.ServiceAccountToken}, nil
 }
 
 func (g *KiamGateway) Close() {
@@ -130,7 +140,9 @@ func (g *KiamGateway) IsAllowedAssumeRole(ctx context.Context, role, podIP strin
 }
 
 func (g *KiamGateway) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
-	credentials, err := g.client.GetRoleCredentials(ctx, &pb.GetRoleCredentialsRequest{&pb.Role{Name: role}})
+	credentials, err := g.client.GetRoleCredentials(ctx, &pb.GetRoleCredentialsRequest{
+		Role:                &pb.Role{Name: role},
+		ServiceAccountToken: g.serviceAccountToken})
 	if err != nil {
 		return nil, err
 	}

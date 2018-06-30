@@ -31,6 +31,7 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -52,6 +53,8 @@ type Config struct {
 	ParallelFetcherProcesses int
 	PrefetchBufferSize       int
 	AssumeRoleArn            string
+	AgentServiceAccountName  string
+	AgentNamespace           string
 }
 
 type TLSConfig struct {
@@ -70,6 +73,7 @@ type KiamServer struct {
 	credentialsProvider sts.CredentialsProvider
 	assumePolicy        AssumeRolePolicy
 	parallelFetchers    int
+	tokenReviewer       *k8s.TokenReviewer
 }
 
 func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
@@ -87,6 +91,13 @@ func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedA
 }
 
 func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb.HealthStatus, error) {
+	var logger *log.Entry
+	if client, ok := peer.FromContext(ctx); ok {
+		logger = log.WithField("health.check", client.Addr.String())
+	} else {
+		logger = log.WithField("health.check", "unknown")
+	}
+	logger.Debug("received Health check")
 	return &pb.HealthStatus{Message: "ok"}, nil
 }
 
@@ -128,6 +139,13 @@ func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCred
 	logger := log.WithField("pod.iam.role", req.Role.Name)
 
 	logger.Infof("requesting credentials")
+
+	if k.tokenReviewer != nil {
+		if err := k.reviewToken(req.ServiceAccountToken); err != nil {
+			return nil, err
+		}
+	}
+
 	credentials, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role.Name)
 	if err != nil {
 		logger.Errorf("error requesting credentials: %s", err.Error())
@@ -135,6 +153,21 @@ func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCred
 	}
 
 	return translateCredentialsToProto(credentials), nil
+}
+
+func (k *KiamServer) reviewToken(token string) error {
+	log.Debugf("reviewing token")
+	review, err := k.tokenReviewer.CreateReview(token)
+	if err != nil {
+		return err
+	}
+	if auth, err := review.Review(); auth {
+		log.Infof("validated token name: %s namespace:%s", review.GetName(), review.GetNamespace())
+		return nil
+	} else {
+		log.Errorf("failed validated token %v", err)
+		return err
+	}
 }
 
 func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {
@@ -183,6 +216,10 @@ func NewServer(config *Config) (*KiamServer, error) {
 	server.credentialsProvider = credentialsCache
 	server.manager = prefetch.NewManager(credentialsCache, server.pods, server.pods)
 	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
+
+	if config.AgentNamespace != "" && config.AgentServiceAccountName != "" {
+		server.tokenReviewer = k8s.NewTokenReviewer(client, config.AgentNamespace, config.AgentServiceAccountName)
+	}
 
 	certificate, err := tls.LoadX509KeyPair(config.TLS.ServerCert, config.TLS.ServerKey)
 	if err != nil {

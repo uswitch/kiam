@@ -19,6 +19,7 @@ message Role {
 
 message GetRoleCredentialsRequest {
   Role role = 1;
+  string service_account_token = 2;
 }
 
 message Credentials {

@@ -15,6 +15,7 @@ package k8s
 
 import (
 	"context"
+
 	"k8s.io/api/core/v1"
 )
 
@@ -36,4 +37,8 @@ type PodAnnouncer interface {
 
 type NamespaceFinder interface {
 	FindNamespace(ctx context.Context, name string) (*v1.Namespace, error)
+}
+
+type TokenReview interface {
+	CreateReview(token string) (*KiamReview, error)
 }

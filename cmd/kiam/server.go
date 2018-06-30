@@ -57,6 +57,8 @@ func (o *serverOptions) bind(parser parser) {
 	parser.Flag("session-duration", "Requested session duration for STS Tokens.").Default("15m").DurationVar(&o.SessionDuration)
 	parser.Flag("session-refresh", "How soon STS Tokens should be refreshed before their expiration.").Default("5m").DurationVar(&o.SessionRefresh)
 	parser.Flag("assume-role-arn", "IAM Role to assume before processing requests").Default("").StringVar(&o.AssumeRoleArn)
+	parser.Flag("agent-namespace", "The namespace that includes agent service account").Default("").StringVar(&o.AgentNamespace)
+	parser.Flag("agent-service-name", "The name of agent service account").Default("").StringVar(&o.AgentServiceAccountName)
 }
 
 func (opts *serverCommand) Run() {

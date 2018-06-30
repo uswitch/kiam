@@ -16,10 +16,11 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"github.com/rcrowley/go-metrics"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/rcrowley/go-metrics"
+	log "github.com/sirupsen/logrus"
 )
 
 // interface for request handlers

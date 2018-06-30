@@ -15,6 +15,7 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
@@ -22,6 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	http "github.com/uswitch/kiam/pkg/aws/metadata"
 	kiamserver "github.com/uswitch/kiam/pkg/server"
+	"k8s.io/api/core/v1"
 )
 
 type agentCommand struct {
@@ -30,11 +32,12 @@ type agentCommand struct {
 	tlsOptions
 	clientOptions
 
-	port          int
-	allowIPQuery  bool
-	iptables      bool
-	hostIP        string
-	hostInterface string
+	port                   int
+	allowIPQuery           bool
+	iptables               bool
+	hostIP                 string
+	hostInterface          string
+	useServiceAccountToken bool
 }
 
 func (cmd *agentCommand) Bind(parser parser) {
@@ -44,6 +47,7 @@ func (cmd *agentCommand) Bind(parser parser) {
 	cmd.clientOptions.bind(parser)
 
 	parser.Flag("port", "HTTP port").Default("3100").IntVar(&cmd.port)
+	parser.Flag("service-account-token", "Send ServiceAccountToken in Role Request").Default("true").BoolVar(&cmd.useServiceAccountToken)
 	parser.Flag("allow-ip-query", "Allow client IP to be specified with ?ip. Development use only.").Default("false").BoolVar(&cmd.allowIPQuery)
 
 	parser.Flag("iptables", "Add IPTables rules").Default("false").BoolVar(&cmd.iptables)
@@ -79,7 +83,23 @@ func (opts *agentCommand) Run() {
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
 
-	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath)
+	kiamConfig := &kiamserver.KiamGatewayConfig{
+		Address:             opts.serverAddress,
+		Refresh:             opts.serverAddressRefresh,
+		CaFile:              opts.caPath,
+		CertificateFile:     opts.certificatePath,
+		KeyFile:             opts.keyPath,
+		ServiceAccountToken: "",
+	}
+	if opts.useServiceAccountToken {
+		token, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/" + v1.ServiceAccountTokenKey)
+		if err != nil {
+			log.Fatalf("error reading service account token: %s", err.Error())
+		}
+		kiamConfig.ServiceAccountToken = string(token[:])
+	}
+
+	gateway, err := kiamserver.NewGateway(ctxGateway, kiamConfig)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}

@@ -17,6 +17,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/cenkalti/backoff"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
@@ -24,8 +27,6 @@ import (
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/server"
-	"net/http"
-	"time"
 )
 
 type credentialsHandler struct {
