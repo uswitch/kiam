@@ -11,7 +11,7 @@ pipeline:
   benchmarks:
     image: golang:1.10
     commands:
-      - go test -run=XX -bench=. test/unit/*.go
+      - go test -run=XX -bench=. github.com/uswitch/kiam/pkg/...
 
   build:
     image: golang:1.10
