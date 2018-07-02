@@ -11,17 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package kiam
+package future
 
 import (
 	"context"
-	"github.com/uswitch/kiam/pkg/future"
 	"testing"
 	"time"
 )
 
 func TestReturnsValue(t *testing.T) {
-	f := future.New(func() (interface{}, error) {
+	f := New(func() (interface{}, error) {
 		return "hello", nil
 	})
 	val, _ := f.Get(context.Background())
@@ -38,7 +37,7 @@ func TestReturnsValue(t *testing.T) {
 }
 
 func TestCancelsWhenBlocked(t *testing.T) {
-	f := future.New(func() (interface{}, error) {
+	f := New(func() (interface{}, error) {
 		time.Sleep(1 * time.Second)
 		return "bar", nil
 	})
@@ -52,7 +51,7 @@ func TestCancelsWhenBlocked(t *testing.T) {
 }
 
 func BenchmarkFutureGet(b *testing.B) {
-	f := future.New(func() (interface{}, error) {
+	f := New(func() (interface{}, error) {
 		return 1, nil
 	})
 	for n := 0; n < b.N; n++ {

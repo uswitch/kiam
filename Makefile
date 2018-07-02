@@ -10,7 +10,7 @@ proto/service.pb.go: proto/service.proto
 	protoc -I proto/ proto/service.proto --go_out=plugins=grpc:proto
 
 test: $(shell find . -name '*.go')
-	go test test/unit/*_test.go
+	go test github.com/uswitch/kiam/pkg/...
 	go test test/functional/*_test.go
 
 clean:

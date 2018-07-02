@@ -6,8 +6,7 @@ pipeline:
   test:
     image: golang:1.10
     commands:
-      - go test test/unit/*_test.go
-      - go test test/functional/*_test.go
+      - make test
 
   benchmarks:
     image: golang:1.10
