@@ -19,7 +19,7 @@ import (
 )
 
 type PodGetter interface {
-	GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error)
+	GetPodByIP(ip string) (*v1.Pod, error)
 }
 
 type PodAnnouncer interface {

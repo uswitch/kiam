@@ -78,7 +78,7 @@ type KiamServer struct {
 // GetPodCredentials returns credentials for the Pod, according to the role it's
 // annotated with. It will additionally check policy before returning credentials.
 func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCredentialsRequest) (*pb.Credentials, error) {
-	pod, err := k.pods.GetPodByIP(ctx, req.Ip)
+	pod, err := k.pods.GetPodByIP(req.Ip)
 	if err != nil {
 		if err == k8s.ErrPodNotFound {
 			return nil, ErrPodNotFound
@@ -132,7 +132,7 @@ func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb
 // GetPodRole determines which role a Pod is annotated with
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
 	logger := log.WithField("pod.ip", req.Ip)
-	pod, err := k.pods.FindPodForIP(req.Ip)
+	pod, err := k.pods.GetPodByIP(req.Ip)
 	if err != nil {
 		logger.Errorf("error finding pod: %s", err.Error())
 		return nil, err

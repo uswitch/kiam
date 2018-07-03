@@ -35,7 +35,7 @@ func TestFindsRunningPod(t *testing.T) {
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 	c.Run(ctx)
 
-	found, _ := c.FindPodForIP("192.168.0.1")
+	found, _ := c.GetPodByIP("192.168.0.1")
 	if found == nil {
 		t.Error("should have found pod")
 	}
@@ -82,7 +82,7 @@ func BenchmarkFindPodsByIP(b *testing.B) {
 	b.StartTimer()
 
 	for n := 0; n < b.N; n++ {
-		c.FindPodForIP("ip-500")
+		c.GetPodByIP("ip-500")
 	}
 }
 

@@ -27,16 +27,12 @@ type StubFinder struct {
 	pod *v1.Pod
 }
 
-func (f *StubFinder) FindPodForIP(ip string) (*v1.Pod, error) {
+func (f *StubFinder) GetPodByIP(ip string) (*v1.Pod, error) {
 	if f.pod == nil {
 		return nil, k8s.ErrPodNotFound
 	}
 
 	return f.pod, nil
-}
-
-func (f *StubFinder) GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error) {
-	return f.FindPodForIP(ip)
 }
 
 type stubAnnouncer struct {

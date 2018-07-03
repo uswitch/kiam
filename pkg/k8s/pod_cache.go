@@ -96,9 +96,9 @@ var (
 	ErrWaitingForSync = fmt.Errorf("error waiting for cache sync")
 )
 
-// FindPodForIP returns the Pod identified by the provided IP address. The
+// findPodForIP returns the Pod identified by the provided IP address. The
 // Pod must be active (i.e. pending or running)
-func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
+func (s *PodCache) findPodForIP(ip string) (*v1.Pod, error) {
 	found := make([]*v1.Pod, 0)
 
 	items, err := s.indexer.ByIndex(indexPodIP, ip)
@@ -134,8 +134,8 @@ func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 }
 
 // GetPodByIP returns the Pod with the provided IP address
-func (s *PodCache) GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error) {
-	return s.FindPodForIP(ip)
+func (s *PodCache) GetPodByIP(ip string) (*v1.Pod, error) {
+	return s.findPodForIP(ip)
 }
 
 const (
