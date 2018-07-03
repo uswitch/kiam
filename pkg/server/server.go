@@ -224,7 +224,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 		arnResolver,
 	)
 	server.credentialsProvider = credentialsCache
-	server.manager = prefetch.NewManager(credentialsCache, server.pods, server.pods)
+	server.manager = prefetch.NewManager(credentialsCache, server.pods)
 	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
 
 	certificate, err := tls.LoadX509KeyPair(config.TLS.ServerCert, config.TLS.ServerKey)

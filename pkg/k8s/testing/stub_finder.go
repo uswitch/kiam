@@ -35,19 +35,6 @@ func (f *StubFinder) FindPodForIP(ip string) (*v1.Pod, error) {
 	return f.pod, nil
 }
 
-func (f *StubFinder) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
-	pod, err := f.FindPodForIP(ip)
-	if err != nil {
-		return "", err
-	}
-
-	if pod == nil {
-		return "", nil
-	}
-
-	return k8s.PodRole(pod), nil
-}
-
 func (f *StubFinder) GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error) {
 	return f.FindPodForIP(ip)
 }

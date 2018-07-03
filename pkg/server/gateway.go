@@ -38,7 +38,7 @@ type Client interface {
 	Health(ctx context.Context) (string, error)
 }
 
-// KiamGateway is the client to interact with KiamServer, exposing k8s.RoleFinder and sts.CredentialsProvider interfaces
+// KiamGateway is the client to interact with KiamServer
 type KiamGateway struct {
 	conn   *grpc.ClientConn
 	client pb.KiamServiceClient

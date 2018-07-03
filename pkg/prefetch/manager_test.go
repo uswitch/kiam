@@ -27,13 +27,12 @@ func TestPrefetchRunningPods(t *testing.T) {
 	defer cancel()
 
 	requestedRoles := make(chan string)
-	finder := kt.NewStubFinder(nil)
 	announcer := kt.NewStubAnnouncer()
 	cache := testutil.NewStubCredentialsCache(func(role string) (*sts.Credentials, error) {
 		requestedRoles <- role
 		return &sts.Credentials{}, nil
 	})
-	manager := NewManager(cache, finder, announcer)
+	manager := NewManager(cache, announcer)
 	go manager.Run(ctx, 1)
 
 	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))

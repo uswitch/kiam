@@ -18,11 +18,6 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-type RoleFinder interface {
-	// Finds a uncompleted pod from its IP address
-	FindRoleFromIP(ctx context.Context, ip string) (string, error)
-}
-
 type PodGetter interface {
 	GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error)
 }

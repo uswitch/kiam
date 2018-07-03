@@ -133,21 +133,6 @@ func (s *PodCache) FindPodForIP(ip string) (*v1.Pod, error) {
 	return nil, ErrMultipleRunningPods
 }
 
-// FindRoleFromIP returns the IAM role, if specified, for the Pod identified
-// with the IP address
-func (s *PodCache) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
-	pod, err := s.FindPodForIP(ip)
-	if err != nil {
-		return "", err
-	}
-
-	if pod == nil {
-		return "", nil
-	}
-
-	return PodRole(pod), nil
-}
-
 // GetPodByIP returns the Pod with the provided IP address
 func (s *PodCache) GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error) {
 	return s.FindPodForIP(ip)
