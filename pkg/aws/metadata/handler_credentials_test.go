@@ -20,7 +20,7 @@ func TestReturnsCredentials(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/role", nil)
 	rr := httptest.NewRecorder()
 
-	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(st.GetCredentialsResult{&sts.Credentials{}, nil})
+	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(st.GetCredentialsResult{&sts.Credentials{AccessKeyId: "A1", SecretAccessKey: "S1"}, nil})
 	handler := newCredentialsHandler(client)
 	handler.ServeHTTP(rr, r.WithContext(ctx))
 
@@ -33,7 +33,7 @@ func TestReturnsCredentials(t *testing.T) {
 		t.Error("expected json result", content)
 	}
 
-	expected := `{"Code":"","Type":"","AccessKeyId":"","SecretAccessKey":"","Token":"","Expiration":"","LastUpdated":""}`
+	expected := `{"Code":"","Type":"","AccessKeyId":"A1","SecretAccessKey":"S1","Token":"","Expiration":"","LastUpdated":""}`
 
 	if !strings.Contains(rr.Body.String(), expected) {
 		t.Error("unexpected result", rr.Body.String())
