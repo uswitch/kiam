@@ -16,6 +16,7 @@ package prefetch
 import (
 	"context"
 	"github.com/uswitch/kiam/pkg/aws/sts"
+	kt "github.com/uswitch/kiam/pkg/k8s/testing"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"testing"
 	"time"
@@ -26,8 +27,8 @@ func TestPrefetchRunningPods(t *testing.T) {
 	defer cancel()
 
 	requestedRoles := make(chan string)
-	finder := testutil.NewStubFinder(nil)
-	announcer := testutil.NewStubAnnouncer()
+	finder := kt.NewStubFinder(nil)
+	announcer := kt.NewStubAnnouncer()
 	cache := testutil.NewStubCredentialsCache(func(role string) (*sts.Credentials, error) {
 		requestedRoles <- role
 		return &sts.Credentials{}, nil

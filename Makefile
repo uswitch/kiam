@@ -21,7 +21,6 @@ proto/service.pb.go: proto/service.proto
 
 test: $(shell find . -name '*.go')
 	go test github.com/uswitch/kiam/pkg/... -cover
-	go test test/functional/*_test.go
 
 coverage: $(shell find . -name '*.go')
 	go test github.com/uswitch/kiam/pkg/... -coverprofile=coverage.out
