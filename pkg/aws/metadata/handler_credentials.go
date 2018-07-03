@@ -51,13 +51,10 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	requestedRole := mux.Vars(req)["role"]
-	if requestedRole == "" {
-		return http.StatusBadRequest, fmt.Errorf("no role specified")
+	credentials, err := c.fetchCredentials(ctx, ip, requestedRole)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error fetching credentials: %s", err)
 	}
-
-	// TODO
-	// Call GetCredentials
-	credentials, _ := c.fetchCredentials(ctx, ip, requestedRole)
 
 	err = json.NewEncoder(w).Encode(credentials)
 	if err != nil {

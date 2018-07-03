@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func TestReturnsErrorWithoutRole(t *testing.T) {
+func TestReturnsCredentials(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -37,6 +37,25 @@ func TestReturnsErrorWithoutRole(t *testing.T) {
 
 	if !strings.Contains(rr.Body.String(), expected) {
 		t.Error("unexpected result", rr.Body.String())
+	}
+}
+
+func TestReturnsErrorWithNoPod(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/role", nil)
+	rr := httptest.NewRecorder()
+
+	client := st.NewStubClient().WithCredentials(st.GetCredentialsResult{nil, server.ErrPodNotFound})
+	handler := newCredentialsHandler(client)
+	handler.ServeHTTP(rr, r.WithContext(ctx))
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Error("unexpected status", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "error fetching credentials: no pod found") {
+		t.Error("unexpected error", rr.Body.String())
 	}
 }
 
