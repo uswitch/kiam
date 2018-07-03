@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 )
 
@@ -19,7 +18,11 @@ type GetRoleResult struct {
 }
 
 func (c *StubClient) GetRole(ctx context.Context, ip string) (string, error) {
-	fmt.Printf("idx: %d", c.rolesCallCount)
+	if c.rolesCallCount == len(c.Roles) {
+		v := c.Roles[len(c.Roles)-1]
+		return v.Role, v.Error
+	}
+
 	currentVal := c.Roles[c.rolesCallCount]
 	c.rolesCallCount = c.rolesCallCount + 1
 
@@ -30,4 +33,13 @@ func (c *StubClient) GetCredentials(ctx context.Context, ip, role string) (*sts.
 }
 func (c *StubClient) Health(ctx context.Context) (string, error) {
 	return "ok", nil
+}
+
+func (c *StubClient) WithRoles(roles ...GetRoleResult) *StubClient {
+	c.Roles = roles
+	return c
+}
+
+func NewStubClient() *StubClient {
+	return &StubClient{}
 }

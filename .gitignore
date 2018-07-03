@@ -2,3 +2,4 @@ bin/
 .idea/
 kiam.test
 mem.out
+coverage.out

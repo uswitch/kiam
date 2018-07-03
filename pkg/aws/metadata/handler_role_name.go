@@ -43,6 +43,7 @@ func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *ht
 	}
 
 	role, err := findRole(ctx, h.client, ip)
+
 	if err != nil {
 		metrics.GetOrRegisterMeter("roleNameHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
 		return http.StatusInternalServerError, err
