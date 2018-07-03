@@ -31,6 +31,10 @@ type credentialsHandler struct {
 	client   server.Client
 }
 
+func (c *credentialsHandler) Install(router *mux.Router) {
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", c)))
+}
+
 func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	credentialTimings := metrics.GetOrRegisterTimer("credentialsHandler", metrics.DefaultRegistry)
 	startTime := time.Now()
@@ -68,8 +72,11 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requestedRole string) (*sts.Credentials, error) {
 	credsCh := make(chan *sts.Credentials, 1)
 	op := func() error {
-		//TODO
-		// Implement call for credentials
+		creds, err := c.client.GetCredentials(ctx, ip, requestedRole)
+		if err != nil {
+			return err
+		}
+		credsCh <- creds
 		return nil
 	}
 

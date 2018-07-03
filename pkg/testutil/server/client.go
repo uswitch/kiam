@@ -7,8 +7,10 @@ import (
 
 // StubClient returns fake server responses
 type StubClient struct {
-	Roles          []GetRoleResult
-	rolesCallCount int
+	credentials          []GetCredentialsResult
+	credentialsCallCount int
+	roles                []GetRoleResult
+	rolesCallCount       int
 }
 
 // GetRoleResult is a return value from GetRole
@@ -18,25 +20,43 @@ type GetRoleResult struct {
 }
 
 func (c *StubClient) GetRole(ctx context.Context, ip string) (string, error) {
-	if c.rolesCallCount == len(c.Roles) {
-		v := c.Roles[len(c.Roles)-1]
+	if c.rolesCallCount == len(c.roles) {
+		v := c.roles[len(c.roles)-1]
 		return v.Role, v.Error
 	}
 
-	currentVal := c.Roles[c.rolesCallCount]
+	currentVal := c.roles[c.rolesCallCount]
 	c.rolesCallCount = c.rolesCallCount + 1
 
 	return currentVal.Role, currentVal.Error
 }
 func (c *StubClient) GetCredentials(ctx context.Context, ip, role string) (*sts.Credentials, error) {
-	return nil, nil
+	if c.credentialsCallCount == len(c.credentials) {
+		v := c.credentials[len(c.credentials)-1]
+		return v.Credentials, v.Error
+	}
+	v := c.credentials[c.credentialsCallCount]
+	c.credentialsCallCount = c.credentialsCallCount + 1
+
+	return v.Credentials, v.Error
 }
+
 func (c *StubClient) Health(ctx context.Context) (string, error) {
 	return "ok", nil
 }
 
 func (c *StubClient) WithRoles(roles ...GetRoleResult) *StubClient {
-	c.Roles = roles
+	c.roles = roles
+	return c
+}
+
+type GetCredentialsResult struct {
+	Credentials *sts.Credentials
+	Error       error
+}
+
+func (c *StubClient) WithCredentials(credentials ...GetCredentialsResult) *StubClient {
+	c.credentials = credentials
 	return c
 }
 
