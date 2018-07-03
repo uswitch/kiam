@@ -28,7 +28,7 @@ coverage: $(shell find . -name '*.go')
 	go tool cover -html=coverage.out
 
 bench: $(SOURCES)
-	go test -run=XX -bench=. test/unit/*.go
+	go test -run=XX -bench=. github.com/uswitch/kiam/pkg/...
 
 docker: Dockerfile $(BIN_LINUX)
 	docker image build -t quay.io/uswitch/kiam:devel .
