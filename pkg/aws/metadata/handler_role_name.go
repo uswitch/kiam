@@ -16,6 +16,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
@@ -25,6 +26,12 @@ import (
 type roleHandler struct {
 	client   server.Client
 	clientIP clientIPFunc
+}
+
+func (h *roleHandler) Install(router *mux.Router) {
+	handler := adapt(withMeter("roleName", h))
+	router.Handle("/{version}/meta-data/iam/security-credentials", handler)
+	router.Handle("/{version}/meta-data/iam/security-credentials/", handler)
 }
 
 func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {

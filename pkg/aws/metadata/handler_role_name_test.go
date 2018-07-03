@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/uswitch/kiam/pkg/server"
 	st "github.com/uswitch/kiam/pkg/testutil/server"
 	"net/http"
@@ -16,14 +17,10 @@ func TestReturnRoleWhenClientResponds(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}))
 
-	status, err := handler.Handle(context.Background(), rr, r)
+	handler.ServeHTTP(rr, r)
 
-	if err != nil {
-		t.Error("unexpected error:", err)
-	}
-
-	if status != http.StatusOK {
-		t.Error("expected 200 response, was", status)
+	if rr.Code != http.StatusOK {
+		t.Error("expected 200 response, was", rr.Code)
 	}
 
 	body := rr.Body.String()
@@ -37,14 +34,10 @@ func TestReturnRoleWhenRetryingFollowingError(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", fmt.Errorf("unexpected error")}, st.GetRoleResult{"foo_role", nil}))
 
-	status, err := handler.Handle(context.Background(), rr, r)
+	handler.ServeHTTP(rr, r)
 
-	if err != nil {
-		t.Error(err)
-	}
-
-	if status != http.StatusOK {
-		t.Error("expected 200 response, was", status)
+	if rr.Code != http.StatusOK {
+		t.Error("expected 200 response, was", rr.Code)
 	}
 
 	body := rr.Body.String()
@@ -58,42 +51,38 @@ func TestReturnsEmptyRoleWhenClientSucceedsWithEmptyRole(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", nil}))
 
-	status, err := handler.Handle(context.Background(), rr, r)
+	handler.ServeHTTP(rr, r)
 
-	if status != http.StatusNotFound {
-		t.Error("expected 404 response, was", status)
-	}
-
-	if err != EmptyRoleError {
-		t.Error("unexpected error, was", err)
+	if rr.Code != http.StatusNotFound {
+		t.Error("expected 404 response, was", rr.Code)
 	}
 }
 
 func TestReturnErrorWhenPodNotFoundWithinTimeout(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
 	handler := newHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", server.ErrPodNotFound}))
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
+	handler.ServeHTTP(rr, r.WithContext(ctx))
 
-	status, err := handler.Handle(ctx, rr, r)
-
-	if status != http.StatusInternalServerError {
-		t.Error("expected internal server error, was:", status)
-	}
-	if err != server.ErrPodNotFound {
-		t.Error("unexpected error, was", err)
+	if rr.Code != http.StatusInternalServerError {
+		t.Error("expected internal server error, was:", rr.Code)
 	}
 }
 
-func newHandler(c server.Client) *roleHandler {
+func newHandler(c server.Client) http.Handler {
 	ip := func(r *http.Request) (string, error) {
 		return "", nil
 	}
 
-	return &roleHandler{
+	h := &roleHandler{
 		client:   c,
 		clientIP: ip,
 	}
+	r := mux.NewRouter()
+	h.Install(r)
+	return r
 }

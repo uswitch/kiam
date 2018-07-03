@@ -69,16 +69,13 @@ func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, 
 		client:   client,
 		clientIP: clientIP,
 	}
-
-	securityCredsHandler := adapt(withMeter("roleName", r))
-	router.Handle("/{version}/meta-data/iam/security-credentials", securityCredsHandler)
-	router.Handle("/{version}/meta-data/iam/security-credentials/", securityCredsHandler)
+	r.Install(router)
 
 	c := &credentialsHandler{
 		clientIP: clientIP,
 		client:   client,
 	}
-	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", c)))
+	c.Install(router)
 
 	metadataURL, err := url.Parse(config.MetadataEndpoint)
 	if err != nil {

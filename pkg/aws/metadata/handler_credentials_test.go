@@ -59,6 +59,24 @@ func TestReturnsErrorWithNoPod(t *testing.T) {
 	}
 }
 
+func TestReturnsCredentialsWithRetryAfterError(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/role", nil)
+	rr := httptest.NewRecorder()
+
+	valid := st.GetCredentialsResult{&sts.Credentials{}, nil}
+	e := st.GetCredentialsResult{nil, server.ErrPodNotFound}
+	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(e, valid)
+	handler := newCredentialsHandler(client)
+	handler.ServeHTTP(rr, r.WithContext(ctx))
+
+	if rr.Code != http.StatusOK {
+		t.Error("unexpected status", rr.Code)
+	}
+}
+
 func newCredentialsHandler(c server.Client) http.Handler {
 	ip := func(r *http.Request) (string, error) {
 		return "", nil
