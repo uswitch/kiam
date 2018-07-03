@@ -80,7 +80,21 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 		return nil, err
 	}
 
-	return nil, nil
+	decision, err := k.assumePolicy.IsAllowedAssumeRole(ctx, req.Role, req.Ip)
+	if err != nil {
+		return nil, err
+	}
+
+	if !decision.IsAllowed() {
+		return nil, ErrPolicyForbidden
+	}
+
+	creds, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role)
+	if err != nil {
+		return nil, err
+	}
+
+	return translateCredentialsToProto(creds), nil
 }
 
 // IsAllowedAssumeRole checks policy to ensure the role can be assumed. Deprecated and will
