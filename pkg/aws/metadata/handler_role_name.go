@@ -16,8 +16,10 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"github.com/cenkalti/backoff"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
+	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"time"
@@ -65,4 +67,33 @@ func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *ht
 	metrics.GetOrRegisterMeter("roleNameHandler.success", metrics.DefaultRegistry).Mark(1)
 
 	return http.StatusOK, nil
+}
+
+const (
+	retryInterval = time.Millisecond * 5
+)
+
+func findRole(ctx context.Context, client server.Client, ip string) (string, error) {
+	logger := log.WithField("pod.ip", ip)
+
+	roleCh := make(chan string, 1)
+	op := func() error {
+		role, err := client.GetRole(ctx, ip)
+		if err != nil {
+			logger.Warnf("error finding role for pod: %s", err.Error())
+			return err
+		}
+		roleCh <- role
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = retryInterval
+
+	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
+	if err != nil {
+		return "", err
+	}
+
+	return <-roleCh, nil
 }
