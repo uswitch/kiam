@@ -116,16 +116,28 @@ func (g *KiamGateway) Close() {
 
 // GetRole returns the role for the identified Pod
 func (g *KiamGateway) GetRole(ctx context.Context, ip string) (string, error) {
-	// TODO
-	// implement
-	return "", nil
+	role, err := g.client.GetPodRole(ctx, &pb.GetPodRoleRequest{Ip: ip})
+	if err != nil {
+		return "", err
+	}
+	return role.GetName(), nil
 }
 
 // GetCredentials returns the credentials for the identified Pod
 func (g *KiamGateway) GetCredentials(ctx context.Context, ip, role string) (*sts.Credentials, error) {
-	// TODO
-	// implement
-	return nil, nil
+	credentials, err := g.client.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: ip, Role: role})
+	if err != nil {
+		return nil, err
+	}
+	return &sts.Credentials{
+		Code:            credentials.Code,
+		Type:            credentials.Type,
+		AccessKeyId:     credentials.AccessKeyId,
+		SecretAccessKey: credentials.SecretAccessKey,
+		Token:           credentials.Token,
+		Expiration:      credentials.Expiration,
+		LastUpdated:     credentials.LastUpdated,
+	}, nil
 }
 
 // Health is used to check the gRPC client connection
@@ -136,21 +148,3 @@ func (g *KiamGateway) Health(ctx context.Context) (string, error) {
 	}
 	return status.Message, nil
 }
-
-// func (g *KiamGateway) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
-// 	credentials, err := g.client.GetRoleCredentials(ctx, &pb.GetRoleCredentialsRequest{
-// 		Role: &pb.Role{Name: role},
-// 	})
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &sts.Credentials{
-// 		Code:            credentials.Code,
-// 		Type:            credentials.Type,
-// 		AccessKeyId:     credentials.AccessKeyId,
-// 		SecretAccessKey: credentials.SecretAccessKey,
-// 		Token:           credentials.Token,
-// 		Expiration:      credentials.Expiration,
-// 		LastUpdated:     credentials.LastUpdated,
-// 	}, nil
-// }
