@@ -19,10 +19,10 @@ proto/service.pb.go: proto/service.proto
 	go get -u -v github.com/golang/protobuf/protoc-gen-go
 	protoc -I proto/ proto/service.proto --go_out=plugins=grpc:proto
 
-test: $(shell find . -name '*.go')
+test: $(SOURCES)
 	go test github.com/uswitch/kiam/pkg/... -cover
 
-coverage: $(shell find . -name '*.go')
+coverage: $(SOURCES)
 	go test github.com/uswitch/kiam/pkg/... -coverprofile=coverage.out
 	go tool cover -html=coverage.out
 
