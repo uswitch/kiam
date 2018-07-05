@@ -5,7 +5,7 @@ BIN_DARWIN = $(BIN)-darwin-$(ARCH)
 
 SOURCES := $(shell find . -iname '*.go') proto/service.pb.go
 
-.PHONY: test clean all
+.PHONY: test clean all coverage
 
 all: proto/service.pb.go build-darwin build-linux
 
@@ -20,11 +20,13 @@ proto/service.pb.go: proto/service.proto
 	protoc -I proto/ proto/service.proto --go_out=plugins=grpc:proto
 
 test: $(SOURCES)
-	go test github.com/uswitch/kiam/pkg/... -cover
+	go test github.com/uswitch/kiam/pkg/... -cover -race
 
-coverage: $(SOURCES)
-	go test github.com/uswitch/kiam/pkg/... -coverprofile=coverage.out
-	go tool cover -html=coverage.out
+coverage.txt: $(SOURCES)
+	go test github.com/uswitch/kiam/pkg/... -coverprofile=coverage.txt -covermode=atomic
+
+coverage: $(SOURCES) coverage.txt
+	go tool cover -html=coverage.txt
 
 bench: $(SOURCES)
 	go test -run=XX -bench=. github.com/uswitch/kiam/pkg/...

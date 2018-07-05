@@ -2,4 +2,4 @@ bin/
 .idea/
 kiam.test
 mem.out
-coverage.out
+coverage.txt
