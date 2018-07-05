@@ -20,7 +20,7 @@ proto/service.pb.go: proto/service.proto
 	protoc -I proto/ proto/service.proto --go_out=plugins=grpc:proto
 
 test: $(SOURCES)
-	go test github.com/uswitch/kiam/pkg/... -cover -race
+	go test github.com/uswitch/kiam/pkg/... -race
 
 coverage.txt: $(SOURCES)
 	go test github.com/uswitch/kiam/pkg/... -coverprofile=coverage.txt -covermode=atomic
