@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: kube-system
+  name: kiam-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiam
+      role: server
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9620"
+      labels:
+        app: kiam
+        role: server
+    spec:
+      serviceAccountName: kiam-server
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        kubernetes.io/role: cluster-management
+      tolerations:
+      - key: "kubernetes.io/dedicated"
+        operator: "Equal"
+        value: "cluster-management"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/dedicated"
+        operator: "Equal"
+        value: "cluster-management"
+        effect: "NoExecute"
+      volumes:
+        - name: ssl-certs
+          hostPath:
+            # for AWS linux or RHEL distros
+            path: /etc/pki/ca-trust/extracted/pem/
+            # path: /usr/share/ca-certificates
+            # path: /etc/kubernetes/pki/
+        - name: tls
+          secret:
+            secretName: kiam-server-tls
+      containers:
+        - name: kiam
+          image: quay.io/uswitch/kiam:v2.8 # USE A TAGGED RELEASE IN PRODUCTION
+          imagePullPolicy: Always
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 500m
+            requests:
+              cpu: 200m
+              memory: 128Mi
+          command:
+            - /server
+          args:
+            - "--json-log"
+            - "--assume-role-arn=$(ROLE_ASSUME_ARN)"
+            - "--bind=0.0.0.0:443"
+            - "--cert=/etc/kiam/tls/server.pem"
+            - "--key=/etc/kiam/tls/server-key.pem"
+            - "--ca=/etc/kiam/tls/ca.pem"
+            - "--role-base-arn=$(ROLE_BASE_ARN)"
+            - "--sync=1m"
+            - "--session-duration=900s"
+            - "--prometheus-listen-addr=0.0.0.0:9620"
+            - "--prometheus-sync-interval=5s"
+          env:
+            - name: ROLE_ASSUME_ARN
+              valueFrom:
+                configMapKeyRef:
+                  name: kiam-config
+                  key: assume-role-arn
+            - name: ROLE_BASE_ARN
+              valueFrom:
+                configMapKeyRef:
+                  name: kiam-config
+                  key: role-base-arn
+          volumeMounts:
+            - mountPath: /etc/ssl/certs
+              name: ssl-certs
+            - mountPath: /etc/kiam/tls
+              name: tls
+          livenessProbe:
+            exec:
+              command:
+              - /health
+              - --cert=/etc/kiam/tls/server.pem
+              - --key=/etc/kiam/tls/server-key.pem
+              - --ca=/etc/kiam/tls/ca.pem
+              - --server-address=localhost:443
+              - --server-address-refresh=2s
+              - --timeout=5s
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+              - /health
+              - --cert=/etc/kiam/tls/server.pem
+              - --key=/etc/kiam/tls/server-key.pem
+              - --ca=/etc/kiam/tls/ca.pem
+              - --server-address=localhost:443
+              - --server-address-refresh=2s
+              - --timeout=5s
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 10
