@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
@@ -33,10 +34,18 @@ func TestReturnsCredentials(t *testing.T) {
 		t.Error("expected json result", content)
 	}
 
-	expected := `{"Code":"","Type":"","AccessKeyId":"A1","SecretAccessKey":"S1","Token":"","Expiration":"","LastUpdated":""}`
+	var creds sts.Credentials
+	decoder := json.NewDecoder(rr.Body)
+	err := decoder.Decode(&creds)
+	if err != nil {
+		t.Error(err.Error())
+	}
 
-	if !strings.Contains(rr.Body.String(), expected) {
-		t.Error("unexpected result", rr.Body.String())
+	if creds.AccessKeyId != "A1" {
+		t.Error("unexpected key, was", creds.AccessKeyId)
+	}
+	if creds.SecretAccessKey != "S1" {
+		t.Error("unexpected secret key, was", creds.SecretAccessKey)
 	}
 }
 
