@@ -17,7 +17,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"regexp"
 	"strings"
@@ -85,9 +84,12 @@ func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, 
 	if err != nil {
 		return nil, err
 	}
-	allowed := fmt.Sprintf("/{path:%s}", config.AllowedRoutes)
-	router.Handle(allowed, httputil.NewSingleHostReverseProxy(metadataURL))
-	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusForbidden) })
+
+	p := &proxyHandler{
+		metadataURL:   metadataURL,
+		allowedRoutes: config.AllowedRoutes,
+	}
+	p.Install(router)
 
 	listen := fmt.Sprintf(":%d", config.ListenPort)
 	return &http.Server{Addr: listen, Handler: loggingHandler(router)}, nil
