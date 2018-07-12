@@ -3,10 +3,18 @@ syntax = "proto3";
 package kiam;
 
 service KiamService {
-    rpc GetPodRole(GetPodRoleRequest) returns (Role) {}
-    rpc GetRoleCredentials(GetRoleCredentialsRequest) returns (Credentials) {}
-    rpc GetHealth(GetHealthRequest) returns (HealthStatus) {}
-    rpc IsAllowedAssumeRole(IsAllowedAssumeRoleRequest) returns (IsAllowedAssumeRoleResponse) {}
+  rpc GetPodRole(GetPodRoleRequest) returns (Role) {}
+  rpc GetPodCredentials(GetPodCredentialsRequest) returns (Credentials) {}
+  rpc GetHealth(GetHealthRequest) returns (HealthStatus) {}
+
+  // DEPRECATE BELOW
+  rpc GetRoleCredentials(GetRoleCredentialsRequest) returns (Credentials) {}
+  rpc IsAllowedAssumeRole(IsAllowedAssumeRoleRequest) returns (IsAllowedAssumeRoleResponse) {}
+}
+
+message GetPodCredentialsRequest {
+  string ip = 1;
+  string role = 2;
 }
 
 message GetPodRoleRequest {

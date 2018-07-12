@@ -31,7 +31,14 @@ import (
 	"google.golang.org/grpc/naming"
 )
 
-// Client to interact with KiamServer, exposing k8s.RoleFinder and sts.CredentialsProvider interfaces
+// Client is the Server's client interface
+type Client interface {
+	GetRole(ctx context.Context, ip string) (string, error)
+	GetCredentials(ctx context.Context, ip, role string) (*sts.Credentials, error)
+	Health(ctx context.Context) (string, error)
+}
+
+// KiamGateway is the client to interact with KiamServer
 type KiamGateway struct {
 	conn   *grpc.ClientConn
 	client pb.KiamServiceClient
@@ -41,6 +48,7 @@ const (
 	RetryInterval = 10 * time.Millisecond
 )
 
+// NewGateway constructs a gRPC client to talk to the server
 func NewGateway(ctx context.Context, address string, refresh time.Duration, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
@@ -98,39 +106,26 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 	err = backoff.Retry(lookupAddress, backoff.WithContext(backoff.NewConstantBackOff(50*time.Millisecond), ctx))
 
 	client := pb.NewKiamServiceClient(conn)
-	return &KiamGateway{conn: conn, client: ClientWithTelemetry(client)}, nil
+	return &KiamGateway{conn: conn, client: client}, nil
 }
 
+// Close disconnects the connection
 func (g *KiamGateway) Close() {
 	g.conn.Close()
 }
 
-func (g *KiamGateway) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
+// GetRole returns the role for the identified Pod
+func (g *KiamGateway) GetRole(ctx context.Context, ip string) (string, error) {
 	role, err := g.client.GetPodRole(ctx, &pb.GetPodRoleRequest{Ip: ip})
 	if err != nil {
 		return "", err
 	}
-	return role.Name, nil
+	return role.GetName(), nil
 }
 
-func (g *KiamGateway) Health(ctx context.Context) (string, error) {
-	status, err := g.client.GetHealth(ctx, &pb.GetHealthRequest{})
-	if err != nil {
-		return "", err
-	}
-	return status.Message, nil
-}
-
-func (g *KiamGateway) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-	resp, err := g.client.IsAllowedAssumeRole(ctx, &pb.IsAllowedAssumeRoleRequest{Ip: podIP, Role: &pb.Role{Name: role}})
-	if err != nil {
-		return nil, err
-	}
-	return &adaptedDecision{resp.Decision}, nil
-}
-
-func (g *KiamGateway) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
-	credentials, err := g.client.GetRoleCredentials(ctx, &pb.GetRoleCredentialsRequest{&pb.Role{Name: role}})
+// GetCredentials returns the credentials for the identified Pod
+func (g *KiamGateway) GetCredentials(ctx context.Context, ip, role string) (*sts.Credentials, error) {
+	credentials, err := g.client.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: ip, Role: role})
 	if err != nil {
 		return nil, err
 	}
@@ -143,4 +138,13 @@ func (g *KiamGateway) CredentialsForRole(ctx context.Context, role string) (*sts
 		Expiration:      credentials.Expiration,
 		LastUpdated:     credentials.LastUpdated,
 	}, nil
+}
+
+// Health is used to check the gRPC client connection
+func (g *KiamGateway) Health(ctx context.Context) (string, error) {
+	status, err := g.client.GetHealth(ctx, &pb.GetHealthRequest{})
+	if err != nil {
+		return "", err
+	}
+	return status.Message, nil
 }

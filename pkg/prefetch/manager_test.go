@@ -11,12 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package kiam
+package prefetch
 
 import (
 	"context"
 	"github.com/uswitch/kiam/pkg/aws/sts"
-	"github.com/uswitch/kiam/pkg/prefetch"
+	kt "github.com/uswitch/kiam/pkg/k8s/testing"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"testing"
 	"time"
@@ -27,13 +27,12 @@ func TestPrefetchRunningPods(t *testing.T) {
 	defer cancel()
 
 	requestedRoles := make(chan string)
-	finder := testutil.NewStubFinder(nil)
-	announcer := testutil.NewStubAnnouncer()
+	announcer := kt.NewStubAnnouncer()
 	cache := testutil.NewStubCredentialsCache(func(role string) (*sts.Credentials, error) {
 		requestedRoles <- role
 		return &sts.Credentials{}, nil
 	})
-	manager := prefetch.NewManager(cache, finder, announcer)
+	manager := NewManager(cache, announcer)
 	go manager.Run(ctx, 1)
 
 	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))

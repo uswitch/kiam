@@ -11,16 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package kiam
+package sts
 
 import (
 	"testing"
-
-	"github.com/uswitch/kiam/pkg/aws/sts"
 )
 
 func TestAddsPrefix(t *testing.T) {
-	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
+	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
 	role := resolver.Resolve("myrole")
 
 	if role != "arn:aws:iam::account-id:role/myrole" {
@@ -29,7 +27,7 @@ func TestAddsPrefix(t *testing.T) {
 }
 
 func TestAddsPrefixWithRoleBeginningWithSlash(t *testing.T) {
-	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
+	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
 	role := resolver.Resolve("/myrole")
 
 	if role != "arn:aws:iam::account-id:role/myrole" {
@@ -37,7 +35,7 @@ func TestAddsPrefixWithRoleBeginningWithSlash(t *testing.T) {
 	}
 }
 func TestAddsPrefixWithRoleBeginningWithPathWithoutSlash(t *testing.T) {
-	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
+	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
 	role := resolver.Resolve("kiam/myrole")
 
 	if role != "arn:aws:iam::account-id:role/kiam/myrole" {
@@ -45,7 +43,7 @@ func TestAddsPrefixWithRoleBeginningWithPathWithoutSlash(t *testing.T) {
 	}
 }
 func TestAddsPrefixWithRoleBeginningWithSlashPath(t *testing.T) {
-	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
+	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
 	role := resolver.Resolve("/kiam/myrole")
 
 	if role != "arn:aws:iam::account-id:role/kiam/myrole" {
@@ -54,7 +52,7 @@ func TestAddsPrefixWithRoleBeginningWithSlashPath(t *testing.T) {
 }
 
 func TestUsesAbsoluteARN(t *testing.T) {
-	resolver := sts.DefaultResolver("arn:aws:iam::account-id:role/")
+	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
 	role := resolver.Resolve("arn:aws:iam::some-other-account:role/another-role")
 
 	if role != "arn:aws:iam::some-other-account:role/another-role" {
@@ -63,12 +61,12 @@ func TestUsesAbsoluteARN(t *testing.T) {
 }
 
 func TestExtractsBaseFromInstanceArn(t *testing.T) {
-	prefix, _ := sts.BaseArn("arn:aws:iam::account-id:instance-profile/instance-role-name")
+	prefix, _ := BaseArn("arn:aws:iam::account-id:instance-profile/instance-role-name")
 	if prefix != "arn:aws:iam::account-id:role/" {
 		t.Error("unexpected prefix, was: ", prefix)
 	}
 
-	prefix, _ = sts.BaseArn("arn:aws:iam::account-id:instance-profile/mypath/instance-role-name")
+	prefix, _ = BaseArn("arn:aws:iam::account-id:instance-profile/mypath/instance-role-name")
 	if prefix != "arn:aws:iam::account-id:role/" {
 		t.Error("unexpected prefix, was: ", prefix)
 	}

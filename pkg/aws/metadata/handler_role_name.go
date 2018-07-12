@@ -16,15 +16,24 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"github.com/cenkalti/backoff"
+	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
-	"github.com/uswitch/kiam/pkg/k8s"
+	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"time"
 )
 
 type roleHandler struct {
-	roleFinder k8s.RoleFinder
-	clientIP   clientIPFunc
+	client   server.Client
+	clientIP clientIPFunc
+}
+
+func (h *roleHandler) Install(router *mux.Router) {
+	handler := adapt(withMeter("roleName", h))
+	router.Handle("/{version}/meta-data/iam/security-credentials", handler)
+	router.Handle("/{version}/meta-data/iam/security-credentials/", handler)
 }
 
 func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
@@ -42,7 +51,8 @@ func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *ht
 		return http.StatusInternalServerError, err
 	}
 
-	role, err := findRole(ctx, h.roleFinder, ip)
+	role, err := findRole(ctx, h.client, ip)
+
 	if err != nil {
 		metrics.GetOrRegisterMeter("roleNameHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
 		return http.StatusInternalServerError, err
@@ -57,4 +67,33 @@ func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *ht
 	metrics.GetOrRegisterMeter("roleNameHandler.success", metrics.DefaultRegistry).Mark(1)
 
 	return http.StatusOK, nil
+}
+
+const (
+	retryInterval = time.Millisecond * 5
+)
+
+func findRole(ctx context.Context, client server.Client, ip string) (string, error) {
+	logger := log.WithField("pod.ip", ip)
+
+	roleCh := make(chan string, 1)
+	op := func() error {
+		role, err := client.GetRole(ctx, ip)
+		if err != nil {
+			logger.Warnf("error finding role for pod: %s", err.Error())
+			return err
+		}
+		roleCh <- role
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = retryInterval
+
+	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
+	if err != nil {
+		return "", err
+	}
+
+	return <-roleCh, nil
 }

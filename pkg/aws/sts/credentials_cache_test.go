@@ -11,31 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package kiam
+package sts
 
 import (
 	"context"
 	"testing"
 	"time"
-
-	"github.com/uswitch/kiam/pkg/aws/sts"
 )
 
 type stubGateway struct {
-	c             *sts.Credentials
+	c             *Credentials
 	issueCount    int
 	requestedRole string
 }
 
-func (s *stubGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*sts.Credentials, error) {
+func (s *stubGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
 	s.issueCount = s.issueCount + 1
 	s.requestedRole = roleARN
 	return s.c, nil
 }
 
 func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
-	stubGateway := &stubGateway{c: &sts.Credentials{Code: "foo"}}
-	cache := sts.DefaultCache(stubGateway, "session", 15*time.Minute, 5*time.Minute, sts.DefaultResolver("prefix:"))
+	stubGateway := &stubGateway{c: &Credentials{Code: "foo"}}
+	cache := DefaultCache(stubGateway, "session", 15*time.Minute, 5*time.Minute, DefaultResolver("prefix:"))
 	ctx := context.Background()
 
 	creds, _ := cache.CredentialsForRole(ctx, "role")

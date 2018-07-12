@@ -107,7 +107,7 @@ func (f *forbidden) Explanation() string {
 }
 
 func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-	pod, err := p.pods.GetPodByIP(ctx, podIP)
+	pod, err := p.pods.GetPodByIP(podIP)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (f *namespacePolicyForbidden) Explanation() string {
 
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
 
-	pod, err := p.pods.GetPodByIP(ctx, podIP)
+	pod, err := p.pods.GetPodByIP(podIP)
 	if err != nil {
 		return nil, err
 	}

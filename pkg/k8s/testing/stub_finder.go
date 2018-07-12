@@ -11,41 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package testutil
+package testing
 
 import (
 	"context"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"k8s.io/api/core/v1"
 )
-
-type FailingFinder struct {
-	Pod               *v1.Pod
-	SucceedAfterCalls int
-	calls             int
-}
-
-func (f *FailingFinder) FindPodForIP(ip string) (*v1.Pod, error) {
-	if f.calls != f.SucceedAfterCalls {
-		f.calls = f.calls + 1
-		return nil, k8s.ErrPodNotFound
-	}
-
-	return f.Pod, nil
-}
-
-func (f *FailingFinder) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
-	pod, err := f.FindPodForIP(ip)
-	if err != nil {
-		return "", err
-	}
-
-	if pod == nil {
-		return "", nil
-	}
-
-	return k8s.PodRole(pod), nil
-}
 
 func NewStubFinder(pod *v1.Pod) *StubFinder {
 	return &StubFinder{pod: pod}
@@ -55,29 +27,12 @@ type StubFinder struct {
 	pod *v1.Pod
 }
 
-func (f *StubFinder) FindPodForIP(ip string) (*v1.Pod, error) {
+func (f *StubFinder) GetPodByIP(ip string) (*v1.Pod, error) {
 	if f.pod == nil {
 		return nil, k8s.ErrPodNotFound
 	}
 
 	return f.pod, nil
-}
-
-func (f *StubFinder) FindRoleFromIP(ctx context.Context, ip string) (string, error) {
-	pod, err := f.FindPodForIP(ip)
-	if err != nil {
-		return "", err
-	}
-
-	if pod == nil {
-		return "", nil
-	}
-
-	return k8s.PodRole(pod), nil
-}
-
-func (f *StubFinder) GetPodByIP(ctx context.Context, ip string) (*v1.Pod, error) {
-	return f.FindPodForIP(ip)
 }
 
 type stubAnnouncer struct {
