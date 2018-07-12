@@ -3,13 +3,14 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/uswitch/kiam/pkg/server"
-	st "github.com/uswitch/kiam/pkg/testutil/server"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/uswitch/kiam/pkg/server"
+	st "github.com/uswitch/kiam/pkg/testutil/server"
 )
 
 func TestReturnRoleWhenClientResponds(t *testing.T) {

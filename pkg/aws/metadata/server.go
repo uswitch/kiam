@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"regexp"
 	"strings"
@@ -86,7 +87,7 @@ func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, 
 	}
 
 	p := &proxyHandler{
-		metadataURL:   metadataURL,
+		reverseProxy:  httputil.NewSingleHostReverseProxy(metadataURL),
 		allowedRoutes: config.AllowedRoutes,
 	}
 	p.Install(router)

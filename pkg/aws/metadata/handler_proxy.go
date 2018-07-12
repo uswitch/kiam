@@ -17,21 +17,21 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"regexp"
 
 	"github.com/gorilla/mux"
 )
 
+var (
+	blacklistStatus = http.StatusNotFound
+)
+
 type proxyHandler struct {
-	metadataURL   *url.URL
 	reverseProxy  http.Handler
 	allowedRoutes *regexp.Regexp
 }
 
 func (p *proxyHandler) Install(router *mux.Router) {
-	p.reverseProxy = httputil.NewSingleHostReverseProxy(p.metadataURL)
 	router.Handle("/{path}", adapt(withMeter("proxy", p)))
 }
 
@@ -52,6 +52,6 @@ func (p *proxyHandler) Handle(ctx context.Context, w http.ResponseWriter, r *htt
 		p.reverseProxy.ServeHTTP(writer, r)
 		return writer.status, nil
 	} else {
-		return http.StatusForbidden, fmt.Errorf("request blocked by allowedRoutes pattern %q: %s", p.allowedRoutes, route)
+		return blacklistStatus, fmt.Errorf("request blocked by allowedRoutes pattern %q: %s", p.allowedRoutes, route)
 	}
 }
