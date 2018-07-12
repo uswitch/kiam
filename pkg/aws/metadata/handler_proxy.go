@@ -22,10 +22,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var (
-	blacklistStatus = http.StatusNotFound
-)
-
 type proxyHandler struct {
 	reverseProxy  http.Handler
 	allowedRoutes *regexp.Regexp
@@ -52,6 +48,6 @@ func (p *proxyHandler) Handle(ctx context.Context, w http.ResponseWriter, r *htt
 		p.reverseProxy.ServeHTTP(writer, r)
 		return writer.status, nil
 	} else {
-		return blacklistStatus, fmt.Errorf("request blocked by allowedRoutes pattern %q: %s", p.allowedRoutes, route)
+		return http.StatusNotFound, fmt.Errorf("request blocked by whitelist-route-regexp %q: %s", p.allowedRoutes, route)
 	}
 }

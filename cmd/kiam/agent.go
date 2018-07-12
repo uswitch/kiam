@@ -47,7 +47,7 @@ func (cmd *agentCommand) Bind(parser parser) {
 
 	parser.Flag("port", "HTTP port").Default("3100").IntVar(&cmd.port)
 	parser.Flag("allow-ip-query", "Allow client IP to be specified with ?ip. Development use only.").Default("false").BoolVar(&cmd.allowIPQuery)
-	parser.Flag("whitelist-route-regexp", "Proxy routes matching this regular expression").Default(".*").RegexpVar(&cmd.whitelistRouteRegexp)
+	parser.Flag("whitelist-route-regexp", "Proxy routes matching this regular expression").Default("^$").RegexpVar(&cmd.whitelistRouteRegexp)
 
 	parser.Flag("iptables", "Add IPTables rules").Default("false").BoolVar(&cmd.iptables)
 	parser.Flag("host", "Host IP address.").Envar("HOST_IP").Required().StringVar(&cmd.hostIP)

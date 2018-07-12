@@ -24,6 +24,32 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func TestProxyDefaultBlacklisting(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	allowedRoutes := regexp.MustCompile("^$")
+
+	var hits int
+	backingService := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.WriteHeader(http.StatusOK)
+	})
+	handler := newFilteringHandler(backingService, allowedRoutes)
+
+	r, _ := http.NewRequest("GET", "/", nil)
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, r.WithContext(ctx))
+
+	if hits != 0 {
+		t.Error("unexpected reverse proxy hit")
+	}
+	if rr.Code != http.StatusNotFound {
+		t.Error("unexpected status", rr.Code)
+	}
+}
+
 func TestProxyFiltering(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -45,7 +71,7 @@ func TestProxyFiltering(t *testing.T) {
 	if hits != 0 {
 		t.Error("unexpected reverse proxy hit")
 	}
-	if rr.Code != blacklistStatus {
+	if rr.Code != http.StatusNotFound {
 		t.Error("unexpected status", rr.Code)
 	}
 }
