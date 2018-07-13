@@ -42,12 +42,12 @@ type ServerConfig struct {
 	WhitelistRouteRegexp *regexp.Regexp
 }
 
-func NewConfig(port int) *ServerConfig {
+func NewConfig(port int, allowIPQuery bool, whitelistRouteRegexp *regexp.Regexp) *ServerConfig {
 	return &ServerConfig{
 		MetadataEndpoint:     "http://169.254.169.254",
 		ListenPort:           port,
 		AllowIPQuery:         false,
-		WhitelistRouteRegexp: regexp.MustCompile(".*"),
+		WhitelistRouteRegexp: whitelistRouteRegexp,
 	}
 }
 
@@ -64,21 +64,13 @@ func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, 
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
 	router.HandleFunc("/ping", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") })
 
-	h := &healthHandler{config.MetadataEndpoint}
-	router.Handle("/health", adapt(withMeter("health", h)))
+	h := newHealthHandler(config.MetadataEndpoint)
+	h.Install(router)
 
-	clientIP := buildClientIP(config)
-
-	r := &roleHandler{
-		client:   client,
-		clientIP: clientIP,
-	}
+	r := newRoleHandler(client, buildClientIP(config))
 	r.Install(router)
 
-	c := &credentialsHandler{
-		clientIP: clientIP,
-		client:   client,
-	}
+	c := newCredentialsHandler(client, buildClientIP(config))
 	c.Install(router)
 
 	metadataURL, err := url.Parse(config.MetadataEndpoint)
@@ -86,10 +78,7 @@ func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, 
 		return nil, err
 	}
 
-	p := &proxyHandler{
-		reverseProxy:  httputil.NewSingleHostReverseProxy(metadataURL),
-		allowedRoutes: config.WhitelistRouteRegexp,
-	}
+	p := newProxyHandler(httputil.NewSingleHostReverseProxy(metadataURL), config.WhitelistRouteRegexp)
 	p.Install(router)
 
 	listen := fmt.Sprintf(":%d", config.ListenPort)

@@ -23,8 +23,8 @@ import (
 )
 
 type proxyHandler struct {
-	reverseProxy  http.Handler
-	allowedRoutes *regexp.Regexp
+	backingService       http.Handler
+	whitelistRouteRegexp *regexp.Regexp
 }
 
 func (p *proxyHandler) Install(router *mux.Router) {
@@ -43,11 +43,21 @@ func (w *teeWriter) WriteHeader(statusCode int) {
 
 func (p *proxyHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	route := mux.Vars(r)["path"]
-	if p.allowedRoutes.MatchString(route) {
+	if p.whitelistRouteRegexp.MatchString(route) {
 		writer := &teeWriter{w, http.StatusOK}
-		p.reverseProxy.ServeHTTP(writer, r)
+		p.backingService.ServeHTTP(writer, r)
 		return writer.status, nil
 	} else {
-		return http.StatusNotFound, fmt.Errorf("request blocked by whitelist-route-regexp %q: %s", p.allowedRoutes, route)
+		return http.StatusNotFound, fmt.Errorf("request blocked by whitelist-route-regexp %q: %s", p.whitelistRouteRegexp, route)
+	}
+}
+
+func newProxyHandler(backingService http.Handler, whitelistRouteRegexp *regexp.Regexp) *proxyHandler {
+	if whitelistRouteRegexp.String() == "" {
+		whitelistRouteRegexp = regexp.MustCompile("^$")
+	}
+	return &proxyHandler{
+		backingService:       backingService,
+		whitelistRouteRegexp: whitelistRouteRegexp,
 	}
 }

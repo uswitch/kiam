@@ -16,18 +16,19 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/cenkalti/backoff"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/server"
-	"net/http"
-	"time"
 )
 
 type roleHandler struct {
-	client   server.Client
-	clientIP clientIPFunc
+	client     server.Client
+	ipResolver clientIPFunc
 }
 
 func (h *roleHandler) Install(router *mux.Router) {
@@ -46,7 +47,7 @@ func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *ht
 		return http.StatusInternalServerError, err
 	}
 
-	ip, err := h.clientIP(req)
+	ip, err := h.ipResolver(req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -96,4 +97,11 @@ func findRole(ctx context.Context, client server.Client, ip string) (string, err
 	}
 
 	return <-roleCh, nil
+}
+
+func newRoleHandler(client server.Client, ipResolver clientIPFunc) *roleHandler {
+	return &roleHandler{
+		client:     client,
+		ipResolver: ipResolver,
+	}
 }

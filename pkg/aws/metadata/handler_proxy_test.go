@@ -35,12 +35,14 @@ func TestProxyDefaultBlacklisting(t *testing.T) {
 		hits++
 		w.WriteHeader(http.StatusOK)
 	})
-	handler := newFilteringHandler(backingService, allowedRoutes)
+	handler := newProxyHandler(backingService, allowedRoutes)
+	router := mux.NewRouter()
+	handler.Install(router)
 
 	r, _ := http.NewRequest("GET", "/", nil)
 	rr := httptest.NewRecorder()
 
-	handler.ServeHTTP(rr, r.WithContext(ctx))
+	router.ServeHTTP(rr, r.WithContext(ctx))
 
 	if hits != 0 {
 		t.Error("unexpected reverse proxy hit")
@@ -61,12 +63,14 @@ func TestProxyFiltering(t *testing.T) {
 		hits++
 		w.WriteHeader(http.StatusOK)
 	})
-	handler := newFilteringHandler(backingService, allowedRoutes)
+	handler := newProxyHandler(backingService, allowedRoutes)
+	router := mux.NewRouter()
+	handler.Install(router)
 
 	r, _ := http.NewRequest("GET", "/bar", nil)
 	rr := httptest.NewRecorder()
 
-	handler.ServeHTTP(rr, r.WithContext(ctx))
+	router.ServeHTTP(rr, r.WithContext(ctx))
 
 	if hits != 0 {
 		t.Error("unexpected reverse proxy hit")
@@ -87,12 +91,14 @@ func TestProxyWhitelisting(t *testing.T) {
 		hits++
 		w.WriteHeader(http.StatusOK)
 	})
-	handler := newFilteringHandler(backingService, allowedRoutes)
+	handler := newProxyHandler(backingService, allowedRoutes)
+	router := mux.NewRouter()
+	handler.Install(router)
 
 	r, _ := http.NewRequest("GET", "/foo", nil)
 	rr := httptest.NewRecorder()
 
-	handler.ServeHTTP(rr, r.WithContext(ctx))
+	router.ServeHTTP(rr, r.WithContext(ctx))
 
 	if hits != 1 {
 		t.Error("expected reverse proxy hit")
@@ -100,14 +106,4 @@ func TestProxyWhitelisting(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Error("unexpected status", rr.Code)
 	}
-}
-
-func newFilteringHandler(reverseProxy http.Handler, allowedRoutes *regexp.Regexp) http.Handler {
-	h := &proxyHandler{
-		reverseProxy:  reverseProxy,
-		allowedRoutes: allowedRoutes,
-	}
-	r := mux.NewRouter()
-	h.Install(r)
-	return r
 }

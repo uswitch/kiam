@@ -3,15 +3,16 @@ package metadata
 import (
 	"context"
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"github.com/uswitch/kiam/pkg/aws/sts"
-	"github.com/uswitch/kiam/pkg/server"
-	st "github.com/uswitch/kiam/pkg/testutil/server"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/uswitch/kiam/pkg/aws/sts"
+	"github.com/uswitch/kiam/pkg/server"
+	st "github.com/uswitch/kiam/pkg/testutil/server"
 )
 
 func TestReturnsCredentials(t *testing.T) {
@@ -22,8 +23,11 @@ func TestReturnsCredentials(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(st.GetCredentialsResult{&sts.Credentials{AccessKeyId: "A1", SecretAccessKey: "S1"}, nil})
-	handler := newCredentialsHandler(client)
-	handler.ServeHTTP(rr, r.WithContext(ctx))
+	handler := newCredentialsHandler(client, blankIPResolver)
+	router := mux.NewRouter()
+	handler.Install(router)
+
+	router.ServeHTTP(rr, r.WithContext(ctx))
 
 	if rr.Code != http.StatusOK {
 		t.Error("unexpected status, was", rr.Code)
@@ -57,8 +61,11 @@ func TestReturnsErrorWithNoPod(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	client := st.NewStubClient().WithCredentials(st.GetCredentialsResult{nil, server.ErrPodNotFound})
-	handler := newCredentialsHandler(client)
-	handler.ServeHTTP(rr, r.WithContext(ctx))
+	handler := newCredentialsHandler(client, blankIPResolver)
+	router := mux.NewRouter()
+	handler.Install(router)
+
+	router.ServeHTTP(rr, r.WithContext(ctx))
 
 	if rr.Code != http.StatusInternalServerError {
 		t.Error("unexpected status", rr.Code)
@@ -78,20 +85,13 @@ func TestReturnsCredentialsWithRetryAfterError(t *testing.T) {
 	valid := st.GetCredentialsResult{&sts.Credentials{}, nil}
 	e := st.GetCredentialsResult{nil, server.ErrPodNotFound}
 	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(e, valid)
-	handler := newCredentialsHandler(client)
-	handler.ServeHTTP(rr, r.WithContext(ctx))
+	handler := newCredentialsHandler(client, blankIPResolver)
+	router := mux.NewRouter()
+	handler.Install(router)
+
+	router.ServeHTTP(rr, r.WithContext(ctx))
 
 	if rr.Code != http.StatusOK {
 		t.Error("unexpected status", rr.Code)
 	}
-}
-
-func newCredentialsHandler(c server.Client) http.Handler {
-	ip := func(r *http.Request) (string, error) {
-		return "", nil
-	}
-	h := &credentialsHandler{clientIP: ip, client: c}
-	r := mux.NewRouter()
-	h.Install(r)
-	return r
 }

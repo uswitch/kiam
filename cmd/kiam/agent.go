@@ -76,9 +76,7 @@ func (opts *agentCommand) Run() {
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
 
-	config := http.NewConfig(opts.port)
-	config.AllowIPQuery = opts.allowIPQuery
-	config.WhitelistRouteRegexp = opts.whitelistRouteRegexp
+	config := http.NewConfig(opts.port, opts.allowIPQuery, opts.whitelistRouteRegexp)
 
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
