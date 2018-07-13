@@ -30,8 +30,8 @@ import (
 )
 
 type roleHandler struct {
-	client   server.Client
-	clientIP clientIPFunc
+	client      server.Client
+	getClientIP clientIPFunc
 }
 
 func trailingSlashSuffixRedirectHandler(rw http.ResponseWriter, req *http.Request) {
@@ -64,7 +64,7 @@ func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *ht
 		return http.StatusInternalServerError, err
 	}
 
-	ip, err := h.clientIP(req)
+	ip, err := h.getClientIP(req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -114,4 +114,11 @@ func findRole(ctx context.Context, client server.Client, ip string) (string, err
 	}
 
 	return <-roleCh, nil
+}
+
+func newRoleHandler(client server.Client, getClientIP clientIPFunc) *roleHandler {
+	return &roleHandler{
+		client:      client,
+		getClientIP: getClientIP,
+	}
 }

@@ -24,12 +24,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
-	"github.com/uswitch/kiam/pkg/statsd"
 )
 
 type credentialsHandler struct {
-	clientIP clientIPFunc
-	client   server.Client
+	client      server.Client
+	getClientIP clientIPFunc
 }
 
 func (c *credentialsHandler) Install(router *mux.Router) {
@@ -39,16 +38,13 @@ func (c *credentialsHandler) Install(router *mux.Router) {
 func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("credentials"))
 	defer timer.ObserveDuration()
-	if statsd.Enabled {
-		defer statsd.Client.NewTiming().Send("handler.credentials")
-	}
 
 	err := req.ParseForm()
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 
-	ip, err := c.clientIP(req)
+	ip, err := c.getClientIP(req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -90,4 +86,11 @@ func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requested
 		return nil, err
 	}
 	return <-credsCh, nil
+}
+
+func newCredentialsHandler(client server.Client, getClientIP clientIPFunc) *credentialsHandler {
+	return &credentialsHandler{
+		client:      client,
+		getClientIP: getClientIP,
+	}
 }
