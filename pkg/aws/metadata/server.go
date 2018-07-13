@@ -16,38 +16,42 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/server"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"strings"
-	"time"
 )
 
 type Server struct {
-	cfg    *ServerConfig
+	cfg    *ServerOptions
 	server *http.Server
 }
 
-type ServerConfig struct {
-	ListenPort       int
-	MetadataEndpoint string
-	AllowIPQuery     bool
+type ServerOptions struct {
+	ListenPort           int
+	MetadataEndpoint     string
+	AllowIPQuery         bool
+	WhitelistRouteRegexp *regexp.Regexp
 }
 
-func NewConfig(port int) *ServerConfig {
-	return &ServerConfig{
-		MetadataEndpoint: "http://169.254.169.254",
-		ListenPort:       port,
-		AllowIPQuery:     false,
+func DefaultOptions() *ServerOptions {
+	return &ServerOptions{
+		MetadataEndpoint:     "http://169.254.169.254",
+		ListenPort:           3100,
+		AllowIPQuery:         false,
+		WhitelistRouteRegexp: regexp.MustCompile("^$"),
 	}
 }
 
-func NewWebServer(config *ServerConfig, client server.Client) (*Server, error) {
+func NewWebServer(config *ServerOptions, client server.Client) (*Server, error) {
 	http, err := buildHTTPServer(config, client)
 	if err != nil {
 		return nil, err
@@ -55,39 +59,33 @@ func NewWebServer(config *ServerConfig, client server.Client) (*Server, error) {
 	return &Server{cfg: config, server: http}, nil
 }
 
-func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, error) {
+func buildHTTPServer(config *ServerOptions, client server.Client) (*http.Server, error) {
 	router := mux.NewRouter()
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
-	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
+	router.HandleFunc("/ping", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") })
 
-	h := &healthHandler{config.MetadataEndpoint}
-	router.Handle("/health", adapt(withMeter("health", h)))
+	h := newHealthHandler(config.MetadataEndpoint)
+	h.Install(router)
 
-	clientIP := buildClientIP(config)
-
-	r := &roleHandler{
-		client:   client,
-		clientIP: clientIP,
-	}
+	r := newRoleHandler(client, buildClientIP(config))
 	r.Install(router)
 
-	c := &credentialsHandler{
-		clientIP: clientIP,
-		client:   client,
-	}
+	c := newCredentialsHandler(client, buildClientIP(config))
 	c.Install(router)
 
 	metadataURL, err := url.Parse(config.MetadataEndpoint)
 	if err != nil {
 		return nil, err
 	}
-	router.Handle("/{path:.*}", httputil.NewSingleHostReverseProxy(metadataURL))
+
+	p := newProxyHandler(httputil.NewSingleHostReverseProxy(metadataURL), config.WhitelistRouteRegexp)
+	p.Install(router)
 
 	listen := fmt.Sprintf(":%d", config.ListenPort)
 	return &http.Server{Addr: listen, Handler: loggingHandler(router)}, nil
 }
 
-func buildClientIP(config *ServerConfig) clientIPFunc {
+func buildClientIP(config *ServerOptions) clientIPFunc {
 	remote := func(req *http.Request) (string, error) {
 		return ParseClientIP(req.RemoteAddr)
 	}

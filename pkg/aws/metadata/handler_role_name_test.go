@@ -3,21 +3,24 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/uswitch/kiam/pkg/server"
-	st "github.com/uswitch/kiam/pkg/testutil/server"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/uswitch/kiam/pkg/server"
+	st "github.com/uswitch/kiam/pkg/testutil/server"
 )
 
 func TestReturnRoleWhenClientResponds(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
-	handler := newHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}))
+	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
+	router := mux.NewRouter()
+	handler.Install(router)
 
-	handler.ServeHTTP(rr, r)
+	router.ServeHTTP(rr, r)
 
 	if rr.Code != http.StatusOK {
 		t.Error("expected 200 response, was", rr.Code)
@@ -32,9 +35,11 @@ func TestReturnRoleWhenClientResponds(t *testing.T) {
 func TestReturnRoleWhenRetryingFollowingError(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
-	handler := newHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", fmt.Errorf("unexpected error")}, st.GetRoleResult{"foo_role", nil}))
+	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", fmt.Errorf("unexpected error")}, st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
+	router := mux.NewRouter()
+	handler.Install(router)
 
-	handler.ServeHTTP(rr, r)
+	router.ServeHTTP(rr, r)
 
 	if rr.Code != http.StatusOK {
 		t.Error("expected 200 response, was", rr.Code)
@@ -49,9 +54,11 @@ func TestReturnRoleWhenRetryingFollowingError(t *testing.T) {
 func TestReturnsEmptyRoleWhenClientSucceedsWithEmptyRole(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
-	handler := newHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", nil}))
+	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", nil}), getBlankClientIP)
+	router := mux.NewRouter()
+	handler.Install(router)
 
-	handler.ServeHTTP(rr, r)
+	router.ServeHTTP(rr, r)
 
 	if rr.Code != http.StatusNotFound {
 		t.Error("expected 404 response, was", rr.Code)
@@ -64,25 +71,13 @@ func TestReturnErrorWhenPodNotFoundWithinTimeout(t *testing.T) {
 
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
-	handler := newHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", server.ErrPodNotFound}))
+	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", server.ErrPodNotFound}), getBlankClientIP)
+	router := mux.NewRouter()
+	handler.Install(router)
 
-	handler.ServeHTTP(rr, r.WithContext(ctx))
+	router.ServeHTTP(rr, r.WithContext(ctx))
 
 	if rr.Code != http.StatusInternalServerError {
 		t.Error("expected internal server error, was:", rr.Code)
 	}
-}
-
-func newHandler(c server.Client) http.Handler {
-	ip := func(r *http.Request) (string, error) {
-		return "", nil
-	}
-
-	h := &roleHandler{
-		client:   c,
-		clientIP: ip,
-	}
-	r := mux.NewRouter()
-	h.Install(r)
-	return r
 }

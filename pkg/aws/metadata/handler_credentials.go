@@ -17,18 +17,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/cenkalti/backoff"
 	"github.com/gorilla/mux"
 	"github.com/rcrowley/go-metrics"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
-	"net/http"
-	"time"
 )
 
 type credentialsHandler struct {
-	clientIP clientIPFunc
-	client   server.Client
+	client      server.Client
+	getClientIP clientIPFunc
 }
 
 func (c *credentialsHandler) Install(router *mux.Router) {
@@ -45,7 +46,7 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 		return http.StatusInternalServerError, err
 	}
 
-	ip, err := c.clientIP(req)
+	ip, err := c.getClientIP(req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -85,4 +86,11 @@ func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requested
 		return nil, err
 	}
 	return <-credsCh, nil
+}
+
+func newCredentialsHandler(client server.Client, getClientIP clientIPFunc) *credentialsHandler {
+	return &credentialsHandler{
+		client:      client,
+		getClientIP: getClientIP,
+	}
 }
