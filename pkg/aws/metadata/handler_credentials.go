@@ -28,8 +28,8 @@ import (
 )
 
 type credentialsHandler struct {
-	client     server.Client
-	ipResolver clientIPFunc
+	client      server.Client
+	getClientIP clientIPFunc
 }
 
 func (c *credentialsHandler) Install(router *mux.Router) {
@@ -46,7 +46,7 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 		return http.StatusInternalServerError, err
 	}
 
-	ip, err := c.ipResolver(req)
+	ip, err := c.getClientIP(req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -88,9 +88,9 @@ func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requested
 	return <-credsCh, nil
 }
 
-func newCredentialsHandler(client server.Client, ipResolver clientIPFunc) *credentialsHandler {
+func newCredentialsHandler(client server.Client, getClientIP clientIPFunc) *credentialsHandler {
 	return &credentialsHandler{
-		client:     client,
-		ipResolver: ipResolver,
+		client:      client,
+		getClientIP: getClientIP,
 	}
 }

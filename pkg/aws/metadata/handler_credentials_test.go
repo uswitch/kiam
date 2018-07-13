@@ -23,7 +23,7 @@ func TestReturnsCredentials(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(st.GetCredentialsResult{&sts.Credentials{AccessKeyId: "A1", SecretAccessKey: "S1"}, nil})
-	handler := newCredentialsHandler(client, blankIPResolver)
+	handler := newCredentialsHandler(client, getBlankClientIP)
 	router := mux.NewRouter()
 	handler.Install(router)
 
@@ -61,7 +61,7 @@ func TestReturnsErrorWithNoPod(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	client := st.NewStubClient().WithCredentials(st.GetCredentialsResult{nil, server.ErrPodNotFound})
-	handler := newCredentialsHandler(client, blankIPResolver)
+	handler := newCredentialsHandler(client, getBlankClientIP)
 	router := mux.NewRouter()
 	handler.Install(router)
 
@@ -85,7 +85,7 @@ func TestReturnsCredentialsWithRetryAfterError(t *testing.T) {
 	valid := st.GetCredentialsResult{&sts.Credentials{}, nil}
 	e := st.GetCredentialsResult{nil, server.ErrPodNotFound}
 	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(e, valid)
-	handler := newCredentialsHandler(client, blankIPResolver)
+	handler := newCredentialsHandler(client, getBlankClientIP)
 	router := mux.NewRouter()
 	handler.Install(router)
 

@@ -16,7 +16,7 @@ import (
 func TestReturnRoleWhenClientResponds(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
-	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}), blankIPResolver)
+	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
 	router := mux.NewRouter()
 	handler.Install(router)
 
@@ -35,7 +35,7 @@ func TestReturnRoleWhenClientResponds(t *testing.T) {
 func TestReturnRoleWhenRetryingFollowingError(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
-	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", fmt.Errorf("unexpected error")}, st.GetRoleResult{"foo_role", nil}), blankIPResolver)
+	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", fmt.Errorf("unexpected error")}, st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
 	router := mux.NewRouter()
 	handler.Install(router)
 
@@ -54,7 +54,7 @@ func TestReturnRoleWhenRetryingFollowingError(t *testing.T) {
 func TestReturnsEmptyRoleWhenClientSucceedsWithEmptyRole(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
-	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", nil}), blankIPResolver)
+	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", nil}), getBlankClientIP)
 	router := mux.NewRouter()
 	handler.Install(router)
 
@@ -71,7 +71,7 @@ func TestReturnErrorWhenPodNotFoundWithinTimeout(t *testing.T) {
 
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
-	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", server.ErrPodNotFound}), blankIPResolver)
+	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", server.ErrPodNotFound}), getBlankClientIP)
 	router := mux.NewRouter()
 	handler.Install(router)
 

@@ -16,6 +16,6 @@ func TestParseAddress(t *testing.T) {
 	}
 }
 
-func blankIPResolver(_ *http.Request) (string, error) {
+func getBlankClientIP(_ *http.Request) (string, error) {
 	return "", nil
 }

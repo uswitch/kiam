@@ -28,14 +28,12 @@ func TestProxyDefaultBlacklisting(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	allowedRoutes := regexp.MustCompile("^$")
-
 	var hits int
 	backingService := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits++
 		w.WriteHeader(http.StatusOK)
 	})
-	handler := newProxyHandler(backingService, allowedRoutes)
+	handler := newProxyHandler(backingService, regexp.MustCompile(""))
 	router := mux.NewRouter()
 	handler.Install(router)
 
