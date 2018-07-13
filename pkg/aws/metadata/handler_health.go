@@ -16,15 +16,19 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-
+	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/uswitch/kiam/pkg/statsd"
+	"io/ioutil"
+	"net/http"
 )
 
 type healthHandler struct {
 	endpoint string
+}
+
+func (h *healthHandler) Install(router *mux.Router) {
+	router.Handle("/health", adapt(withMeter("health", h)))
 }
 
 func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
@@ -53,4 +57,10 @@ func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *
 
 	fmt.Fprint(w, string(body))
 	return http.StatusOK, nil
+}
+
+func newHealthHandler(endpoint string) *healthHandler {
+	return &healthHandler{
+		endpoint: endpoint,
+	}
 }
