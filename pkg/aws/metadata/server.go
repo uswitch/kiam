@@ -31,27 +31,27 @@ import (
 )
 
 type Server struct {
-	cfg    *ServerConfig
+	cfg    *ServerOptions
 	server *http.Server
 }
 
-type ServerConfig struct {
+type ServerOptions struct {
 	ListenPort           int
 	MetadataEndpoint     string
 	AllowIPQuery         bool
 	WhitelistRouteRegexp *regexp.Regexp
 }
 
-func NewConfig(port int, allowIPQuery bool, whitelistRouteRegexp *regexp.Regexp) *ServerConfig {
-	return &ServerConfig{
+func DefaultOptions() *ServerOptions {
+	return &ServerOptions{
 		MetadataEndpoint:     "http://169.254.169.254",
-		ListenPort:           port,
+		ListenPort:           3100,
 		AllowIPQuery:         false,
-		WhitelistRouteRegexp: whitelistRouteRegexp,
+		WhitelistRouteRegexp: regexp.MustCompile("^$"),
 	}
 }
 
-func NewWebServer(config *ServerConfig, client server.Client) (*Server, error) {
+func NewWebServer(config *ServerOptions, client server.Client) (*Server, error) {
 	http, err := buildHTTPServer(config, client)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func NewWebServer(config *ServerConfig, client server.Client) (*Server, error) {
 	return &Server{cfg: config, server: http}, nil
 }
 
-func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, error) {
+func buildHTTPServer(config *ServerOptions, client server.Client) (*http.Server, error) {
 	router := mux.NewRouter()
 	router.Handle("/metrics", exp.ExpHandler(metrics.DefaultRegistry))
 	router.HandleFunc("/ping", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") })
@@ -85,7 +85,7 @@ func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, 
 	return &http.Server{Addr: listen, Handler: loggingHandler(router)}, nil
 }
 
-func buildClientIP(config *ServerConfig) clientIPFunc {
+func buildClientIP(config *ServerOptions) clientIPFunc {
 	remote := func(req *http.Request) (string, error) {
 		return ParseClientIP(req.RemoteAddr)
 	}

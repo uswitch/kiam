@@ -17,7 +17,6 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"regexp"
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
@@ -30,13 +29,11 @@ type agentCommand struct {
 	telemetryOptions
 	tlsOptions
 	clientOptions
+	*http.ServerOptions
 
-	port                 int
-	allowIPQuery         bool
-	whitelistRouteRegexp *regexp.Regexp
-	iptables             bool
-	hostIP               string
-	hostInterface        string
+	iptables      bool
+	hostIP        string
+	hostInterface string
 }
 
 func (cmd *agentCommand) Bind(parser parser) {
@@ -45,9 +42,11 @@ func (cmd *agentCommand) Bind(parser parser) {
 	cmd.tlsOptions.bind(parser)
 	cmd.clientOptions.bind(parser)
 
-	parser.Flag("port", "HTTP port").Default("3100").IntVar(&cmd.port)
-	parser.Flag("allow-ip-query", "Allow client IP to be specified with ?ip. Development use only.").Default("false").BoolVar(&cmd.allowIPQuery)
-	parser.Flag("whitelist-route-regexp", "Proxy routes matching this regular expression").Default("^$").RegexpVar(&cmd.whitelistRouteRegexp)
+	cmd.ServerOptions = http.DefaultOptions()
+
+	parser.Flag("port", "HTTP port").Default("3100").IntVar(&cmd.ListenPort)
+	parser.Flag("allow-ip-query", "Allow client IP to be specified with ?ip. Development use only.").Default("false").BoolVar(&cmd.AllowIPQuery)
+	parser.Flag("whitelist-route-regexp", "Proxy routes matching this regular expression").Default("^$").RegexpVar(&cmd.WhitelistRouteRegexp)
 
 	parser.Flag("iptables", "Add IPTables rules").Default("false").BoolVar(&cmd.iptables)
 	parser.Flag("host", "Host IP address.").Envar("HOST_IP").Required().StringVar(&cmd.hostIP)
@@ -59,7 +58,7 @@ func (opts *agentCommand) Run() {
 
 	if opts.iptables {
 		log.Infof("configuring iptables")
-		rules := newIPTablesRules(opts.hostIP, opts.port, opts.hostInterface)
+		rules := newIPTablesRules(opts.hostIP, opts.ListenPort, opts.hostInterface)
 		err := rules.Add()
 		if err != nil {
 			log.Fatal("error configuring iptables:", err.Error())
@@ -76,8 +75,6 @@ func (opts *agentCommand) Run() {
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
 
-	config := http.NewConfig(opts.port, opts.allowIPQuery, opts.whitelistRouteRegexp)
-
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
 
@@ -86,7 +83,7 @@ func (opts *agentCommand) Run() {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
 
-	server, err := http.NewWebServer(config, gateway)
+	server, err := http.NewWebServer(opts.ServerOptions, gateway)
 	if err != nil {
 		log.Fatalf("error creating agent http server: %s", err.Error())
 	}
