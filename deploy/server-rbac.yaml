@@ -23,11 +23,36 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: kiam-server
+  name: kiam-read
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: kiam-read
+subjects:
+- kind: ServiceAccount
+  name: kiam-server
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: kiam-write
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: kiam-write
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kiam-write
 subjects:
 - kind: ServiceAccount
   name: kiam-server
