@@ -12,6 +12,18 @@ import (
 	"time"
 )
 
+func TestRedirectsToCanonicalPath(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials", nil)
+	rr := httptest.NewRecorder()
+
+	handler := newHandler(nil)
+	handler.ServeHTTP(rr, r)
+
+	if rr.Code != http.StatusPermanentRedirect {
+		t.Error("expected redirect, was", rr.Code)
+	}
+}
+
 func TestReturnRoleWhenClientResponds(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
