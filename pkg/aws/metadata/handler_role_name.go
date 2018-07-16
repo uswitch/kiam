@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -30,10 +31,22 @@ type roleHandler struct {
 	clientIP clientIPFunc
 }
 
+func trailingSlashSuffixRedirectHandler(rw http.ResponseWriter, req *http.Request) {
+	u, err := url.Parse(req.URL.String())
+	if err != nil {
+		log.Errorf("error parsing uri: %s", err)
+		http.Error(rw, "error parsing uri", http.StatusInternalServerError)
+		return
+	}
+
+	u.Path = fmt.Sprintf("%s/", u.Path)
+	http.Redirect(rw, req, u.String(), http.StatusTemporaryRedirect)
+}
+
 func (h *roleHandler) Install(router *mux.Router) {
 	handler := adapt(withMeter("roleName", h))
-	router.Handle("/{version}/meta-data/iam/security-credentials", handler)
 	router.Handle("/{version}/meta-data/iam/security-credentials/", handler)
+	router.HandleFunc("/{version}/meta-data/iam/security-credentials", trailingSlashSuffixRedirectHandler)
 }
 
 func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
