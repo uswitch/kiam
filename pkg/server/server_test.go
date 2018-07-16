@@ -2,13 +2,14 @@ package server
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/testutil"
 	pb "github.com/uswitch/kiam/proto"
 	kt "k8s.io/client-go/tools/cache/testing"
-	"testing"
-	"time"
 )
 
 const (
