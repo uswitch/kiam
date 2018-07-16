@@ -97,7 +97,7 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 	if !decision.IsAllowed() {
 		logger.WithField("policy.explanation", decision.Explanation()).Errorf("pod denied by policy")
 		k.recordEvent(pod, v1.EventTypeWarning, "KiamRoleForbidden",
-			fmt.Sprintf("failed assuming role: %s", req.Role))
+			fmt.Sprintf("failed assuming role %q: %s", req.Role, decision.Explanation()))
 		return nil, ErrPolicyForbidden
 	}
 
