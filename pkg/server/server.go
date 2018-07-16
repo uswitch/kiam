@@ -109,7 +109,6 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 		return nil, err
 	}
 
-	k.recordEvent(pod, v1.EventTypeNormal, "KiamCredentialIssued", "issued credentials")
 	return translateCredentialsToProto(creds), nil
 }
 
@@ -146,9 +145,6 @@ func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) 
 	role := k8s.PodRole(pod)
 
 	logger.WithField("pod.iam.role", role).Infof("found role")
-	k.recordEvent(pod, v1.EventTypeNormal, "KiamRoleFound",
-		fmt.Sprintf("role found for pod %q: %s", pod.Name, role))
-
 	return &pb.Role{Name: role}, nil
 }
 
