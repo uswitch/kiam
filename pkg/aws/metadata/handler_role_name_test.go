@@ -19,7 +19,7 @@ func TestRedirectsToCanonicalPath(t *testing.T) {
 	handler := newHandler(nil)
 	handler.ServeHTTP(rr, r)
 
-	if rr.Code != http.StatusTemporaryRedirect {
+	if rr.Code != http.StatusPermanentRedirect {
 		t.Error("expected redirect, was", rr.Code)
 	}
 }
