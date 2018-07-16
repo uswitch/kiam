@@ -32,11 +32,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/tools/reference"
 )
 
 // Config controls the setup of the gRPC server
@@ -96,15 +96,20 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 
 	if !decision.IsAllowed() {
 		logger.WithField("policy.explanation", decision.Explanation()).Errorf("pod denied by policy")
+		k.recordEvent(pod, v1.EventTypeWarning, "KiamRoleForbidden",
+			fmt.Sprintf("failed assuming role: %s", req.Role))
 		return nil, ErrPolicyForbidden
 	}
 
 	creds, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role)
 	if err != nil {
 		logger.Errorf("error retrieving credentials: %s", err.Error())
+		k.recordEvent(pod, v1.EventTypeWarning, "KiamCredentialError",
+			fmt.Sprintf("failed retrieving credentials: %s", err))
 		return nil, err
 	}
 
+	k.recordEvent(pod, v1.EventTypeNormal, "KiamCredentialIssued", "issued credentials")
 	return translateCredentialsToProto(creds), nil
 }
 
@@ -139,15 +144,10 @@ func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) 
 	}
 
 	role := k8s.PodRole(pod)
-	ref, err := reference.GetReference(scheme.Scheme, pod)
-	if err != nil {
-		logger.Errorf("error getting reference for pod %q: %s", pod.Name, err)
-		return nil, err
-	}
 
 	logger.WithField("pod.iam.role", role).Infof("found role")
-	k.eventRecorder.Event(ref, v1.EventTypeNormal, "KiamRoleFound",
-		fmt.Sprintf("Role: %q found for pod: %q", role, pod.Name))
+	k.recordEvent(pod, v1.EventTypeNormal, "KiamRoleFound",
+		fmt.Sprintf("role found for pod %q: %s", pod.Name, role))
 
 	return &pb.Role{Name: role}, nil
 }
@@ -283,4 +283,11 @@ func eventRecorder(kubeClient *kubernetes.Clientset) record.EventRecorder {
 	broadcaster.StartRecordingToSink(sink)
 
 	return broadcaster.NewRecorder(scheme.Scheme, source)
+}
+
+func (k *KiamServer) recordEvent(object runtime.Object, eventtype, reason, message string) {
+	if k.eventRecorder == nil {
+		return
+	}
+	k.eventRecorder.Event(object, eventtype, reason, message)
 }
