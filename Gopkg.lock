@@ -74,12 +74,6 @@
   version = "v1.1.0"
 
 [[projects]]
-  name = "github.com/fortytw2/leaktest"
-  packages = ["."]
-  revision = "a5ef70473c97b71626b9abeda80ee92ba2a7de9e"
-  version = "v1.2.0"
-
-[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -161,6 +155,12 @@
   ]
   revision = "c250d6563d4d4c20252cd865923440e829844f4e"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/grpc-ecosystem/go-grpc-prometheus"
+  packages = ["."]
+  revision = "c225b8c3b01faf2899099b768856a9e916e5087b"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -558,6 +558,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ae38b583e5990319838eea490438baca4fcd62403bb94e2cc4320279c05cd96d"
+  inputs-digest = "594e3ba6736e435b9e81a9e42fcc191b87c5ec15faaee83123147a650a61809f"
   solver-name = "gps-cdcl"
   solver-version = 1
