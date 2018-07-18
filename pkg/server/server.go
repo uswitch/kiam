@@ -23,6 +23,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/k8sc/official"
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -244,7 +245,11 @@ func NewServer(config *Config) (*KiamServer, error) {
 		ClientCAs:    certPool,
 	})
 
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
+	grpcServer := grpc.NewServer(
+		grpc.Creds(creds),
+		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
+	)
 	pb.RegisterKiamServiceServer(grpcServer, server)
 	server.server = grpcServer
 
