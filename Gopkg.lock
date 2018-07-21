@@ -74,6 +74,12 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/fortytw2/leaktest"
+  packages = ["."]
+  revision = "a5ef70473c97b71626b9abeda80ee92ba2a7de9e"
+  version = "v1.2.0"
+
+[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -549,6 +555,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "594e3ba6736e435b9e81a9e42fcc191b87c5ec15faaee83123147a650a61809f"
+  inputs-digest = "dbaf5c9e992d976b0011cac31e44cc1612ff2bb7af2516359c9099f91f133506"
   solver-name = "gps-cdcl"
   solver-version = 1
