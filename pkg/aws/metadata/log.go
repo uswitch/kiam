@@ -15,6 +15,7 @@ package metadata
 
 import (
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -43,11 +44,13 @@ func requestFields(req *http.Request) log.Fields {
 
 func loggingHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		requestTimer := time.Now()
 		statusWriter := newStatusWriter(w)
 		handler.ServeHTTP(statusWriter, req)
 		fields := log.Fields{
-			"headers": w.Header(),
-			"status":  statusWriter.statusCode,
+			"headers":  w.Header(),
+			"status":   statusWriter.statusCode,
+			"duration": float64(time.Since(requestTimer) / time.Millisecond),
 		}
 		logger := log.WithFields(requestFields(req)).WithFields(fields)
 		if statusWriter.statusCode < 400 {

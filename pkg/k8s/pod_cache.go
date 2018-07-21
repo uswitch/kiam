@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"time"
 
-	metrics "github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -201,7 +200,7 @@ func (o *podHandler) announce(pod *v1.Pod) {
 	case o.pods <- pod:
 		logger.Debugf("announced pod")
 	default:
-		metrics.GetOrRegisterMeter("PodCache.dropAnnounce", metrics.DefaultRegistry).Mark(1)
+		dropAnnounce.Inc()
 		logger.Warnf("pods announcement full, dropping")
 	}
 }

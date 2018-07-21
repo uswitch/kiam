@@ -17,10 +17,15 @@ import (
 	"context"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	kt "github.com/uswitch/kiam/pkg/k8s/testing"
+	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 	"testing"
 	"time"
 )
+
+func init() {
+	statsd.New("", "", time.Millisecond)
+}
 
 func TestPrefetchRunningPods(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())

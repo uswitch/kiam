@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
+	"github.com/uswitch/kiam/pkg/statsd"
 	st "github.com/uswitch/kiam/pkg/testutil/server"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,10 @@ import (
 	"testing"
 	"time"
 )
+
+func init() {
+	statsd.New("", "", time.Millisecond)
+}
 
 func TestReturnsCredentials(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

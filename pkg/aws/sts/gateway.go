@@ -21,7 +21,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/rcrowley/go-metrics"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/uswitch/kiam/pkg/statsd"
 )
 
 type STSGateway interface {
@@ -44,13 +45,12 @@ func DefaultGateway(assumeRoleArn string) *DefaultSTSGateway {
 }
 
 func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
-	timer := metrics.GetOrRegisterTimer("aws.assumeRole", metrics.DefaultRegistry)
-	started := time.Now()
-	defer timer.UpdateSince(started)
+	timer := prometheus.NewTimer(assumeRole)
+	defer timer.ObserveDuration()
+	defer statsd.Client.NewTiming().Send("aws.assume_role")
 
-	counter := metrics.GetOrRegisterCounter("stsAssumeRole.executingRequests", metrics.DefaultRegistry)
-	counter.Inc(1)
-	defer counter.Dec(1)
+	assumeRoleExecuting.Inc()
+	defer assumeRoleExecuting.Dec()
 
 	svc := sts.New(g.session)
 	in := &sts.AssumeRoleInput{
