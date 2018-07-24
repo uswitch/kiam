@@ -56,7 +56,7 @@ This is the process that would typically be deployed as a DaemonSet to ensure th
 | [weave](https://www.weave.works/docs/net/latest/kubernetes/kube-addon/) | `weave` |   |
 | [calico/canal](https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/flannel) | `cali+` |   |
 | [kube-router](https://www.kube-router.io/docs) | `kube-bridge` | This is the default bridge interface that all the pods are connected to when using kube-router |
-
+| [kubenet](https://kubernetes.io/docs/concepts/cluster-administration/networking/#docker-model) | `veth+` |  |
 
 ### Server
 This process is responsible for connecting to the Kubernetes API Servers to watch Pods and communicating with AWS STS to request credentials. It also maintains a cache of credentials for roles currently in use by running pods- ensuring that credentials are refreshed every few minutes and stored in advance of Pods needing them.
