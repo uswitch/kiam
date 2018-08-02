@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -88,9 +89,8 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 	balancer := grpc.RoundRobin(resolver)
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
-		grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...)),
+		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(retry.UnaryClientInterceptor(callOpts...), grpc_prometheus.UnaryClientInterceptor)),
 		grpc.WithBalancer(balancer),
-		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
 		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 	}
 	conn, err := grpc.Dial(address, dialOpts...)
