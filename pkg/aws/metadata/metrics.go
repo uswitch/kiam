@@ -22,7 +22,7 @@ var (
 		prometheus.CounterOpts{
 			Namespace: "kiam",
 			Subsystem: "metadata",
-			Name:      "credential_fetch_error",
+			Name:      "credential_fetch_errors_total",
 			Help:      "Number of errors fetching the credentials for a pod",
 		},
 		[]string{"handler"},
@@ -32,7 +32,7 @@ var (
 		prometheus.CounterOpts{
 			Namespace: "kiam",
 			Subsystem: "metadata",
-			Name:      "credential_encode_error",
+			Name:      "credential_encode_errors_total",
 			Help:      "Number of errors encoding credentials for a pod",
 		},
 		[]string{"handler"},
@@ -42,7 +42,7 @@ var (
 		prometheus.CounterOpts{
 			Namespace: "kiam",
 			Subsystem: "metadata",
-			Name:      "find_role_error_total",
+			Name:      "find_role_errors_total",
 			Help:      "Number of errors finding the role for a pod",
 		},
 		[]string{"handler"},

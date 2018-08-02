@@ -10,7 +10,7 @@ var (
 			Namespace: "kiam",
 			Subsystem: "k8s",
 			Name:      "dropped_pods_total",
-			Help:      "Number of dropped pods because of full cache",
+			Help:      "Number of dropped pods because of full buffer",
 		},
 	)
 )

@@ -28,9 +28,9 @@ metrics are not aggregated and flushed every 100ms.
 ### Prometheus
 #### Metadata Subsystem
 - `handler_latency_milliseconds` - Bucketed histogram of handler timings. Tagged by handler
-- `credential_fetch_error` - Number of errors fetching the credentials for a pod
-- `credential_encode_error` - Number of errors encoding credentials for a pod
-- `find_role_error_total` - Number of errors finding the role for a pod
+- `credential_fetch_errors_total` - Number of errors fetching the credentials for a pod
+- `credential_encode_errors_total` - Number of errors encoding credentials for a pod
+- `find_role_errors_total` - Number of errors finding the role for a pod
 - `empty_role_total` - Number of empty roles returned
 - `success_total` - Number of successful responses from a handler
 - `responses_total` - Responses from mocked out metadata handlers
@@ -38,12 +38,12 @@ metrics are not aggregated and flushed every 100ms.
 #### STS Subsystem
 - `cache_hit_total` - Number of cache hits to the metadata cache
 - `cache_miss_total` - Number of cache misses to the metadata cache
-- `error_issuing_count` - Number of errors issuing credentials
+- `issuing_errors_total` - Number of errors issuing credentials
 - `assumerole_timing_milliseconds` - Bucketed histogram of assumeRole timings
-- `assume_role_executing_total` - Number of assume role calls currently executing
+- `assumerole_current` - Number of assume role calls currently executing
 
 #### K8s Subsystem
-- `dropped_pods_total` - Number of dropped pods because of full cache
+- `dropped_pods_total` - Number of dropped pods because of full buffer
 
 ### StatsD Timing metrics
 - `gateway.rpc.GetRole` - Observed client side latency of GetRole RPC

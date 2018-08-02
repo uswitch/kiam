@@ -25,7 +25,7 @@ var (
 		prometheus.CounterOpts{
 			Namespace: "kiam",
 			Subsystem: "sts",
-			Name:      "error_issuing_count",
+			Name:      "issuing_errors_total",
 			Help:      "Number of errors issuing credentials",
 		},
 	)
@@ -46,7 +46,7 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: "kiam",
 			Subsystem: "sts",
-			Name:      "assume_role_executing_total",
+			Name:      "assumerole_current",
 			Help:      "Number of assume role calls currently executing",
 		},
 	)
