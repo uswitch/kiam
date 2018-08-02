@@ -88,10 +88,10 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 	balancer := grpc.RoundRobin(resolver)
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
-		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
-		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 		grpc.WithUnaryInterceptor(retry.UnaryClientInterceptor(callOpts...)),
 		grpc.WithBalancer(balancer),
+		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
+		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 	}
 	conn, err := grpc.Dial(address, dialOpts...)
 	if err != nil {

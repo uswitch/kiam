@@ -46,14 +46,17 @@ metrics are not aggregated and flushed every 100ms.
 #### K8s Subsystem
 - `dropped_pods_total` - Number of dropped pods because of full buffer
 
-#### gRPC Server
+#### gRPC Server (Kiam Server)
 - `grpc_server_handled_total` - Total number of RPCs completed on the server, regardless of success or failure.
 - `grpc_server_msg_received_total` - Total number of RPC stream messages received on the server.
 - `grpc_server_msg_sent_total` - Total number of gRPC stream messages sent by the server.
 - `grpc_server_started_total` - Total number of RPCs started on the server.
 
-#### gRPC Client
-
+#### gRPC Client (Kiam Agent)
+- `grpc_client_handled_total` -  Total number of RPCs completed by the client, regardless of success or failure.
+- `grpc_client_msg_received_total` -  Total number of RPC stream messages received by the client.
+- `grpc_client_msg_sent_total` -  Total number of gRPC stream messages sent by the client.
+- `grpc_client_started_total` -  Total number of RPCs started on the client.
 
 ### StatsD Timing metrics
 - `gateway.rpc.GetRole` - Observed client side latency of GetRole RPC
