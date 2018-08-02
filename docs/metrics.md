@@ -26,6 +26,7 @@ metrics are not aggregated and flushed every 100ms.
 ## Emitted Metrics
 
 ### Prometheus
+
 #### Metadata Subsystem
 - `handler_latency_milliseconds` - Bucketed histogram of handler timings. Tagged by handler
 - `credential_fetch_errors_total` - Number of errors fetching the credentials for a pod
@@ -44,6 +45,15 @@ metrics are not aggregated and flushed every 100ms.
 
 #### K8s Subsystem
 - `dropped_pods_total` - Number of dropped pods because of full buffer
+
+#### gRPC Server
+- `grpc_server_handled_total` - Total number of RPCs completed on the server, regardless of success or failure.
+- `grpc_server_msg_received_total` - Total number of RPC stream messages received on the server.
+- `grpc_server_msg_sent_total` - Total number of gRPC stream messages sent by the server.
+- `grpc_server_started_total` - Total number of RPCs started on the server.
+
+#### gRPC Client
+
 
 ### StatsD Timing metrics
 - `gateway.rpc.GetRole` - Observed client side latency of GetRole RPC
