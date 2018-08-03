@@ -29,6 +29,7 @@ import (
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/prefetch"
+	"github.com/uswitch/kiam/pkg/statsd"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -79,6 +80,7 @@ type KiamServer struct {
 // GetPodCredentials returns credentials for the Pod, according to the role it's
 // annotated with. It will additionally check policy before returning credentials.
 func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCredentialsRequest) (*pb.Credentials, error) {
+	defer statsd.Client.NewTiming().Send("server.rpc.GetRoleCredentials")
 	pod, err := k.pods.GetPodByIP(req.Ip)
 	if err != nil {
 		if err == k8s.ErrPodNotFound {
@@ -116,6 +118,7 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 // IsAllowedAssumeRole checks policy to ensure the role can be assumed. Deprecated and will
 // be removed in a future release.
 func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
+	defer statsd.Client.NewTiming().Send("server.rpc.IsAllowedAssumeRole")
 	decision, err := k.assumePolicy.IsAllowedAssumeRole(ctx, req.Role.Name, req.Ip)
 	if err != nil {
 		return nil, err
@@ -131,11 +134,13 @@ func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedA
 
 // GetHealth returns ok to allow a command to ensure the sever is operating well
 func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb.HealthStatus, error) {
+	defer statsd.Client.NewTiming().Send("server.rpc.GetHealth")
 	return &pb.HealthStatus{Message: "ok"}, nil
 }
 
 // GetPodRole determines which role a Pod is annotated with
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
+	defer statsd.Client.NewTiming().Send("server.rpc.GetPodRole")
 	logger := log.WithField("pod.ip", req.Ip)
 	pod, err := k.pods.GetPodByIP(req.Ip)
 	if err != nil {
@@ -164,6 +169,7 @@ func translateCredentialsToProto(credentials *sts.Credentials) *pb.Credentials {
 // GetRoleCredentials returns the credentials for the role. Deprecated and will be
 // removed in a future release.
 func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCredentialsRequest) (*pb.Credentials, error) {
+	defer statsd.Client.NewTiming().Send("server.rpc.GetRoleCredentials")
 	logger := log.WithField("pod.iam.role", req.Role.Name)
 
 	logger.Infof("requesting credentials")

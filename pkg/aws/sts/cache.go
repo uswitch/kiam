@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
-	"github.com/rcrowley/go-metrics"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/future"
 )
@@ -32,8 +32,6 @@ type credentialsCache struct {
 	sessionName     string
 	sessionDuration time.Duration
 	cacheTTL        time.Duration
-	meterCacheHit   metrics.Meter
-	meterCacheMiss  metrics.Meter
 	gateway         STSGateway
 }
 
@@ -59,14 +57,22 @@ func DefaultCache(
 		sessionName:     fmt.Sprintf("kiam-%s", sessionName),
 		sessionDuration: sessionDuration,
 		cacheTTL:        sessionDuration - sessionRefresh,
-		meterCacheHit:   metrics.GetOrRegisterMeter("credentialsCache.cacheHit", metrics.DefaultRegistry),
-		meterCacheMiss:  metrics.GetOrRegisterMeter("credentialsCache.cacheMiss", metrics.DefaultRegistry),
 		gateway:         gateway,
 	}
 	c.cache = cache.New(c.cacheTTL, DefaultPurgeInterval)
 	c.cache.OnEvicted(c.evicted)
 
-	metrics.NewRegisteredFunctionalGauge("credentialsCache.size", metrics.DefaultRegistry, func() int64 { return int64(c.cache.ItemCount()) })
+	// TODO: Not do this inline
+	cacheSize := prometheus.NewCounterFunc(
+		prometheus.CounterOpts{
+			Namespace: "kiam",
+			Subsystem: "sts",
+			Name:      "cacheSize",
+			Help:      "Current size of the metadata cache",
+		},
+		func() float64 { return float64(c.cache.ItemCount()) },
+	)
+	prometheus.MustRegister(cacheSize)
 
 	return c
 }
@@ -108,18 +114,18 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 			return nil, err
 		}
 
-		c.meterCacheHit.Mark(1)
+		cacheHit.Inc()
 
 		return val.(*Credentials), nil
 	}
 
-	c.meterCacheMiss.Mark(1)
+	cacheMiss.Inc()
 
 	issue := func() (interface{}, error) {
 		arn := c.arnResolver.Resolve(role)
 		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, c.sessionDuration)
 		if err != nil {
-			metrics.GetOrRegisterMeter("credentialsCache.errorIssuing", metrics.DefaultRegistry).Mark(1)
+			errorIssuing.Inc()
 			logger.Errorf("error requesting credentials: %s", err.Error())
 			return nil, err
 		}

@@ -17,13 +17,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/cenkalti/backoff"
 	"github.com/gorilla/mux"
-	"github.com/rcrowley/go-metrics"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
-	"net/http"
-	"time"
+	"github.com/uswitch/kiam/pkg/statsd"
 )
 
 type credentialsHandler struct {
@@ -36,9 +37,9 @@ func (c *credentialsHandler) Install(router *mux.Router) {
 }
 
 func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
-	credentialTimings := metrics.GetOrRegisterTimer("credentialsHandler", metrics.DefaultRegistry)
-	startTime := time.Now()
-	defer credentialTimings.UpdateSince(startTime)
+	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("credentials"))
+	defer timer.ObserveDuration()
+	defer statsd.Client.NewTiming().Send("handler.credentials")
 
 	err := req.ParseForm()
 	if err != nil {
@@ -53,16 +54,18 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 	requestedRole := mux.Vars(req)["role"]
 	credentials, err := c.fetchCredentials(ctx, ip, requestedRole)
 	if err != nil {
+		credentialFetchError.WithLabelValues("credentials").Inc()
 		return http.StatusInternalServerError, fmt.Errorf("error fetching credentials: %s", err)
 	}
 
 	err = json.NewEncoder(w).Encode(credentials)
 	if err != nil {
+		credentialEncodeError.WithLabelValues("credentials").Inc()
 		return http.StatusInternalServerError, fmt.Errorf("error encoding credentials: %s", err.Error())
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	metrics.GetOrRegisterMeter("credentialsHandler.success", metrics.DefaultRegistry).Mark(1)
+	success.WithLabelValues("credentials").Inc()
 	return http.StatusOK, nil
 }
 

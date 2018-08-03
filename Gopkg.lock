@@ -149,6 +149,7 @@
 [[projects]]
   name = "github.com/grpc-ecosystem/go-grpc-middleware"
   packages = [
+    ".",
     "retry",
     "util/backoffutils",
     "util/metautils"
@@ -224,8 +225,8 @@
     "prometheus",
     "prometheus/promhttp"
   ]
-  revision = "c5b7fccd204277076155f10851dad72b76a49317"
-  version = "v0.8.0"
+  revision = "967789050ba94deca04a5e84cce8ad472ce313c1"
+  version = "v0.9.0-pre1"
 
 [[projects]]
   branch = "master"
@@ -253,21 +254,6 @@
     "xfs"
   ]
   revision = "94663424ae5ae9856b40a9f170762b4197024661"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/pubnub/go-metrics-statsd"
-  packages = ["."]
-  revision = "7da61f429d6bdaa79d5d5746998e0db9622c56fc"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/rcrowley/go-metrics"
-  packages = [
-    ".",
-    "exp"
-  ]
-  revision = "e2704e165165ec55d062f5919b4b29494e9fa790"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -391,6 +377,12 @@
   packages = ["."]
   revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
   version = "v2.2.6"
+
+[[projects]]
+  name = "gopkg.in/alexcesaro/statsd.v2"
+  packages = ["."]
+  revision = "7fea3f0d2fab1ad973e641e51dba45443a311a90"
+  version = "v2.0.0"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -558,6 +550,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "594e3ba6736e435b9e81a9e42fcc191b87c5ec15faaee83123147a650a61809f"
+  inputs-digest = "bdd2b09a796b70e23a943da72425a1a647ed21232a7a04a6597cf5ca5e9f8d7d"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -18,12 +18,14 @@ import (
 	"fmt"
 	"github.com/cenkalti/backoff"
 	"github.com/gorilla/mux"
-	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/uswitch/kiam/pkg/statsd"
 )
 
 type roleHandler struct {
@@ -50,9 +52,9 @@ func (h *roleHandler) Install(router *mux.Router) {
 }
 
 func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
-	roleNameTimings := metrics.GetOrRegisterTimer("roleNameHandler", metrics.DefaultRegistry)
-	startTime := time.Now()
-	defer roleNameTimings.UpdateSince(startTime)
+	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("roleName"))
+	defer timer.ObserveDuration()
+	defer statsd.Client.NewTiming().Send("handler.role_name")
 
 	err := req.ParseForm()
 	if err != nil {
@@ -67,17 +69,17 @@ func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *ht
 	role, err := findRole(ctx, h.client, ip)
 
 	if err != nil {
-		metrics.GetOrRegisterMeter("roleNameHandler.findRoleError", metrics.DefaultRegistry).Mark(1)
+		findRoleError.WithLabelValues("roleName").Inc()
 		return http.StatusInternalServerError, err
 	}
 
 	if role == "" {
-		metrics.GetOrRegisterMeter("credentialsHandler.emptyRole", metrics.DefaultRegistry).Mark(1)
+		emptyRole.WithLabelValues("roleName").Inc()
 		return http.StatusNotFound, EmptyRoleError
 	}
 
 	fmt.Fprint(w, role)
-	metrics.GetOrRegisterMeter("roleNameHandler.success", metrics.DefaultRegistry).Mark(1)
+	success.WithLabelValues("roleName").Inc()
 
 	return http.StatusOK, nil
 }
