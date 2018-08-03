@@ -4,7 +4,7 @@ Kiam exports both Prometheus and StatsD metrics to determine the health of the
 system, check the timing of each RPC call, and monitor the size of the
 credentials cache. By default, Prometheus metrics are exported on
 `localhost:9620` and StatsD metrics are sent to `127.0.0.1:8125`. StatsD
-metrics are not aggregated and flushed every 100ms.
+metrics are flushed every 100ms but are not aggregated.
 
 ## Metrics configuration
 
