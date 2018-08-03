@@ -80,7 +80,15 @@ func (opts *serverCommand) Run() {
 	signal.Notify(stopChan, syscall.SIGTERM)
 
 	opts.Config.TLS = serv.TLSConfig{ServerCert: opts.certificatePath, ServerKey: opts.keyPath, CA: opts.caPath}
-	server, err := serv.NewServer(&opts.Config)
+
+	var statsd bool
+	if opts.telemetryOptions.statsD != "" {
+		statsd = true
+	} else {
+		statsd = false
+	}
+
+	server, err := serv.NewServer(&opts.Config, statsd)
 	if err != nil {
 		log.Fatal("error creating listener: ", err.Error())
 	}

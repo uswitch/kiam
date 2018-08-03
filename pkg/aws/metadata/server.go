@@ -16,14 +16,15 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/server"
 )
 
 type Server struct {
@@ -45,19 +46,19 @@ func NewConfig(port int) *ServerConfig {
 	}
 }
 
-func NewWebServer(config *ServerConfig, client server.Client) (*Server, error) {
-	http, err := buildHTTPServer(config, client)
+func NewWebServer(config *ServerConfig, client server.Client, statsd bool) (*Server, error) {
+	http, err := buildHTTPServer(config, client, statsd)
 	if err != nil {
 		return nil, err
 	}
 	return &Server{cfg: config, server: http}, nil
 }
 
-func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, error) {
+func buildHTTPServer(config *ServerConfig, client server.Client, statsd bool) (*http.Server, error) {
 	router := mux.NewRouter()
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
 
-	h := &healthHandler{config.MetadataEndpoint}
+	h := &healthHandler{endpoint: config.MetadataEndpoint, statsd: statsd}
 	router.Handle("/health", adapt(withMeter("health", h)))
 
 	clientIP := buildClientIP(config)
@@ -65,12 +66,14 @@ func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, 
 	r := &roleHandler{
 		client:   client,
 		clientIP: clientIP,
+		statsd:   statsd,
 	}
 	r.Install(router)
 
 	c := &credentialsHandler{
 		clientIP: clientIP,
 		client:   client,
+		statsd:   statsd,
 	}
 	c.Install(router)
 

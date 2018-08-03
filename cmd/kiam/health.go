@@ -26,6 +26,7 @@ type healthCommand struct {
 	logOptions
 	tlsOptions
 	clientOptions
+	telemetryOptions
 
 	timeout time.Duration
 }
@@ -44,7 +45,14 @@ func (opts *healthCommand) Run() {
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
 
-	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath)
+	var statsd bool
+	if opts.telemetryOptions.statsD != "" {
+		statsd = true
+	} else {
+		statsd = false
+	}
+
+	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath, statsd)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}

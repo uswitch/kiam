@@ -68,14 +68,16 @@ func (o *telemetryOptions) bind(parser parser) {
 }
 
 func (o telemetryOptions) start(ctx context.Context, identifier string) {
-	err := statsd.New(
-		o.statsD,
-		fmt.Sprintf("%s.%s", o.statsDPrefix, identifier),
-		o.statsDInterval,
-	)
+	if o.statsD != "" {
+		err := statsd.New(
+			o.statsD,
+			fmt.Sprintf("%s.%s", o.statsDPrefix, identifier),
+			o.statsDInterval,
+		)
 
-	if err != nil {
-		log.Fatalf("Error initing statsd: %v", err)
+		if err != nil {
+			log.Fatalf("Error initing statsd: %v", err)
+		}
 	}
 
 	if o.prometheusListen != "" {

@@ -45,6 +45,7 @@ type Client interface {
 type KiamGateway struct {
 	conn   *grpc.ClientConn
 	client pb.KiamServiceClient
+	statsd bool
 }
 
 const (
@@ -52,7 +53,7 @@ const (
 )
 
 // NewGateway constructs a gRPC client to talk to the server
-func NewGateway(ctx context.Context, address string, refresh time.Duration, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
+func NewGateway(ctx context.Context, address string, refresh time.Duration, caFile, certificateFile, keyFile string, statsd bool) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
 	}
@@ -110,7 +111,7 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 	err = backoff.Retry(lookupAddress, backoff.WithContext(backoff.NewConstantBackOff(50*time.Millisecond), ctx))
 
 	client := pb.NewKiamServiceClient(conn)
-	return &KiamGateway{conn: conn, client: client}, nil
+	return &KiamGateway{conn: conn, client: client, statsd: statsd}, nil
 }
 
 // Close disconnects the connection
@@ -120,7 +121,9 @@ func (g *KiamGateway) Close() {
 
 // GetRole returns the role for the identified Pod
 func (g *KiamGateway) GetRole(ctx context.Context, ip string) (string, error) {
-	defer statsd.Client.NewTiming().Send("gateway.rpc.GetRole")
+	if g.statsd {
+		defer statsd.Client.NewTiming().Send("gateway.rpc.GetRole")
+	}
 	role, err := g.client.GetPodRole(ctx, &pb.GetPodRoleRequest{Ip: ip})
 	if err != nil {
 		return "", err
@@ -130,7 +133,9 @@ func (g *KiamGateway) GetRole(ctx context.Context, ip string) (string, error) {
 
 // GetCredentials returns the credentials for the identified Pod
 func (g *KiamGateway) GetCredentials(ctx context.Context, ip, role string) (*sts.Credentials, error) {
-	defer statsd.Client.NewTiming().Send("gateway.rpc.GetCredentials")
+	if g.statsd {
+		defer statsd.Client.NewTiming().Send("gateway.rpc.GetCredentials")
+	}
 	credentials, err := g.client.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: ip, Role: role})
 	if err != nil {
 		return nil, err
@@ -148,7 +153,9 @@ func (g *KiamGateway) GetCredentials(ctx context.Context, ip, role string) (*sts
 
 // Health is used to check the gRPC client connection
 func (g *KiamGateway) Health(ctx context.Context) (string, error) {
-	defer statsd.Client.NewTiming().Send("gateway.rpc.Health")
+	if g.statsd {
+		defer statsd.Client.NewTiming().Send("gateway.rpc.Health")
+	}
 	status, err := g.client.GetHealth(ctx, &pb.GetHealthRequest{})
 	if err != nil {
 		return "", err
