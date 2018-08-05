@@ -81,9 +81,6 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 		RootCAs:      certPool,
 	})
 
-	dialCtx, dialCancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer dialCancel()
-
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
 		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(retry.UnaryClientInterceptor(callOpts...), grpc_prometheus.UnaryClientInterceptor)),
@@ -92,7 +89,7 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 		grpc.WithWaitForHandshake(),
 		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 	}
-	conn, err := grpc.DialContext(dialCtx, address, dialOpts...)
+	conn, err := grpc.DialContext(ctx, address, dialOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing grpc server: %v", err)
 	}
