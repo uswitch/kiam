@@ -90,6 +90,7 @@ func (opts *agentCommand) Run() {
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
+	defer gateway.Close()
 
 	server, err := http.NewWebServer(config, gateway, statsd)
 	if err != nil {
