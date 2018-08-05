@@ -22,7 +22,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
@@ -30,8 +29,8 @@ import (
 	"github.com/uswitch/kiam/pkg/statsd"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/naming"
 )
 
 // Client is the Server's client interface
@@ -82,34 +81,21 @@ func NewGateway(ctx context.Context, address string, refresh time.Duration, caFi
 		RootCAs:      certPool,
 	})
 
-	resolver, err := naming.NewDNSResolverWithFreq(refresh)
-	if err != nil {
-		return nil, fmt.Errorf("error creating DNS resolver: %v", err)
-	}
+	dialCtx, dialCancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer dialCancel()
 
-	balancer := grpc.RoundRobin(resolver)
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
 		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(retry.UnaryClientInterceptor(callOpts...), grpc_prometheus.UnaryClientInterceptor)),
-		grpc.WithBalancer(balancer),
+		grpc.WithBalancerName(roundrobin.Name),
+		grpc.WithBlock(),
+		grpc.WithWaitForHandshake(),
 		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 	}
-	conn, err := grpc.Dial(address, dialOpts...)
+	conn, err := grpc.DialContext(dialCtx, address, dialOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing grpc server: %v", err)
 	}
-
-	lookupAddress := func() error {
-		// BlockingWait for the BalancerGetOptions appears to have no effect
-		// so we wrap in a retry loop to provide the same behaviour
-		_, _, err := balancer.Get(ctx, grpc.BalancerGetOptions{})
-		if err != nil {
-			return fmt.Errorf("error waiting for address to be available in the balancer: %v", err)
-		}
-		return nil
-	}
-	err = backoff.Retry(lookupAddress, backoff.WithContext(backoff.NewConstantBackOff(50*time.Millisecond), ctx))
-
 	client := pb.NewKiamServiceClient(conn)
 	return &KiamGateway{conn: conn, client: client, statsd: statsd}, nil
 }
