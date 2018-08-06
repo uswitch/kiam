@@ -79,20 +79,13 @@ func (opts *agentCommand) Run() {
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
 
-	var statsd bool
-	if opts.telemetryOptions.statsD != "" {
-		statsd = true
-	} else {
-		statsd = false
-	}
-
-	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath, statsd)
+	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
 	defer gateway.Close()
 
-	server, err := http.NewWebServer(config, gateway, statsd)
+	server, err := http.NewWebServer(config, gateway)
 	if err != nil {
 		log.Fatalf("error creating agent http server: %s", err.Error())
 	}

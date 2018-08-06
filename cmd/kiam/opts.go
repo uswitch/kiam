@@ -69,6 +69,7 @@ func (o *telemetryOptions) bind(parser parser) {
 
 func (o telemetryOptions) start(ctx context.Context, identifier string) {
 	if o.statsD != "" {
+		statsd.Enabled = true
 		err := statsd.New(
 			o.statsD,
 			fmt.Sprintf("%s.%s", o.statsDPrefix, identifier),

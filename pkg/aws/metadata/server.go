@@ -46,19 +46,19 @@ func NewConfig(port int) *ServerConfig {
 	}
 }
 
-func NewWebServer(config *ServerConfig, client server.Client, statsd bool) (*Server, error) {
-	http, err := buildHTTPServer(config, client, statsd)
+func NewWebServer(config *ServerConfig, client server.Client) (*Server, error) {
+	http, err := buildHTTPServer(config, client)
 	if err != nil {
 		return nil, err
 	}
 	return &Server{cfg: config, server: http}, nil
 }
 
-func buildHTTPServer(config *ServerConfig, client server.Client, statsd bool) (*http.Server, error) {
+func buildHTTPServer(config *ServerConfig, client server.Client) (*http.Server, error) {
 	router := mux.NewRouter()
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
 
-	h := &healthHandler{endpoint: config.MetadataEndpoint, statsd: statsd}
+	h := &healthHandler{endpoint: config.MetadataEndpoint}
 	router.Handle("/health", adapt(withMeter("health", h)))
 
 	clientIP := buildClientIP(config)
@@ -66,14 +66,12 @@ func buildHTTPServer(config *ServerConfig, client server.Client, statsd bool) (*
 	r := &roleHandler{
 		client:   client,
 		clientIP: clientIP,
-		statsd:   statsd,
 	}
 	r.Install(router)
 
 	c := &credentialsHandler{
 		clientIP: clientIP,
 		client:   client,
-		statsd:   statsd,
 	}
 	c.Install(router)
 

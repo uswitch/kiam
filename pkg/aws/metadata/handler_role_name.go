@@ -32,7 +32,6 @@ import (
 type roleHandler struct {
 	client   server.Client
 	clientIP clientIPFunc
-	statsd   bool
 }
 
 func trailingSlashSuffixRedirectHandler(rw http.ResponseWriter, req *http.Request) {
@@ -56,7 +55,7 @@ func (h *roleHandler) Install(router *mux.Router) {
 func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("roleName"))
 	defer timer.ObserveDuration()
-	if h.statsd {
+	if statsd.Enabled {
 		defer statsd.Client.NewTiming().Send("handler.role_name")
 	}
 

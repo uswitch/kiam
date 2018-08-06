@@ -25,13 +25,12 @@ import (
 
 type healthHandler struct {
 	endpoint string
-	statsd   bool
 }
 
 func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("health"))
 	defer timer.ObserveDuration()
-	if h.statsd {
+	if statsd.Enabled {
 		defer statsd.Client.NewTiming().Send("handler.health")
 	}
 
