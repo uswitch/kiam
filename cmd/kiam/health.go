@@ -26,7 +26,6 @@ type healthCommand struct {
 	logOptions
 	tlsOptions
 	clientOptions
-
 	timeout time.Duration
 }
 
