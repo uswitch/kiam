@@ -207,7 +207,7 @@ func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {
 }
 
 // NewServer constructs a new server.
-func NewServer(config *Config, statsd bool) (*KiamServer, error) {
+func NewServer(config *Config) (*KiamServer, error) {
 	server := &KiamServer{
 		parallelFetchers: config.ParallelFetcherProcesses,
 	}
@@ -227,7 +227,7 @@ func NewServer(config *Config, statsd bool) (*KiamServer, error) {
 	server.namespaces = k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 	server.eventRecorder = eventRecorder(client)
 
-	stsGateway := sts.DefaultGateway(config.AssumeRoleArn, statsd)
+	stsGateway := sts.DefaultGateway(config.AssumeRoleArn)
 	arnResolver, err := newRoleARNResolver(config)
 	if err != nil {
 		return nil, err

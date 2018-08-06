@@ -34,7 +34,7 @@ type DefaultSTSGateway struct {
 	statsd  bool
 }
 
-func DefaultGateway(assumeRoleArn string, statsd bool) *DefaultSTSGateway {
+func DefaultGateway(assumeRoleArn string) *DefaultSTSGateway {
 	if assumeRoleArn == "" {
 		return &DefaultSTSGateway{session: session.Must(session.NewSession())}
 	} else {
