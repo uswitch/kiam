@@ -208,9 +208,7 @@ func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {
 
 // NewServer constructs a new server.
 func NewServer(config *Config) (*KiamServer, error) {
-	server := &KiamServer{
-		parallelFetchers: config.ParallelFetcherProcesses,
-	}
+	server := &KiamServer{parallelFetchers: config.ParallelFetcherProcesses}
 
 	listener, err := net.Listen("tcp", config.BindAddress)
 	if err != nil {
