@@ -39,7 +39,9 @@ func (c *credentialsHandler) Install(router *mux.Router) {
 func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("credentials"))
 	defer timer.ObserveDuration()
-	defer statsd.Client.NewTiming().Send("handler.credentials")
+	if statsd.Enabled {
+		defer statsd.Client.NewTiming().Send("handler.credentials")
+	}
 
 	err := req.ParseForm()
 	if err != nil {

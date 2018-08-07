@@ -30,7 +30,9 @@ type healthHandler struct {
 func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("health"))
 	defer timer.ObserveDuration()
-	defer statsd.Client.NewTiming().Send("handler.health")
+	if statsd.Enabled {
+		defer statsd.Client.NewTiming().Send("handler.health")
+	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/latest/meta-data/instance-id", h.endpoint), nil)
 	if err != nil {

@@ -26,7 +26,6 @@ type healthCommand struct {
 	logOptions
 	tlsOptions
 	clientOptions
-
 	timeout time.Duration
 }
 
@@ -48,6 +47,8 @@ func (opts *healthCommand) Run() {
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
+	defer gateway.Close()
+
 	ctx, cancel := context.WithTimeout(context.Background(), opts.timeout)
 	defer cancel()
 

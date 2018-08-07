@@ -47,7 +47,9 @@ func DefaultGateway(assumeRoleArn string) *DefaultSTSGateway {
 func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
 	timer := prometheus.NewTimer(assumeRole)
 	defer timer.ObserveDuration()
-	defer statsd.Client.NewTiming().Send("aws.assume_role")
+	if statsd.Enabled {
+		defer statsd.Client.NewTiming().Send("aws.assume_role")
+	}
 
 	assumeRoleExecuting.Inc()
 	defer assumeRoleExecuting.Dec()

@@ -75,7 +75,7 @@
 
 [[constraint]]
   name = "google.golang.org/grpc"
-  version = "1.12.2"
+  version = "1.14.0"
 
 [[constraint]]
   name = "gopkg.in/alecthomas/kingpin.v2"
