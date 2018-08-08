@@ -50,6 +50,7 @@ spec:
             - --server-address=kiam-server:443
             - --prometheus-listen-addr=0.0.0.0:9620
             - --prometheus-sync-interval=5s
+            - --gateway-timeout-creation=1s
           env:
             - name: HOST_IP
               valueFrom:
