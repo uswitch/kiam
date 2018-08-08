@@ -28,6 +28,7 @@ How to enable Statsd metrics is described below.
 ### Prometheus
 
 #### Metadata Subsystem
+
 - `handler_latency_milliseconds` - Bucketed histogram of handler timings. Tagged by handler
 - `credential_fetch_errors_total` - Number of errors fetching the credentials for a pod
 - `credential_encode_errors_total` - Number of errors encoding credentials for a pod
@@ -37,6 +38,7 @@ How to enable Statsd metrics is described below.
 - `responses_total` - Responses from mocked out metadata handlers
 
 #### STS Subsystem
+
 - `cache_hit_total` - Number of cache hits to the metadata cache
 - `cache_miss_total` - Number of cache misses to the metadata cache
 - `issuing_errors_total` - Number of errors issuing credentials
@@ -44,21 +46,25 @@ How to enable Statsd metrics is described below.
 - `assumerole_current` - Number of assume role calls currently executing
 
 #### K8s Subsystem
+
 - `dropped_pods_total` - Number of dropped pods because of full buffer
 
 #### gRPC Server (Kiam Server)
+
 - `grpc_server_handled_total` - Total number of RPCs completed on the server, regardless of success or failure.
 - `grpc_server_msg_received_total` - Total number of RPC stream messages received on the server.
 - `grpc_server_msg_sent_total` - Total number of gRPC stream messages sent by the server.
 - `grpc_server_started_total` - Total number of RPCs started on the server.
 
 #### gRPC Client (Kiam Agent)
+
 - `grpc_client_handled_total` -  Total number of RPCs completed by the client, regardless of success or failure.
 - `grpc_client_msg_received_total` -  Total number of RPC stream messages received by the client.
 - `grpc_client_msg_sent_total` -  Total number of gRPC stream messages sent by the client.
 - `grpc_client_started_total` -  Total number of RPCs started on the client.
 
 ### StatsD Timing metrics
+
 - `gateway.rpc.GetRole` - Observed client side latency of GetRole RPC
 - `gateway.rpc.GetCredentials` - Observed client side latency of GetCredentials RPC
 - `server.rpc.GetRoleCredentials` - Observed server side latency of GetRoleCredentials RPC
