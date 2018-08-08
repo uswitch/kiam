@@ -20,7 +20,7 @@ We have a [#kiam Slack channel](https://kubernetes.slack.com/messages/CBQLKVABH/
 * Denies access to all other AWS Metadata API paths by default (but can be whitelisted via flag)
 * AWS credentials are prefetched to allow fast responses (and avoid problems with races between Pods requesting credentials and the Kubernetes client caches being aware of the Pod)
 * Multi-account IAM support. Pods can assume roles from any AWS account assuming trust relationships permit it
-* [Prometheus and StatsD metrics](docs/metrics.md)
+* [Prometheus and StatsD metrics](docs/METRICS.md)
 * Uses the Kubernetes Events API to record IAM errors against the Pod so that cluster users can more readily diagnose IAM problems (via `kubectl describe pod ...`)
 * Text and JSON log formats
 
