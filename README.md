@@ -7,6 +7,12 @@ For more information about Kiam's origin, design and performance in our producti
 
 * [Iterating for Security and Reliability](https://medium.com/@pingles/kiam-iterating-for-security-and-reliability-5e793ab93ec3)
 
+## Support
+
+If you come across issues please raise them against the GitHub project. Please include as much detail as you can, including relevant logs, version information etc.
+
+We have a [#kiam Slack channel](https://kubernetes.slack.com/messages/CBQLKVABH/) in the main Kubernetes community Slack so you can also chat with other users and developers.
+
 ## Overview
 From the [AWS documentation on IAM roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html):
 
