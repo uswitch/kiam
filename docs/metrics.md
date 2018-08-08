@@ -1,10 +1,10 @@
 # Metrics
 
-Kiam exports both Prometheus and StatsD metrics to determine the health of the
+Kiam can exports both Prometheus and StatsD metrics to determine the health of the
 system, check the timing of each RPC call, and monitor the size of the
 credentials cache. By default, Prometheus metrics are exported on `localhost:9620`.
-When enabled StatsD metrics are flushed every 100ms but are not aggregated.
-How to enable Statsd metrics is described below.
+StatsD metrics is disabled by default, read below on how to enable them.
+wWen enabled StatsD metrics are flushed every 100ms but are not aggregated.
 
 ## Metrics configuration
 
