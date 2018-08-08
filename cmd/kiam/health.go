@@ -43,7 +43,7 @@ func (opts *healthCommand) Run() {
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
 
-	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.serverAddressRefresh, opts.caPath, opts.certificatePath, opts.keyPath)
+	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.caPath, opts.certificatePath, opts.keyPath)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}

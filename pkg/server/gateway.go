@@ -51,7 +51,7 @@ const (
 )
 
 // NewGateway constructs a gRPC client to talk to the server
-func NewGateway(ctx context.Context, address string, refresh time.Duration, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
+func NewGateway(ctx context.Context, address string, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
 	}
