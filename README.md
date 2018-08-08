@@ -13,6 +13,17 @@ If you come across issues please raise them against the GitHub project. Please i
 
 We have a [#kiam Slack channel](https://kubernetes.slack.com/messages/CBQLKVABH/) in the main Kubernetes community Slack so you can also chat with other users and developers.
 
+## Features
+
+* No client SDK modifications are needed: Kiam intercepts Metadata API requests.
+* Separated Agent and Server processes. Allows user workloads to run on nodes without `sts:AssumeRole` permissions to enhance cluster security.
+* Denies access to all other AWS Metadata API paths by default (but can be whitelisted via flag)
+* AWS credentials are prefetched to allow fast responses (and avoid problems with races between Pods requesting credentials and the Kubernetes client caches being aware of the Pod)
+* Multi-account IAM support. Pods can assume roles from any AWS account assuming trust relationships permit it
+* [Prometheus and StatsD metrics](docs/metrics.md)
+* Uses the Kubernetes Events API to record IAM errors against the Pod so that cluster users can more readily diagnose IAM problems (via `kubectl describe pod ...`)
+* Text and JSON log formats
+
 ## Overview
 From the [AWS documentation on IAM roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html):
 
