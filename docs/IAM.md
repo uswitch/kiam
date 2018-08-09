@@ -2,24 +2,71 @@
 This document provides more detail on how to setup your clusters and Kiam with Amazon's IAM.
 
 ## Cluster Policies
-Kiam runs separate Agent and Server processes. The server is the only process that needs to call `sts:AssumeRole` and can be placed on an isolated set of EC2 instances that don't run other user workloads. Agents should run on all user workload instances and intercept requests to the metadata API.
+Kiam runs separate Agent and Server processes. The server is the only process
+that needs to call `sts:AssumeRole` and can be placed on an isolated set of EC2
+instances that don't run other user workloads. Agents should run on all user
+workload instances and intercept requests to the metadata API. 
 
-EC2 Instances running user workloads (and the Kiam agent) don't need any IAM permissions aside from those needed by your installer (kops, kube-aws etc.) or platform (EKS etc). In all situations your user workload nodes should have an extremely reduced set of IAM permissions.
+EC2 Instances running user workloads (and the Kiam agent) don't need any IAM
+permissions aside from those needed by your installer (kops, kube-aws etc.) or
+platform (EKS etc). In all situations your user workload nodes should have an
+extremely reduced set of IAM permissions. 
 
-Kiam is designed so that the EC2 instances running the Kiam server are the only ones that need IAM policy to call `sts:AssumeRole`.
+Kiam is designed so that the EC2 instances running the Kiam server are the only
+ones that need IAM policy to call `sts:AssumeRole`. 
 
 ### Configuring a Server role
-Kiam's server includes a flag that can be used to specify an IAM Role that will be assumed by the Server before it requests credentials. We recommend you use this so that it's easier to form trust relationships between the roles that your Pods will assume and this Server role.
+Kiam's server includes a flag that can be used to specify an IAM Role that will
+be assumed by the Server before it requests credentials. We recommend you use
+this so that it's easier to form trust relationships between the roles that your
+Pods will assume and this Server role. 
 
-For the rest of this document, we'll use an example server role of `kiam-server`, with a full ARN of `arn:aws:iam::123456789012:role/kiam-server`.
+Using a separate Server IAM role is desirable in cases where the cluster node
+instances and IAM roles are replaced frequently. The Trust Relationship requires
+a fully qualified ARN of an existing role (no wildcards can be used), so reusing
+a role separate from any one cluster allows Pods to move between clusters
+without reconfiguring their IAM roles.
 
-With this you'll need IAM policy which permits the EC2 instances to call `sts:AssumeRole` for the `kiam-server` role. This will ensure the server process can assume the server role. You'll also need IAM policy attached to the server role that permits it to call `sts:AssumeRole`. This ensures that the Kiam Server can request credentials for other roles.
+For the rest of this document, we'll use an example server role of
+`kiam-server`, with a full ARN of `arn:aws:iam::123456789012:role/kiam-server`. 
+
+With this you'll need IAM policy which permits the EC2 instances to call
+`sts:AssumeRole` for the `kiam-server` role. This will ensure the server process
+can assume the server role. You'll also need IAM policy attached to the server
+role that permits it to call `sts:AssumeRole`. This ensures that the Kiam Server
+can request credentials for other roles. 
 
 #### Server Node Policy
-This is the example policy that will allow the EC2 instance that runs the Server process can assume the server role.
+This is the example policy that will allow the EC2 instance that runs the Server
+process can assume the server role. 
 
-```json
+The example below is expressed using
+[Terrafying](https://github.com/uswitch/terrafying) but is pretty close
+to Terraform configuration and should help explain how AWS IAM resources are
+connected. 
+
+```ruby
+aws_iam_role :server, {
+  name: role_name,
+  assume_role_policy: <<-EOF
 {
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "ec2.amazonaws.com"},
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+    
+aws_iam_role_policy :server, {
+  name: role_name,
+  role: "${aws_iam_role.server.name}",
+  policy: <<-EOF
+  {
   "Version": "2012-10-17",
   "Statement": [
     {
@@ -29,12 +76,20 @@ This is the example policy that will allow the EC2 instance that runs the Server
       ],
       "Resource": "arn:aws:iam:123456789012:role/kiam-server"
     }
-  ]
+    ]
+  }
+EOF
+}
+    
+aws_iam_instance_profile :server, {
+  name: "server-node",
+  roles: ["${aws_iam_role.server.name}"]
 }
 ```
 
 #### Server Role Policy
-This is the policy that permits the Server process to assume other roles and request credentials for your Pods.
+This is the policy that permits the Server process to assume other roles and
+request credentials for your Pods. 
 
 ```json
 {
@@ -53,9 +108,10 @@ This is the policy that permits the Server process to assume other roles and req
 
 ## Application Roles
 
-For any role which is to be assumed by a Pod you'll need to ensure it also has a trust policy
-that permits nodes in the cluster to assume the role. This is referred to as the Trust Relationship
-in the AWS Console, and the `assume_role_policy` in Terraform.
+For any role which is to be assumed by a Pod you'll need to ensure it also has a
+trust policy that permits nodes in the cluster to assume the role. This is
+referred to as the Trust Relationship in the AWS Console, and the
+`assume_role_policy` in Terraform. 
 
 ```json
 {
@@ -80,19 +136,6 @@ in the AWS Console, and the `assume_role_policy` in Terraform.
   ]
 }
 ```
-
-
-
-
-
-
-
-
-Using a separate Server IAM role is desirable in cases where the cluster node
-instances and IAM roles are replaced frequently. The Trust Relationship requires
-a fully qualified ARN of an existing role (no wildcards can be used), so reusing
-a role separate from any one cluster allows Pods to move between clusters
-without reconfiguring their IAM roles.
 
 The cluster node EC2 instance role will need to have `sts:AssumeRole` permission
 for this role and for there to be an entry in the Server role's trust policy.
