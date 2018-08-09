@@ -46,8 +46,8 @@ to Terraform configuration and should help explain how AWS IAM resources are
 connected. 
 
 ```ruby
-aws_iam_role :server, {
-  name: role_name,
+aws_iam_role :server_node, {
+  name: "server_node",
   assume_role_policy: <<-EOF
 {
   "Version": "2012-10-17",
@@ -62,9 +62,9 @@ aws_iam_role :server, {
 EOF
 }
     
-aws_iam_role_policy :server, {
-  name: role_name,
-  role: "${aws_iam_role.server.name}",
+aws_iam_role_policy :server_node, {
+  name: "server_node",
+  role: "${aws_iam_role.server_node.name}",
   policy: <<-EOF
   {
   "Version": "2012-10-17",
@@ -81,9 +81,9 @@ aws_iam_role_policy :server, {
 EOF
 }
     
-aws_iam_instance_profile :server, {
-  name: "server-node",
-  roles: ["${aws_iam_role.server.name}"]
+aws_iam_instance_profile :server_node, {
+  name: "server_node",
+  roles: ["${aws_iam_role.server_node.name}"]
 }
 ```
 
