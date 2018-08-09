@@ -1,4 +1,4 @@
-# IA
+# IAM
 This document provides more detail on how to setup your clusters and Kiam with Amazon's IAM.
 
 ## Cluster Policies
