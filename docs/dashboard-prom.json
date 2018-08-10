@@ -44,7 +44,7 @@
   "gnetId": 3831,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1533922444033,
+  "iteration": 1533922855243,
   "links": [],
   "panels": [
     {
@@ -2052,7 +2052,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 39
           },
           "id": 49,
           "legend": {
@@ -2140,7 +2140,7 @@
             "h": 4,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 39
           },
           "id": 52,
           "legend": {
@@ -2233,7 +2233,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 31
+            "y": 43
           },
           "id": 50,
           "legend": {
@@ -2321,7 +2321,7 @@
             "h": 4,
             "w": 12,
             "x": 12,
-            "y": 31
+            "y": 43
           },
           "id": 51,
           "legend": {
@@ -2517,6 +2517,8 @@
           "legend": {
             "avg": false,
             "current": false,
+            "hideEmpty": true,
+            "hideZero": true,
             "max": false,
             "min": false,
             "show": false,
@@ -2526,7 +2528,7 @@
           "lines": true,
           "linewidth": 1,
           "links": [],
-          "nullPointMode": "null",
+          "nullPointMode": "null as zero",
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -2782,8 +2784,7 @@
     "list": [
       {
         "current": {
-          "selected": false,
-          "tags": [],
+          "selected": true,
           "text": "staging",
           "value": "staging"
         },
@@ -2800,6 +2801,7 @@
         "allValue": null,
         "current": {
           "selected": false,
+          "tags": [],
           "text": "5m",
           "value": "5m"
         },
@@ -2907,5 +2909,5 @@
   "timezone": "browser",
   "title": "Kiam",
   "uid": "000000070",
-  "version": 29
+  "version": 32
 }
