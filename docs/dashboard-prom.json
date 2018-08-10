@@ -44,7 +44,7 @@
   "gnetId": 3831,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1533921095932,
+  "iteration": 1533921095939,
   "links": [],
   "panels": [
     {
@@ -115,7 +115,7 @@
       "title": "Number of successful responses from a handler",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -204,7 +204,7 @@
       "title": "Responses from mocked out metadata handlers",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -293,7 +293,7 @@
       "title": "Number of empty roles returned",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -382,7 +382,7 @@
       "title": "Number of errors finding the role for a pod",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -560,7 +560,7 @@
       "title": "Number of errors issuing credentials",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -649,7 +649,7 @@
       "title": "Number of dropped pods because of full buffer",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -701,6 +701,8 @@
       "legend": {
         "avg": false,
         "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
         "max": false,
         "min": false,
         "show": false,
@@ -710,7 +712,7 @@
       "lines": true,
       "linewidth": 1,
       "links": [],
-      "nullPointMode": "null",
+      "nullPointMode": "null as zero",
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -744,7 +746,7 @@
       "title": "Number of assume role calls currently executing",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -808,7 +810,7 @@
       "lines": true,
       "linewidth": 1,
       "links": [],
-      "nullPointMode": "null",
+      "nullPointMode": "null as zero",
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -833,7 +835,7 @@
       "title": "Number of cache hits to the metadata cache",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -1183,7 +1185,7 @@
             "h": 3,
             "w": 2,
             "x": 0,
-            "y": 2
+            "y": 25
           },
           "id": 27,
           "interval": null,
@@ -1264,7 +1266,7 @@
             "h": 3,
             "w": 10,
             "x": 2,
-            "y": 2
+            "y": 25
           },
           "id": 12,
           "interval": null,
@@ -1333,13 +1335,15 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 2
+            "y": 25
           },
           "id": 24,
           "legend": {
             "alignAsTable": true,
             "avg": false,
             "current": false,
+            "hideEmpty": true,
+            "hideZero": true,
             "max": false,
             "min": false,
             "rightSide": true,
@@ -1350,7 +1354,7 @@
           "lines": true,
           "linewidth": 1,
           "links": [],
-          "nullPointMode": "null",
+          "nullPointMode": "null as zero",
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -1387,7 +1391,7 @@
           "title": "Network traffic",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -1443,7 +1447,7 @@
             "h": 3,
             "w": 2,
             "x": 0,
-            "y": 5
+            "y": 28
           },
           "id": 21,
           "interval": null,
@@ -1524,7 +1528,7 @@
             "h": 3,
             "w": 10,
             "x": 2,
-            "y": 5
+            "y": 28
           },
           "id": 31,
           "interval": null,
@@ -1620,7 +1624,7 @@
             "h": 3,
             "w": 2,
             "x": 0,
-            "y": 3
+            "y": 26
           },
           "id": 28,
           "interval": null,
@@ -1701,7 +1705,7 @@
             "h": 3,
             "w": 10,
             "x": 2,
-            "y": 3
+            "y": 26
           },
           "id": 13,
           "interval": null,
@@ -1770,13 +1774,15 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 3
+            "y": 26
           },
           "id": 25,
           "legend": {
             "alignAsTable": false,
             "avg": false,
             "current": false,
+            "hideEmpty": true,
+            "hideZero": true,
             "max": false,
             "min": false,
             "rightSide": false,
@@ -1787,7 +1793,7 @@
           "lines": true,
           "linewidth": 1,
           "links": [],
-          "nullPointMode": "null",
+          "nullPointMode": "null as zero",
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -1824,7 +1830,7 @@
           "title": "Network traffic",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -1880,7 +1886,7 @@
             "h": 3,
             "w": 2,
             "x": 0,
-            "y": 6
+            "y": 29
           },
           "id": 22,
           "interval": null,
@@ -1961,7 +1967,7 @@
             "h": 3,
             "w": 10,
             "x": 2,
-            "y": 6
+            "y": 29
           },
           "id": 32,
           "interval": null,
@@ -2046,7 +2052,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 27
           },
           "id": 49,
           "legend": {
@@ -2074,7 +2080,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (delta(grpc_server_handled_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_code, grpc_method, pod)",
+              "expr": "sum (increase(grpc_server_handled_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_code, grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{grpc_code}} {{pod}}",
@@ -2088,7 +2094,7 @@
           "title": "grpc server handled total",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2134,12 +2140,14 @@
             "h": 4,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 27
           },
           "id": 52,
           "legend": {
             "avg": false,
             "current": false,
+            "hideEmpty": true,
+            "hideZero": true,
             "max": false,
             "min": false,
             "show": false,
@@ -2149,7 +2157,7 @@
           "lines": true,
           "linewidth": 1,
           "links": [],
-          "nullPointMode": "null",
+          "nullPointMode": "null as zero",
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -2165,7 +2173,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (delta(grpc_server_started_total{namespace=\"kube-system\",pod=~\"kiam-server-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_server_started_total{namespace=\"kube-system\",pod=~\"kiam-server-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2179,7 +2187,7 @@
           "title": "grpc server started total",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2225,7 +2233,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 8
+            "y": 31
           },
           "id": 50,
           "legend": {
@@ -2253,7 +2261,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (delta(grpc_server_msg_received_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_server_msg_received_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2267,7 +2275,7 @@
           "title": "grpc server msg received total",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2313,7 +2321,7 @@
             "h": 4,
             "w": 12,
             "x": 12,
-            "y": 8
+            "y": 31
           },
           "id": 51,
           "legend": {
@@ -2341,7 +2349,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (delta(grpc_server_msg_sent_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_server_msg_sent_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2355,7 +2363,7 @@
           "title": "grpc server msg sent total",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2415,7 +2423,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 28
           },
           "id": 55,
           "legend": {
@@ -2443,7 +2451,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (delta(grpc_client_handled_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_code, grpc_method, pod)",
+              "expr": "sum (increase(grpc_client_handled_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_code, grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{grpc_code}} {{pod}}",
@@ -2457,7 +2465,7 @@
           "title": "grpc client handled total",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2503,7 +2511,7 @@
             "h": 4,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 28
           },
           "id": 58,
           "legend": {
@@ -2534,7 +2542,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (delta(grpc_client_started_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_client_started_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2548,7 +2556,7 @@
           "title": "grpc client started total",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2594,7 +2602,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 32
           },
           "id": 56,
           "legend": {
@@ -2622,10 +2630,10 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (delta(grpc_client_msg_received_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_code, pod)",
+              "expr": "sum (increase(grpc_client_msg_received_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
-              "legendFormat": "{{grpc_method}} {{grpc_code}} {{pod}}",
+              "legendFormat": "{{grpc_method}} {{pod}}",
               "refId": "A",
               "target": ""
             }
@@ -2636,7 +2644,7 @@
           "title": "grpc client msg received total",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2682,7 +2690,7 @@
             "h": 4,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 32
           },
           "id": 57,
           "legend": {
@@ -2710,7 +2718,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (delta(grpc_client_msg_sent_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_client_msg_sent_total{namespace=\"kube-system\",pod=~\"kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2724,7 +2732,7 @@
           "title": "grpc client msg sent total",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2898,5 +2906,5 @@
   "timezone": "browser",
   "title": "Kiam",
   "uid": "000000070",
-  "version": 27
+  "version": 28
 }
