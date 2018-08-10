@@ -39,12 +39,12 @@
       }
     ]
   },
-  "description": "Super simple dashboard showing an overview of kubernetes cluster autoscaling activity and status, using metrics reported by the autoscaler to prometheus.\r\n\r\nhttps://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler",
+  "description": "Kiam cache, response & health metrics",
   "editable": true,
   "gnetId": 3831,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1533921095939,
+  "iteration": 1533922444033,
   "links": [],
   "panels": [
     {
@@ -2782,6 +2782,7 @@
     "list": [
       {
         "current": {
+          "selected": false,
           "tags": [],
           "text": "staging",
           "value": "staging"
@@ -2798,7 +2799,7 @@
       {
         "allValue": null,
         "current": {
-          "tags": [],
+          "selected": false,
           "text": "5m",
           "value": "5m"
         },
@@ -2809,7 +2810,7 @@
         "name": "interval",
         "options": [
           {
-            "selected": true,
+            "selected": false,
             "text": "1m",
             "value": "1m"
           },
@@ -2819,7 +2820,7 @@
             "value": "3m"
           },
           {
-            "selected": false,
+            "selected": true,
             "text": "5m",
             "value": "5m"
           },
@@ -2906,5 +2907,5 @@
   "timezone": "browser",
   "title": "Kiam",
   "uid": "000000070",
-  "version": 28
+  "version": 29
 }
