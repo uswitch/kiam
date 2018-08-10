@@ -26,6 +26,11 @@ StatsD metrics is disabled by default, read below on how to enable them.
 
 ### Prometheus
 
+#### Dashboard
+
+An example Grafana dashboard with Prometheus as datasource is provided in [dashboard](dashboard-prom.json) it displays the basic metrics and includes
+daemonset status from kube-state-metrics & pod metrics from cAdvisor if those are available.
+
 #### Metadata Subsystem
 
 - `handler_latency_milliseconds` - Bucketed histogram of handler timings. Tagged by handler
