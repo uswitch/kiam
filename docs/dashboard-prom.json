@@ -2679,8 +2679,8 @@
       "list": [
         {
           "current": {
-            "text": "staging.sgn.io",
-            "value": "staging.sgn.io"
+            "text": "prometheus",
+            "value": "prometheus"
           },
           "hide": 0,
           "label": "Source",
