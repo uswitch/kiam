@@ -5,6 +5,11 @@ system, check the timing of each RPC call, and monitor the size of the
 credentials cache. By default, Prometheus metrics are exported on `localhost:9620`.
 StatsD metrics is disabled by default, read below on how to enable them.
 
+## Dashboard
+
+A example Grafana dashboard with Prometheus as datasource is provided in [dashboard](dashboard-prom.json) it displays the basic metrics and includes
+daemonset status from kube-state-metrics & container metrics from cAdvisor if those are available.
+
 ## Metrics configuration
 
 - The `statsd` flag controls the address to which to send StatsD metrics.
