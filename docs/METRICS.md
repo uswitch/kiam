@@ -7,8 +7,12 @@ StatsD metrics is disabled by default, read below on how to enable them.
 
 ## Dashboard
 
-A example Grafana dashboard with Prometheus as datasource is provided in [dashboard](dashboard-prom.json) it displays the basic metrics and includes
-daemonset status from kube-state-metrics & container metrics from cAdvisor if those are available.
+A example Grafana dashboard with Prometheus as datasource is provided [here](dashboard-prom.json), it displays the basic metrics and includes
+daemonset status from kube-state-metrics & container metrics from cAdvisor if available.
+
+![Dashboard-1](dashboard-1.png)
+![Dashboard-2](dashboard-2.png)
+![Dashboard-3](dashboard-3.png)
 
 ## Metrics configuration
 
