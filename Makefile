@@ -5,13 +5,13 @@ BIN_LINUX = $(BIN)-linux-$(ARCH)
 BIN_DARWIN = $(BIN)-darwin-$(ARCH)
 GIT_BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 IMG_NAMESPACE?=quay.io/uswitch
-IMG_TAG?=$(if $(IMG_TAG_PREFIX),$(IMG_TAG_PREFIX)-)$(if $(ARCH_TAG_PREFIX),$(ARCH_TAG_PREFIX)-)$(GIT_BRANCH)
+IMG_TAG?=$(GIT_BRANCH)
 REGISTRY?=$(IMG_NAMESPACE)/$(NAME)
 SOURCES := $(shell find . -iname '*.go') proto/service.pb.go
 
 .PHONY: test clean all coverage
 
-all: docker
+all: build-linux
 
 build-darwin: $(SOURCES)
 	GOARCH=$(ARCH) GOOS=darwin go build -o $(BIN_DARWIN) cmd/kiam/*.go
