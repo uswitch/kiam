@@ -1,13 +1,17 @@
+NAME?=kiam
 ARCH=amd64
 BIN = bin/kiam
 BIN_LINUX = $(BIN)-linux-$(ARCH)
 BIN_DARWIN = $(BIN)-darwin-$(ARCH)
-
+GIT_BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
+IMG_NAMESPACE?=quay.io/uswitch
+IMG_TAG?=$(if $(IMG_TAG_PREFIX),$(IMG_TAG_PREFIX)-)$(if $(ARCH_TAG_PREFIX),$(ARCH_TAG_PREFIX)-)$(GIT_BRANCH)
+REGISTRY?=$(IMG_NAMESPACE)/$(NAME)
 SOURCES := $(shell find . -iname '*.go') proto/service.pb.go
 
 .PHONY: test clean all coverage
 
-all: proto/service.pb.go build-darwin build-linux
+all: docker
 
 build-darwin: $(SOURCES)
 	GOARCH=$(ARCH) GOOS=darwin go build -o $(BIN_DARWIN) cmd/kiam/*.go
@@ -31,8 +35,8 @@ coverage: $(SOURCES) coverage.txt
 bench: $(SOURCES)
 	go test -run=XX -bench=. github.com/uswitch/kiam/pkg/...
 
-docker: Dockerfile $(BIN_LINUX)
-	docker image build -t quay.io/uswitch/kiam:devel .
+docker: Dockerfile
+	docker image build -t "$(REGISTRY):$(IMG_TAG)" .
 
 clean:
 	rm -rf bin/

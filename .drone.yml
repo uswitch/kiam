@@ -16,10 +16,10 @@ pipeline:
     commands:
       - make bench
 
-  build:
-    image: golang:1.10
-    commands:
-      - make build-linux
+#  build:
+#    image: golang:1.10
+#    commands:
+#      - make build-linux
 
   docker:
     when:
