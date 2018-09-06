@@ -55,6 +55,7 @@ type Config struct {
 	ParallelFetcherProcesses int
 	PrefetchBufferSize       int
 	AssumeRoleArn            string
+	RoleAliases              map[string]string
 }
 
 // TLSConfig controls TLS
@@ -75,6 +76,7 @@ type KiamServer struct {
 	credentialsProvider sts.CredentialsProvider
 	assumePolicy        AssumeRolePolicy
 	parallelFetchers    int
+	roleMapper          *k8s.RoleMapper
 }
 
 // GetPodCredentials returns credentials for the Pod, according to the role it's
@@ -156,7 +158,7 @@ func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) 
 		return nil, err
 	}
 
-	role := k8s.PodRole(pod)
+	role := k.roleMapper.PodRole(pod)
 
 	logger.WithField("pod.iam.role", role).Infof("found role")
 	return &pb.Role{Name: role}, nil
@@ -221,7 +223,8 @@ func NewServer(config *Config) (*KiamServer, error) {
 		log.Fatalf("couldn't create kubernetes client: %s", err.Error())
 	}
 
-	server.pods = k8s.NewPodCache(k8s.NewListWatch(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
+	server.roleMapper = k8s.NewRoleMapper(config.RoleAliases)
+	server.pods = k8s.NewPodCache(k8s.NewListWatch(client, k8s.ResourcePods), server.roleMapper, config.PodSyncInterval, config.PrefetchBufferSize)
 	server.namespaces = k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 	server.eventRecorder = eventRecorder(client)
 
@@ -237,8 +240,8 @@ func NewServer(config *Config) (*KiamServer, error) {
 		arnResolver,
 	)
 	server.credentialsProvider = credentialsCache
-	server.manager = prefetch.NewManager(credentialsCache, server.pods)
-	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
+	server.manager = prefetch.NewManager(credentialsCache, server.pods, server.roleMapper)
+	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver, server.roleMapper), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
 
 	certificate, err := tls.LoadX509KeyPair(config.TLS.ServerCert, config.TLS.ServerKey)
 	if err != nil {

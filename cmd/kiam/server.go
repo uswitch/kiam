@@ -57,6 +57,11 @@ func (o *serverOptions) bind(parser parser) {
 	parser.Flag("session-duration", "Requested session duration for STS Tokens.").Default("15m").DurationVar(&o.SessionDuration)
 	parser.Flag("session-refresh", "How soon STS Tokens should be refreshed before their expiration.").Default("5m").DurationVar(&o.SessionRefresh)
 	parser.Flag("assume-role-arn", "IAM Role to assume before processing requests").Default("").StringVar(&o.AssumeRoleArn)
+
+	if o.RoleAliases == nil {
+		o.RoleAliases = map[string]string{}
+	}
+	parser.Flag("role-alias", "Mapping of a role alias to the full role name. e.g., external-dns=stack-12345-external-dns-123456. Can be specified multiple times.").StringMapVar(&o.RoleAliases)
 }
 
 func (opts *serverCommand) Run() {
