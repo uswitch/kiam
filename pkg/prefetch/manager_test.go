@@ -15,12 +15,14 @@ package prefetch
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/uswitch/kiam/pkg/aws/sts"
+	"github.com/uswitch/kiam/pkg/k8s"
 	kt "github.com/uswitch/kiam/pkg/k8s/testing"
 	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
-	"testing"
-	"time"
 )
 
 func init() {
@@ -37,7 +39,7 @@ func TestPrefetchRunningPods(t *testing.T) {
 		requestedRoles <- role
 		return &sts.Credentials{}, nil
 	})
-	manager := NewManager(cache, announcer)
+	manager := NewManager(cache, announcer, k8s.NewRoleMapper(nil))
 	go manager.Run(ctx, 1)
 
 	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))

@@ -28,7 +28,7 @@ func TestRequestedRolePolicy(t *testing.T) {
 	f := kt.NewStubFinder(p)
 
 	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
-	policy := NewRequestingAnnotatedRolePolicy(f, arnResolver)
+	policy := NewRequestingAnnotatedRolePolicy(f, arnResolver, k8s.NewRoleMapper(nil))
 	decision, err := policy.IsAllowedAssumeRole(context.Background(), "myrole", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -38,7 +38,7 @@ func TestRequestedRolePolicy(t *testing.T) {
 		t.Error("role was same, should have been permitted:", decision.Explanation())
 	}
 
-	policy = NewRequestingAnnotatedRolePolicy(f, arnResolver)
+	policy = NewRequestingAnnotatedRolePolicy(f, arnResolver, k8s.NewRoleMapper(nil))
 	decision, err = policy.IsAllowedAssumeRole(context.Background(), "/myrole", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -64,7 +64,7 @@ func TestRequestedRolePolicyWithSlash(t *testing.T) {
 	p := testutil.NewPodWithRole("namespace", "name", "192.168.0.1", testutil.PhaseRunning, "/myrole")
 	f := kt.NewStubFinder(p)
 
-	policy := NewRequestingAnnotatedRolePolicy(f, arnResolver)
+	policy := NewRequestingAnnotatedRolePolicy(f, arnResolver, k8s.NewRoleMapper(nil))
 	decision, err := policy.IsAllowedAssumeRole(context.Background(), "myrole", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -74,7 +74,7 @@ func TestRequestedRolePolicyWithSlash(t *testing.T) {
 		t.Error("role was same, should have been permitted:", decision.Explanation())
 	}
 
-	policy = NewRequestingAnnotatedRolePolicy(f, arnResolver)
+	policy = NewRequestingAnnotatedRolePolicy(f, arnResolver, k8s.NewRoleMapper(nil))
 	decision, err = policy.IsAllowedAssumeRole(context.Background(), "/myrole", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -98,7 +98,7 @@ func TestRequestedRolePolicyWithSlash(t *testing.T) {
 func TestErrorWhenPodNotFound(t *testing.T) {
 	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
 	f := kt.NewStubFinder(nil)
-	policy := NewRequestingAnnotatedRolePolicy(f, arnResolver)
+	policy := NewRequestingAnnotatedRolePolicy(f, arnResolver, k8s.NewRoleMapper(nil))
 
 	_, err := policy.IsAllowedAssumeRole(context.Background(), "myrole", "192.168.0.1")
 	if err == nil {

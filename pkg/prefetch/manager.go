@@ -15,6 +15,7 @@ package prefetch
 
 import (
 	"context"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
@@ -22,12 +23,13 @@ import (
 )
 
 type CredentialManager struct {
-	cache     sts.CredentialsCache
-	announcer k8s.PodAnnouncer
+	cache      sts.CredentialsCache
+	announcer  k8s.PodAnnouncer
+	roleMapper *k8s.RoleMapper
 }
 
-func NewManager(cache sts.CredentialsCache, announcer k8s.PodAnnouncer) *CredentialManager {
-	return &CredentialManager{cache: cache, announcer: announcer}
+func NewManager(cache sts.CredentialsCache, announcer k8s.PodAnnouncer, roleMapper *k8s.RoleMapper) *CredentialManager {
+	return &CredentialManager{cache: cache, announcer: announcer, roleMapper: roleMapper}
 }
 
 func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
@@ -37,7 +39,7 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 		return
 	}
 
-	role := k8s.PodRole(pod)
+	role := m.roleMapper.PodRole(pod)
 	issued, err := m.fetchCredentialsFromCache(ctx, role)
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())

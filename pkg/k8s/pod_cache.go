@@ -28,25 +28,26 @@ type PodCache struct {
 	pods       chan *v1.Pod
 	indexer    cache.Indexer
 	controller cache.Controller
+	roleMapper *RoleMapper
 }
 
 // NewPodCache creates the cache object that uses a watcher to listen for Pod events. The cache indexes pods by their
 // IP address so that Kiam can identify which role a Pod should assume. It periodically syncs the list of
 // pods and can announce Pods. When announcing Pods via the channel it will drop events if the buffer
 // is full- bufferSize determines how many.
-func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration, bufferSize int) *PodCache {
-	indexers := cache.Indexers{
-		indexPodIP:   podIPIndex,
-		indexPodRole: podRoleIndex,
-	}
+func NewPodCache(source cache.ListerWatcher, roleMapper *RoleMapper, syncInterval time.Duration, bufferSize int) *PodCache {
 	pods := make(chan *v1.Pod, bufferSize)
-	podHandler := &podHandler{pods}
-	indexer, controller := cache.NewIndexerInformer(source, &v1.Pod{}, syncInterval, podHandler, indexers)
 	podCache := &PodCache{
 		pods:       pods,
-		indexer:    indexer,
-		controller: controller,
+		roleMapper: roleMapper,
 	}
+
+	indexers := cache.Indexers{
+		indexPodIP:   podCache.podIPIndex,
+		indexPodRole: podCache.podRoleIndex,
+	}
+	podHandler := &podHandler{pods, roleMapper}
+	podCache.indexer, podCache.controller = cache.NewIndexerInformer(source, &v1.Pod{}, syncInterval, podHandler, indexers)
 
 	return podCache
 }
@@ -142,7 +143,7 @@ const (
 	indexPodRole = "byRole"
 )
 
-func podIPIndex(obj interface{}) ([]string, error) {
+func (s *PodCache) podIPIndex(obj interface{}) ([]string, error) {
 	pod := obj.(*v1.Pod)
 
 	if pod.Status.PodIP == "" {
@@ -152,9 +153,9 @@ func podIPIndex(obj interface{}) ([]string, error) {
 	return []string{pod.Status.PodIP}, nil
 }
 
-func podRoleIndex(obj interface{}) ([]string, error) {
+func (s *PodCache) podRoleIndex(obj interface{}) ([]string, error) {
 	pod := obj.(*v1.Pod)
-	role := PodRole(pod)
+	role := s.roleMapper.PodRole(pod)
 	if role == "" {
 		return []string{}, nil
 	}
@@ -175,16 +176,9 @@ func (s *PodCache) Run(ctx context.Context) error {
 	return nil
 }
 
-// PodRole returns the IAM role specified in the annotation for the Pod
-func PodRole(pod *v1.Pod) string {
-	return pod.ObjectMeta.Annotations[AnnotationIAMRoleKey]
-}
-
-// AnnotationIAMRoleKey is the key for the annotation specifying the IAM Role
-const AnnotationIAMRoleKey = "iam.amazonaws.com/role"
-
 type podHandler struct {
-	pods chan<- *v1.Pod
+	pods       chan<- *v1.Pod
+	roleMapper *RoleMapper
 }
 
 func (o *podHandler) announce(pod *v1.Pod) {
@@ -192,7 +186,7 @@ func (o *podHandler) announce(pod *v1.Pod) {
 	if IsPodCompleted(pod) {
 		return
 	}
-	if PodRole(pod) == "" {
+	if o.roleMapper.PodRole(pod) == "" {
 		return
 	}
 

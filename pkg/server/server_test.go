@@ -23,7 +23,8 @@ func init() {
 
 func TestReturnsErrorWhenPodNotFound(t *testing.T) {
 	source := kt.NewFakeControllerSource()
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	roleMapper := k8s.NewRoleMapper(nil)
+	podCache := k8s.NewPodCache(source, roleMapper, time.Second, defaultBuffer)
 	server := &KiamServer{pods: podCache}
 
 	_, err := server.GetPodCredentials(context.Background(), &pb.GetPodCredentialsRequest{})
@@ -40,7 +41,8 @@ func TestReturnsPolicyErrorWhenForbidden(t *testing.T) {
 	source := kt.NewFakeControllerSource()
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	roleMapper := k8s.NewRoleMapper(nil)
+	podCache := k8s.NewPodCache(source, roleMapper, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 	server := &KiamServer{pods: podCache, assumePolicy: &forbidPolicy{}}
 
@@ -58,7 +60,8 @@ func TestReturnsCredentials(t *testing.T) {
 	source := kt.NewFakeControllerSource()
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	roleMapper := k8s.NewRoleMapper(nil)
+	podCache := k8s.NewPodCache(source, roleMapper, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}}
 
