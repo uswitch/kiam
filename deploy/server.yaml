@@ -31,9 +31,8 @@ spec:
           image: quay.io/uswitch/kiam:master # USE A TAGGED RELEASE IN PRODUCTION
           imagePullPolicy: Always
           command:
-            - /kiam
+            - /server
           args:
-            - server
             - --json-log
             - --bind=0.0.0.0:443
             - --cert=/etc/kiam/tls/server.pem
@@ -51,8 +50,7 @@ spec:
           livenessProbe:
             exec:
               command:
-              - /kiam
-              - health
+              - /health
               - --cert=/etc/kiam/tls/server.pem
               - --key=/etc/kiam/tls/server-key.pem
               - --ca=/etc/kiam/tls/ca.pem
@@ -65,8 +63,7 @@ spec:
           readinessProbe:
             exec:
               command:
-              - /kiam
-              - health
+              - /health
               - --cert=/etc/kiam/tls/server.pem
               - --key=/etc/kiam/tls/server-key.pem
               - --ca=/etc/kiam/tls/ca.pem

@@ -37,9 +37,8 @@ spec:
           image: quay.io/uswitch/kiam:master # USE A TAGGED RELEASE IN PRODUCTION
           imagePullPolicy: Always
           command:
-            - /kiam
+            - /agent
           args:
-            - agent
             - --iptables
             - --host-interface=cali+
             - --json-log
