@@ -1,0 +1,4 @@
+   resources:
+   - server-rbac.yaml
+   - server.yaml
+   - agent.yaml
