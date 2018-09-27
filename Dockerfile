@@ -5,6 +5,6 @@ ADD . .
 RUN make
 
 FROM alpine:3.8
-RUN apk --no-cache add iptables
+RUN apk --no-cache add iptables ca-certificates
 COPY --from=build /go/src/github.com/uswitch/kiam/bin/kiam-linux-amd64 /kiam
 CMD []
