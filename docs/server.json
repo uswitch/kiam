@@ -2,9 +2,9 @@
     "hosts": [
         "kiam-server",
         "kiam-server:443",
-        "localhost",
-        "localhost:443",
-        "localhost:9610"
+        "127.0.0.1",
+        "127.0.0.1:443",
+        "127.0.0.1:9610"
     ],
     "key": {
         "algo": "rsa",
