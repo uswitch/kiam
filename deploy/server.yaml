@@ -56,7 +56,7 @@ spec:
               - --cert=/etc/kiam/tls/server.pem
               - --key=/etc/kiam/tls/server-key.pem
               - --ca=/etc/kiam/tls/ca.pem
-              - --server-address=localhost:443
+              - --server-address=127.0.0.1:443
               - --gateway-timeout-creation=1s
               - --timeout=5s
             initialDelaySeconds: 10
@@ -70,7 +70,7 @@ spec:
               - --cert=/etc/kiam/tls/server.pem
               - --key=/etc/kiam/tls/server-key.pem
               - --ca=/etc/kiam/tls/ca.pem
-              - --server-address=localhost:443
+              - --server-address=127.0.0.1:443
               - --gateway-timeout-creation=1s
               - --timeout=5s
             initialDelaySeconds: 3
