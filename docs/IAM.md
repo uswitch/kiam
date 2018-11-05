@@ -41,8 +41,7 @@ This is the example policy that will allow the EC2 instance that runs the Server
 process can assume the server role. 
 
 The example below is expressed using
-[Terrafying](https://github.com/uswitch/terrafying) but is pretty close
-to Terraform configuration and should help explain how AWS IAM resources are
+[Terraform](https://www.terraform.io/) and should help explain how AWS IAM resources are
 connected. 
 
 ```
