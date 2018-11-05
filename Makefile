@@ -11,12 +11,12 @@ SOURCES := $(shell find . -iname '*.go') proto/service.pb.go
 
 .PHONY: test clean all coverage
 
-all: build-linux
+all: $(BIN_LINUX) $(BIN_DARWIN)
 
-build-darwin: $(SOURCES)
+$(BIN_DARWIN): $(SOURCES)
 	GOARCH=$(ARCH) GOOS=darwin go build -o $(BIN_DARWIN) cmd/kiam/*.go
 
-build-linux: $(SOURCES)
+$(BIN_LINUX): $(SOURCES)
 	GOARCH=$(ARCH) GOOS=linux CGO_ENABLED=0 go build -o $(BIN_LINUX) cmd/kiam/*.go
 
 proto/service.pb.go: proto/service.proto
