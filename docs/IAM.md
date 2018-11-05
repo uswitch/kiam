@@ -29,6 +29,8 @@ without reconfiguring their IAM roles.
 
 For the rest of this document, we'll use an example server role of
 `kiam-server`, with a full ARN of `arn:aws:iam::123456789012:role/kiam-server`. 
+This is the role that you'll specify against Kiam Server's `--assume-role-arn`
+flag.
 
 With this you'll need IAM policy which permits the EC2 instances to call
 `sts:AssumeRole` for the `kiam-server` role. This will ensure the server process
@@ -84,14 +86,19 @@ resource "aws_iam_instance_profile" "server_node" {
   name = "server_node"
   role = "${aws_iam_role.server_node.name}"
 }
-```
 
-#### Server Role Policy
-This is the policy that permits the Server process to assume other roles and
-request credentials for your Pods. 
 
-```json
-{
+resource "aws_iam_role" "server_role" {
+  name = "kiam-server"
+  description = "Role the Kiam Server process assumes"
+}
+
+resource "aws_iam_policy" "server_policy" {
+  name = "kiam_server_policy"
+  description = "Policy for the Kiam Server process"
+  
+  policy = <<EOF
+  {
   "Version": "2012-10-17",
   "Statement": [
     {
@@ -102,6 +109,14 @@ request credentials for your Pods.
       "Resource": "*"
     }
   ]
+}
+EOF
+}
+
+resource "aws_iam_policy_attachment" "server_policy_attach" {
+  name = "kiam-server-attachment"
+  roles = ["${aws_iam_role.server_role.name}"]
+  policy_arn = "${aws_iam_policy.server_policy.arn}"
 }
 ```
 
