@@ -72,6 +72,6 @@ func withMeter(name string, h handler) handler {
 
 func (m *metricHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	status, err := m.h.Handle(ctx, w, r)
-	responses.With(prometheus.Labels{"code": strconv.Itoa(status), "handler": m.name})
+	responses.With(prometheus.Labels{"code": strconv.Itoa(status), "handler": m.name}).Inc()
 	return status, err
 }
