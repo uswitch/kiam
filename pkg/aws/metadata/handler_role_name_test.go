@@ -24,7 +24,7 @@ func TestRedirectsToCanonicalPath(t *testing.T) {
 
 	router.ServeHTTP(rr, r)
 
-	if rr.Code != http.StatusPermanentRedirect {
+	if rr.Code != http.StatusMovedPermanently {
 		t.Error("expected redirect, was", rr.Code)
 	}
 }

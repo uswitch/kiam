@@ -41,7 +41,7 @@ func trailingSlashSuffixRedirectHandler(rw http.ResponseWriter, req *http.Reques
 	}
 
 	u.Path = fmt.Sprintf("%s/", u.Path)
-	http.Redirect(rw, req, u.String(), http.StatusPermanentRedirect)
+	http.Redirect(rw, req, u.String(), http.StatusMovedPermanently)
 }
 
 func (h *roleHandler) Install(router *mux.Router) {
