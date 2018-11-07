@@ -3,14 +3,15 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	prommodel "github.com/prometheus/client_model/go"
+	"github.com/uswitch/kiam/pkg/server"
+	st "github.com/uswitch/kiam/pkg/testutil/server"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/gorilla/mux"
-	"github.com/uswitch/kiam/pkg/server"
-	st "github.com/uswitch/kiam/pkg/testutil/server"
 )
 
 func TestRedirectsToCanonicalPath(t *testing.T) {
@@ -25,6 +26,46 @@ func TestRedirectsToCanonicalPath(t *testing.T) {
 
 	if rr.Code != http.StatusPermanentRedirect {
 		t.Error("expected redirect, was", rr.Code)
+	}
+}
+
+func readPrometheusCounterValue(name, labelName, labelValue string, metrics []*prommodel.MetricFamily) float64 {
+	for _, m := range metrics {
+		if m.GetName() == name {
+			for _, metric := range m.Metric {
+				for _, label := range metric.Label {
+					if label.GetName() == labelName && label.GetValue() == labelValue {
+						return metric.Counter.GetValue()
+					}
+				}
+			}
+		}
+	}
+	return 0
+}
+
+func TestIncrementsPrometheusCounter(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
+	rr := httptest.NewRecorder()
+
+	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
+	router := mux.NewRouter()
+	handler.Install(router)
+
+	router.ServeHTTP(rr, r)
+
+	metrics, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	responses := readPrometheusCounterValue("kiam_metadata_responses_total", "handler", "roleName", metrics)
+	if responses != 1 {
+		t.Error("expected responses_total to be 1, was", responses)
+	}
+	successes := readPrometheusCounterValue("kiam_metadata_success_total", "handler", "roleName", metrics)
+	if successes != 1 {
+		t.Error("expected success_total to be 1, was", successes)
 	}
 }
 
