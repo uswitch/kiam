@@ -18,13 +18,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/gorilla/mux"
 )
 
-func TestProxyDefaultBlacklisting(t *testing.T) {
+func performRequest(allowed, path string) (int, *httptest.ResponseRecorder) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -33,42 +34,34 @@ func TestProxyDefaultBlacklisting(t *testing.T) {
 		hits++
 		w.WriteHeader(http.StatusOK)
 	})
-	handler := newProxyHandler(backingService, regexp.MustCompile(""))
+	handler := newProxyHandler(backingService, regexp.MustCompile(allowed))
 	router := mux.NewRouter()
 	handler.Install(router)
 
-	r, _ := http.NewRequest("GET", "/", nil)
+	r, _ := http.NewRequest("GET", path, nil)
 	rr := httptest.NewRecorder()
 
 	router.ServeHTTP(rr, r.WithContext(ctx))
+
+	return hits, rr
+}
+
+func TestProxyDefaultBlacklistingRoot(t *testing.T) {
+	hits, rr := performRequest("", "/")
 
 	if hits != 0 {
 		t.Error("unexpected reverse proxy hit")
 	}
 	if rr.Code != http.StatusNotFound {
 		t.Error("unexpected status", rr.Code)
+	}
+	if !strings.HasPrefix(rr.Body.String(), "request blocked by whitelist-route-regexp") {
+		t.Error("unexpected body:", rr.Body.String())
 	}
 }
 
 func TestProxyFiltering(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	allowedRoutes := regexp.MustCompile("foo.*")
-
-	var hits int
-	backingService := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		hits++
-		w.WriteHeader(http.StatusOK)
-	})
-	handler := newProxyHandler(backingService, allowedRoutes)
-	router := mux.NewRouter()
-	handler.Install(router)
-
-	r, _ := http.NewRequest("GET", "/bar", nil)
-	rr := httptest.NewRecorder()
-
-	router.ServeHTTP(rr, r.WithContext(ctx))
+	hits, rr := performRequest("foo.*", "/bar")
 
 	if hits != 0 {
 		t.Error("unexpected reverse proxy hit")
@@ -76,27 +69,27 @@ func TestProxyFiltering(t *testing.T) {
 	if rr.Code != http.StatusNotFound {
 		t.Error("unexpected status", rr.Code)
 	}
+	if !strings.HasPrefix(rr.Body.String(), "request blocked by whitelist-route-regexp") {
+		t.Error("unexpected body:", rr.Body.String())
+	}
+}
+
+func TestProxyFilteringSubpath(t *testing.T) {
+	hits, rr := performRequest("foo.*", "/bar/baz")
+
+	if hits != 0 {
+		t.Error("unexpected reverse proxy hit")
+	}
+	if rr.Code != http.StatusNotFound {
+		t.Error("unexpected status", rr.Code)
+	}
+	if !strings.HasPrefix(rr.Body.String(), "request blocked by whitelist-route-regexp") {
+		t.Error("unexpected body:", rr.Body.String())
+	}
 }
 
 func TestProxyWhitelisting(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	allowedRoutes := regexp.MustCompile("foo.*")
-
-	var hits int
-	backingService := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		hits++
-		w.WriteHeader(http.StatusOK)
-	})
-	handler := newProxyHandler(backingService, allowedRoutes)
-	router := mux.NewRouter()
-	handler.Install(router)
-
-	r, _ := http.NewRequest("GET", "/foo", nil)
-	rr := httptest.NewRecorder()
-
-	router.ServeHTTP(rr, r.WithContext(ctx))
+	hits, rr := performRequest("foo.*", "/foo")
 
 	if hits != 1 {
 		t.Error("expected reverse proxy hit")
