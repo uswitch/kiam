@@ -28,7 +28,7 @@ type proxyHandler struct {
 }
 
 func (p *proxyHandler) Install(router *mux.Router) {
-	router.Handle("/{path}", adapt(withMeter("proxy", p)))
+	router.PathPrefix("/").Handler(adapt(withMeter("proxy", p)))
 }
 
 type teeWriter struct {
@@ -42,13 +42,12 @@ func (w *teeWriter) WriteHeader(statusCode int) {
 }
 
 func (p *proxyHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-	route := mux.Vars(r)["path"]
-	if p.whitelistRouteRegexp.MatchString(route) {
+	if p.whitelistRouteRegexp.MatchString(r.URL.Path) {
 		writer := &teeWriter{w, http.StatusOK}
 		p.backingService.ServeHTTP(writer, r)
 		return writer.status, nil
 	} else {
-		return http.StatusNotFound, fmt.Errorf("request blocked by whitelist-route-regexp %q: %s", p.whitelistRouteRegexp, route)
+		return http.StatusNotFound, fmt.Errorf("request blocked by whitelist-route-regexp %q: %s", p.whitelistRouteRegexp, r.URL.Path)
 	}
 }
 
