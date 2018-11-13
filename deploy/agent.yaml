@@ -29,6 +29,7 @@ spec:
         - name: xtables
           hostPath:
             path: /run/xtables.lock
+            type: FileOrCreate
       containers:
         - name: kiam
           securityContext:
