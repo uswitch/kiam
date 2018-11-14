@@ -46,7 +46,7 @@ The example below is expressed using
 [Terraform](https://www.terraform.io/) and should help explain how AWS IAM resources are
 connected. 
 
-```
+```hcl
 resource "aws_iam_role" "server_node" {
   name = "server_node"
   assume_role_policy = <<EOF
@@ -91,6 +91,21 @@ resource "aws_iam_instance_profile" "server_node" {
 resource "aws_iam_role" "server_role" {
   name = "kiam-server"
   description = "Role the Kiam Server process assumes"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::123456789012:role/server_node"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
 }
 
 resource "aws_iam_policy" "server_policy" {
