@@ -18,11 +18,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-
-	"io/ioutil"
-	"net"
-	"time"
-
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/k8sc/official"
@@ -33,12 +29,15 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"io/ioutil"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
+	"net"
+	"time"
 )
 
 // Config controls the setup of the gRPC server
@@ -77,6 +76,15 @@ type KiamServer struct {
 	parallelFetchers    int
 }
 
+func simplifyAWSErrorMessage(err error) string {
+	e, ok := err.(awserr.Error)
+	if !ok {
+		return err.Error()
+	}
+
+	return fmt.Sprintf("%s: %s", e.Code(), e.Message())
+}
+
 // GetPodCredentials returns credentials for the Pod, according to the role it's
 // annotated with. It will additionally check policy before returning credentials.
 func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCredentialsRequest) (*pb.Credentials, error) {
@@ -101,16 +109,14 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 
 	if !decision.IsAllowed() {
 		logger.WithField("policy.explanation", decision.Explanation()).Errorf("pod denied by policy")
-		k.recordEvent(pod, v1.EventTypeWarning, "KiamRoleForbidden",
-			fmt.Sprintf("failed assuming role %q: %s", req.Role, decision.Explanation()))
+		k.recordEvent(pod, v1.EventTypeWarning, "KiamRoleForbidden", fmt.Sprintf("failed assuming role %q: %s", req.Role, decision.Explanation()))
 		return nil, ErrPolicyForbidden
 	}
 
 	creds, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role)
 	if err != nil {
 		logger.Errorf("error retrieving credentials: %s", err.Error())
-		k.recordEvent(pod, v1.EventTypeWarning, "KiamCredentialError",
-			fmt.Sprintf("failed retrieving credentials: %s", err))
+		k.recordEvent(pod, v1.EventTypeWarning, "KiamCredentialError", fmt.Sprintf("failed retrieving credentials: %s", simplifyAWSErrorMessage(err)))
 		return nil, err
 	}
 
