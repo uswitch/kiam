@@ -2,15 +2,16 @@ package server
 
 import (
 	"context"
-	"testing"
-	"time"
-
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 	pb "github.com/uswitch/kiam/proto"
 	kt "k8s.io/client-go/tools/cache/testing"
+	"testing"
+	"time"
 )
 
 const (
@@ -19,6 +20,20 @@ const (
 
 func init() {
 	statsd.New("", "", time.Millisecond)
+}
+
+func TestErrorSimplification(t *testing.T) {
+	e := awserr.NewRequestFailure(awserr.New("code", "message", fmt.Errorf("foo")), 403, "abcdef")
+	simplified := simplifyAWSErrorMessage(e)
+
+	if simplified != "code: message" {
+		t.Errorf("unexpected: %s", simplified)
+	}
+
+	simplified = simplifyAWSErrorMessage(fmt.Errorf("foo"))
+	if simplified != "foo" {
+		t.Errorf("expected foo, got: %s", simplified)
+	}
 }
 
 func TestReturnsErrorWhenPodNotFound(t *testing.T) {
