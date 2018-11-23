@@ -1224,7 +1224,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "min(kube_daemonset_status_number_available{namespace=\"kube-system\",daemonset=~\".*kiam-server\"}) without (instance, pod)",
+              "expr": "min(kube_daemonset_status_number_available{namespace=\"$namespace\",daemonset=~\".*kiam-server\"}) without (instance, pod)",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -1304,7 +1304,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"kube-system\",pod_name=~\".*kiam-server.*\"}[$interval]))",
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",pod_name=~\".*kiam-server.*\"}[$interval]))",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -1370,14 +1370,14 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"kube-system\",pod_name=~\".*kiam-server-.*\"}[$interval])) by (pod_name)",
+              "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"$namespace\",pod_name=~\".*kiam-server-.*\"}[$interval])) by (pod_name)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "In {{pod_name}}",
               "refId": "B"
             },
             {
-              "expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"kube-system\",pod_name=~\".*kiam-server-.*\"}[$interval])) by (pod_name)",
+              "expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"$namespace\",pod_name=~\".*kiam-server-.*\"}[$interval])) by (pod_name)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Out {{pod_name}}",
@@ -1486,7 +1486,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "max(kube_daemonset_status_desired_number_scheduled{namespace=\"kube-system\",daemonset=~\".*kiam-server\"}) without (instance, pod)",
+              "expr": "max(kube_daemonset_status_desired_number_scheduled{namespace=\"$namespace\",daemonset=\".*kiam-server\"}) without (instance, pod)",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -1566,7 +1566,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(container_memory_usage_bytes{namespace=\"kube-system\",pod_name=~\".*kiam-server-.*\"})",
+              "expr": "sum(container_memory_usage_bytes{namespace=\"$namespace\",pod_name=~\".*kiam-server-.*\"})",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -1663,7 +1663,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "min(kube_daemonset_status_number_available{namespace=\"kube-system\",daemonset=~\".*kiam-agent\"}) without (instance, pod)",
+              "expr": "min(kube_daemonset_status_number_available{namespace=\"$namespace\",daemonset=\".*kiam-agent\"}) without (instance, pod)",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -1743,7 +1743,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"kube-system\",pod_name=~\".*kiam-agent.*\"}[$interval]))",
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",pod_name=~\".*kiam-agent.*\"}[$interval]))",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -1809,14 +1809,14 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"kube-system\",pod_name=~\".*kiam-agent-.*\"}[$interval])) by (pod_name)",
+              "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"$namespace\",pod_name=~\".*kiam-agent-.*\"}[$interval])) by (pod_name)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "In {{pod_name}}",
               "refId": "B"
             },
             {
-              "expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"kube-system\",pod_name=~\".*kiam-agent-.*\"}[$interval])) by (pod_name)",
+              "expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"$namespace\",pod_name=~\".*kiam-agent-.*\"}[$interval])) by (pod_name)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Out {{pod_name}}",
@@ -1925,7 +1925,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "max(kube_daemonset_status_desired_number_scheduled{namespace=\"kube-system\",daemonset=~\".*kiam-agent\"}) without (instance, pod)",
+              "expr": "max(kube_daemonset_status_desired_number_scheduled{namespace=\"$namespace\",daemonset=\".*kiam-agent\"}) without (instance, pod)",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -2005,7 +2005,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(container_memory_usage_bytes{namespace=\"kube-system\",pod_name=~\".*kiam-agent-.*\"})",
+              "expr": "sum(container_memory_usage_bytes{namespace=\"$namespace\",pod_name=~\".*kiam-agent-.*\"})",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 2,
@@ -2080,7 +2080,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (increase(grpc_server_handled_total{namespace=\"kube-system\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_code, grpc_method, pod)",
+              "expr": "sum (increase(grpc_server_handled_total{namespace=\"$namespace\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_code, grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{grpc_code}} {{pod}}",
@@ -2173,7 +2173,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (increase(grpc_server_started_total{namespace=\"kube-system\",pod=~\".*kiam-server-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_server_started_total{namespace=\"$namespace\",pod=~\".*kiam-server-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2261,7 +2261,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (increase(grpc_server_msg_received_total{namespace=\"kube-system\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_server_msg_received_total{namespace=\"$namespace\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2349,7 +2349,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (increase(grpc_server_msg_sent_total{namespace=\"kube-system\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_server_msg_sent_total{namespace=\"$namespace\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2451,7 +2451,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (increase(grpc_client_handled_total{namespace=\"kube-system\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_code, grpc_method, pod)",
+              "expr": "sum (increase(grpc_client_handled_total{namespace=\"$namespace\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_code, grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{grpc_code}} {{pod}}",
@@ -2544,7 +2544,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (increase(grpc_client_started_total{namespace=\"kube-system\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_client_started_total{namespace=\"$namespace\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2632,7 +2632,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (increase(grpc_client_msg_received_total{namespace=\"kube-system\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_client_msg_received_total{namespace=\"$namespace\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2720,7 +2720,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (increase(grpc_client_msg_sent_total{namespace=\"kube-system\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
+              "expr": "sum (increase(grpc_client_msg_sent_total{namespace=\"$namespace\",pod=~\".*kiam-.*\"}[$interval])) by (grpc_method, pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} {{pod}}",
@@ -2796,6 +2796,25 @@
         "refresh": 1,
         "regex": "",
         "type": "datasource"
+      },
+      {
+        "current": {},
+        "datasource": "$datasource",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": "label_values(kiam_metadata_responses_total, namespace)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
       },
       {
         "allValue": null,
