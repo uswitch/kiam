@@ -910,7 +910,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (delta(kiam_sts_cache_miss_total_total[$interval])) by (pod)",
+          "expr": "sum (delta(kiam_sts_cache_miss_total[$interval])) by (pod)",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "{{pod}}",
