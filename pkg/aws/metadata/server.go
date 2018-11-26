@@ -16,15 +16,16 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
-	"github.com/uswitch/kiam/pkg/server"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/server"
 )
 
 type Server struct {

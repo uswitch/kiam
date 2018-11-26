@@ -46,9 +46,10 @@ func (p *proxyHandler) Handle(ctx context.Context, w http.ResponseWriter, r *htt
 		writer := &teeWriter{w, http.StatusOK}
 		p.backingService.ServeHTTP(writer, r)
 		return writer.status, nil
-	} else {
-		return http.StatusNotFound, fmt.Errorf("request blocked by whitelist-route-regexp %q: %s", p.whitelistRouteRegexp, r.URL.Path)
 	}
+
+	proxyDenies.Inc()
+	return http.StatusNotFound, fmt.Errorf("request blocked by whitelist-route-regexp %q: %s", p.whitelistRouteRegexp, r.URL.Path)
 }
 
 func newProxyHandler(backingService http.Handler, whitelistRouteRegexp *regexp.Regexp) *proxyHandler {

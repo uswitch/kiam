@@ -44,6 +44,7 @@ daemonset status from kube-state-metrics & container metrics from cAdvisor if av
 - `empty_role_total` - Number of empty roles returned
 - `success_total` - Number of successful responses from a handler
 - `responses_total` - Responses from mocked out metadata handlers
+- `kiam_metadata_proxy_requests_blocked_total` - Number of access requests to the proxy handler that were blocked by the regexp
 
 #### STS Subsystem
 
