@@ -91,6 +91,8 @@ var (
 func init() {
 	prometheus.MustRegister(handlerTimer)
 	prometheus.MustRegister(findRoleError)
+	prometheus.MustRegister(credentialFetchError)
+	prometheus.MustRegister(credentialEncodeError)
 	prometheus.MustRegister(emptyRole)
 	prometheus.MustRegister(success)
 	prometheus.MustRegister(responses)

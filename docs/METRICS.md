@@ -37,26 +37,26 @@ daemonset status from kube-state-metrics & container metrics from cAdvisor if av
 
 #### Metadata Subsystem
 
-- `handler_latency_milliseconds` - Bucketed histogram of handler timings. Tagged by handler
-- `credential_fetch_errors_total` - Number of errors fetching the credentials for a pod
-- `credential_encode_errors_total` - Number of errors encoding credentials for a pod
-- `find_role_errors_total` - Number of errors finding the role for a pod
-- `empty_role_total` - Number of empty roles returned
-- `success_total` - Number of successful responses from a handler
-- `responses_total` - Responses from mocked out metadata handlers
+- `kiam_metadata_handler_latency_milliseconds` - Bucketed histogram of handler timings. Tagged by handler
+- `kiam_metadata_credential_fetch_errors_total` - Number of errors fetching the credentials for a pod
+- `kiam_metadata_credential_encode_errors_total` - Number of errors encoding credentials for a pod
+- `kiam_metadata_find_role_errors_total` - Number of errors finding the role for a pod
+- `kiam_metadata_empty_role_total` - Number of empty roles returned
+- `kiam_metadata_success_total` - Number of successful responses from a handler
+- `kiam_metadata_responses_total` - Responses from mocked out metadata handlers
 - `kiam_metadata_proxy_requests_blocked_total` - Number of access requests to the proxy handler that were blocked by the regexp
 
 #### STS Subsystem
 
 - `kiam_sts_cache_hit_total` - Number of cache hits to the metadata cache
 - `kiam_sts_cache_miss_total` - Number of cache misses to the metadata cache
-- `issuing_errors_total` - Number of errors issuing credentials
-- `assumerole_timing_milliseconds` - Bucketed histogram of assumeRole timings
-- `assumerole_current` - Number of assume role calls currently executing
+- `kiam_sts_issuing_errors_total` - Number of errors issuing credentials
+- `kiam_sts_assumerole_timing_milliseconds` - Bucketed histogram of assumeRole timings
+- `kiam_sts_assumerole_current` - Number of assume role calls currently executing
 
 #### K8s Subsystem
 
-- `dropped_pods_total` - Number of dropped pods because of full buffer
+- `kiam_k8s_dropped_pods_total` - Number of dropped pods because of full buffer
 
 #### gRPC Server (Kiam Server)
 
