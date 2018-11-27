@@ -47,8 +47,8 @@ daemonset status from kube-state-metrics & container metrics from cAdvisor if av
 
 #### STS Subsystem
 
-- `cache_hit_total` - Number of cache hits to the metadata cache
-- `cache_miss_total` - Number of cache misses to the metadata cache
+- `kiam_sts_cache_hit_total` - Number of cache hits to the metadata cache
+- `kiam_sts_cache_miss_total` - Number of cache misses to the metadata cache
 - `issuing_errors_total` - Number of errors issuing credentials
 - `assumerole_timing_milliseconds` - Bucketed histogram of assumeRole timings
 - `assumerole_current` - Number of assume role calls currently executing
