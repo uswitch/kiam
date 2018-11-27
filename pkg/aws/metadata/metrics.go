@@ -77,12 +77,24 @@ var (
 		},
 		[]string{"handler", "code"},
 	)
+
+	proxyDenies = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "kiam",
+			Subsystem: "metadata",
+			Name:      "proxy_requests_blocked_total",
+			Help:      "Number of access requests to the proxy handler that were blocked by the regexp",
+		},
+	)
 )
 
 func init() {
 	prometheus.MustRegister(handlerTimer)
 	prometheus.MustRegister(findRoleError)
+	prometheus.MustRegister(credentialFetchError)
+	prometheus.MustRegister(credentialEncodeError)
 	prometheus.MustRegister(emptyRole)
 	prometheus.MustRegister(success)
 	prometheus.MustRegister(responses)
+	prometheus.MustRegister(proxyDenies)
 }

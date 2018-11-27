@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func performRequest(allowed, path string) (int, *httptest.ResponseRecorder) {
@@ -60,7 +61,24 @@ func TestProxyDefaultBlacklistingRoot(t *testing.T) {
 	}
 }
 
+func readPrometheusSimpleCounterValue(name string) float64 {
+	metrics, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, m := range metrics {
+		if m.GetName() == name {
+			return m.Metric[0].Counter.GetValue()
+		}
+	}
+
+	return 0
+}
+
 func TestProxyFiltering(t *testing.T) {
+	requestsInitial := readPrometheusCounterValue("kiam_metadata_responses_total", "handler", "proxy")
+	blockedInitial := readPrometheusSimpleCounterValue("kiam_metadata_proxy_requests_blocked_total")
 	hits, rr := performRequest("foo.*", "/bar")
 
 	if hits != 0 {
@@ -71,6 +89,15 @@ func TestProxyFiltering(t *testing.T) {
 	}
 	if !strings.HasPrefix(rr.Body.String(), "request blocked by whitelist-route-regexp") {
 		t.Error("unexpected body:", rr.Body.String())
+	}
+
+	responses := readPrometheusCounterValue("kiam_metadata_responses_total", "handler", "proxy")
+	if responses - requestsInitial != 1 {
+		t.Error("expected responses_total to be 1, was", responses)
+	}
+	blocked := readPrometheusSimpleCounterValue("kiam_metadata_proxy_requests_blocked_total")
+	if blocked - blockedInitial != 1 {
+		t.Error("expected blocked total to be 1, was", blocked)
 	}
 }
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
-	prommodel "github.com/prometheus/client_model/go"
 	"github.com/uswitch/kiam/pkg/server"
 	st "github.com/uswitch/kiam/pkg/testutil/server"
 	"net/http"
@@ -29,7 +28,11 @@ func TestRedirectsToCanonicalPath(t *testing.T) {
 	}
 }
 
-func readPrometheusCounterValue(name, labelName, labelValue string, metrics []*prommodel.MetricFamily) float64 {
+func readPrometheusCounterValue(name, labelName, labelValue string) float64 {
+	metrics, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		panic(err)
+	}
 	for _, m := range metrics {
 		if m.GetName() == name {
 			for _, metric := range m.Metric {
@@ -54,16 +57,11 @@ func TestIncrementsPrometheusCounter(t *testing.T) {
 
 	router.ServeHTTP(rr, r)
 
-	metrics, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	responses := readPrometheusCounterValue("kiam_metadata_responses_total", "handler", "roleName", metrics)
+	responses := readPrometheusCounterValue("kiam_metadata_responses_total", "handler", "roleName")
 	if responses != 1 {
 		t.Error("expected responses_total to be 1, was", responses)
 	}
-	successes := readPrometheusCounterValue("kiam_metadata_success_total", "handler", "roleName", metrics)
+	successes := readPrometheusCounterValue("kiam_metadata_success_total", "handler", "roleName")
 	if successes != 1 {
 		t.Error("expected success_total to be 1, was", successes)
 	}
