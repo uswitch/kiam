@@ -21,6 +21,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
+	"github.com/uswitch/kiam/pkg/pprof"
 	serv "github.com/uswitch/kiam/pkg/server"
 )
 
@@ -71,6 +72,12 @@ func (opts *serverCommand) Run() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
+	if opts.pprofListen != "" {
+		log.Infof("pprof listen address specified, starting http server")
+		server := pprof.NewServer(opts.pprofListen)
+		go pprof.ListenAndWait(ctx, server)
+	}
 
 	opts.telemetryOptions.start(ctx, "server")
 
