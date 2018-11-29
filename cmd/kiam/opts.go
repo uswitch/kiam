@@ -16,11 +16,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
-
 	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/pprof"
 	"github.com/uswitch/kiam/pkg/prometheus"
 	"github.com/uswitch/kiam/pkg/statsd"
+	"time"
 )
 
 type logOptions struct {
@@ -84,6 +84,12 @@ func (o telemetryOptions) start(ctx context.Context, identifier string) {
 	if o.prometheusListen != "" {
 		metrics := prometheus.NewServer(identifier, o.prometheusListen, o.prometheusSync)
 		metrics.Listen(ctx)
+	}
+
+	if o.pprofListen != "" {
+		log.Infof("pprof listen address specified, will listen on %s", o.pprofListen)
+		server := pprof.NewServer(o.pprofListen)
+		go pprof.ListenAndWait(ctx, server)
 	}
 }
 
