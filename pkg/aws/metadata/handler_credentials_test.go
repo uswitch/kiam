@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"encoding/json"
+	"github.com/fortytw2/leaktest"
 	"github.com/gorilla/mux"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
@@ -22,6 +23,7 @@ func init() {
 func TestReturnsCredentials(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
+	defer leaktest.Check(t)()
 
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/role", nil)
 	rr := httptest.NewRecorder()
@@ -60,6 +62,7 @@ func TestReturnsCredentials(t *testing.T) {
 func TestReturnsErrorWithNoPod(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
+	defer leaktest.Check(t)()
 
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/role", nil)
 	rr := httptest.NewRecorder()
@@ -82,6 +85,7 @@ func TestReturnsErrorWithNoPod(t *testing.T) {
 func TestReturnsCredentialsWithRetryAfterError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
+	defer leaktest.Check(t)()
 
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/role", nil)
 	rr := httptest.NewRecorder()
