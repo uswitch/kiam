@@ -15,15 +15,15 @@ package metadata
 
 import (
 	"context"
+	"github.com/fortytw2/leaktest"
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 func performRequest(allowed, path string) (int, *httptest.ResponseRecorder) {
@@ -48,6 +48,8 @@ func performRequest(allowed, path string) (int, *httptest.ResponseRecorder) {
 }
 
 func TestProxyDefaultBlacklistingRoot(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	hits, rr := performRequest("", "/")
 
 	if hits != 0 {
@@ -77,6 +79,8 @@ func readPrometheusSimpleCounterValue(name string) float64 {
 }
 
 func TestProxyFiltering(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	requestsInitial := readPrometheusCounterValue("kiam_metadata_responses_total", "handler", "proxy")
 	blockedInitial := readPrometheusSimpleCounterValue("kiam_metadata_proxy_requests_blocked_total")
 	hits, rr := performRequest("foo.*", "/bar")
@@ -92,16 +96,18 @@ func TestProxyFiltering(t *testing.T) {
 	}
 
 	responses := readPrometheusCounterValue("kiam_metadata_responses_total", "handler", "proxy")
-	if responses - requestsInitial != 1 {
+	if responses-requestsInitial != 1 {
 		t.Error("expected responses_total to be 1, was", responses)
 	}
 	blocked := readPrometheusSimpleCounterValue("kiam_metadata_proxy_requests_blocked_total")
-	if blocked - blockedInitial != 1 {
+	if blocked-blockedInitial != 1 {
 		t.Error("expected blocked total to be 1, was", blocked)
 	}
 }
 
 func TestProxyFilteringSubpath(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	hits, rr := performRequest("foo.*", "/bar/baz")
 
 	if hits != 0 {
@@ -116,6 +122,8 @@ func TestProxyFilteringSubpath(t *testing.T) {
 }
 
 func TestProxyWhitelisting(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	hits, rr := performRequest("foo.*", "/foo")
 
 	if hits != 1 {

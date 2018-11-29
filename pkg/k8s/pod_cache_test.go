@@ -16,12 +16,12 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"testing"
-	"time"
-
+	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 	kt "k8s.io/client-go/tools/cache/testing"
+	"testing"
+	"time"
 )
 
 func init() {
@@ -31,6 +31,8 @@ func init() {
 const bufferSize = 10
 
 func TestFindsRunningPod(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -39,6 +41,7 @@ func TestFindsRunningPod(t *testing.T) {
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role"))
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 	c.Run(ctx)
+	defer source.Shutdown()
 
 	found, _ := c.GetPodByIP("192.168.0.1")
 	if found == nil {
@@ -50,6 +53,8 @@ func TestFindsRunningPod(t *testing.T) {
 }
 
 func TestFindRoleActive(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -59,6 +64,7 @@ func TestFindRoleActive(t *testing.T) {
 	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "running_role"))
 	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 	c.Run(ctx)
+	defer source.Shutdown()
 
 	active, _ := c.IsActivePodsForRole("failed_role")
 	if active {

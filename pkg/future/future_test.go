@@ -15,11 +15,14 @@ package future
 
 import (
 	"context"
+	"github.com/fortytw2/leaktest"
 	"testing"
 	"time"
 )
 
 func TestReturnsValue(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	f := New(func() (interface{}, error) {
 		return "hello", nil
 	})
@@ -37,6 +40,8 @@ func TestReturnsValue(t *testing.T) {
 }
 
 func TestCancelsWhenBlocked(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	f := New(func() (interface{}, error) {
 		time.Sleep(1 * time.Second)
 		return "bar", nil

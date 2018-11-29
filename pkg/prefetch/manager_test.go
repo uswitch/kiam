@@ -15,6 +15,7 @@ package prefetch
 
 import (
 	"context"
+	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	kt "github.com/uswitch/kiam/pkg/k8s/testing"
 	"github.com/uswitch/kiam/pkg/statsd"
@@ -28,6 +29,8 @@ func init() {
 }
 
 func TestPrefetchRunningPods(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
