@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"github.com/fortytw2/leaktest"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/uswitch/kiam/pkg/server"
@@ -14,6 +15,8 @@ import (
 )
 
 func TestRedirectsToCanonicalPath(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials", nil)
 	rr := httptest.NewRecorder()
 
@@ -48,6 +51,8 @@ func readPrometheusCounterValue(name, labelName, labelValue string) float64 {
 }
 
 func TestIncrementsPrometheusCounter(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
 
@@ -68,6 +73,8 @@ func TestIncrementsPrometheusCounter(t *testing.T) {
 }
 
 func TestReturnRoleWhenClientResponds(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
 	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
@@ -87,6 +94,8 @@ func TestReturnRoleWhenClientResponds(t *testing.T) {
 }
 
 func TestReturnRoleWhenRetryingFollowingError(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
 	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", fmt.Errorf("unexpected error")}, st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
@@ -106,6 +115,8 @@ func TestReturnRoleWhenRetryingFollowingError(t *testing.T) {
 }
 
 func TestReturnsEmptyRoleWhenClientSucceedsWithEmptyRole(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
 	rr := httptest.NewRecorder()
 	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", nil}), getBlankClientIP)
@@ -120,6 +131,8 @@ func TestReturnsEmptyRoleWhenClientSucceedsWithEmptyRole(t *testing.T) {
 }
 
 func TestReturnErrorWhenPodNotFoundWithinTimeout(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/statsd"
@@ -37,7 +38,11 @@ func TestErrorSimplification(t *testing.T) {
 }
 
 func TestReturnsErrorWhenPodNotFound(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
+
 	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
 	server := &KiamServer{pods: podCache}
 
@@ -49,10 +54,13 @@ func TestReturnsErrorWhenPodNotFound(t *testing.T) {
 }
 
 func TestReturnsPolicyErrorWhenForbidden(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 
 	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
@@ -67,10 +75,13 @@ func TestReturnsPolicyErrorWhenForbidden(t *testing.T) {
 }
 
 func TestReturnsCredentials(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 
 	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
