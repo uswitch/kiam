@@ -16,11 +16,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
-
 	log "github.com/sirupsen/logrus"
+	"github.com/uswitch/kiam/pkg/pprof"
 	"github.com/uswitch/kiam/pkg/prometheus"
 	"github.com/uswitch/kiam/pkg/statsd"
+	"time"
 )
 
 type logOptions struct {
@@ -56,6 +56,7 @@ type telemetryOptions struct {
 	statsDPrefix     string
 	prometheusListen string
 	prometheusSync   time.Duration
+	pprofListen      string
 }
 
 func (o *telemetryOptions) bind(parser parser) {
@@ -65,6 +66,8 @@ func (o *telemetryOptions) bind(parser parser) {
 
 	parser.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&o.prometheusListen)
 	parser.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&o.prometheusSync)
+
+	parser.Flag("pprof-listen-addr", "Address to bind pprof HTTP server. e.g. localhost:9990").Default("").StringVar(&o.pprofListen)
 }
 
 func (o telemetryOptions) start(ctx context.Context, identifier string) {
@@ -81,6 +84,12 @@ func (o telemetryOptions) start(ctx context.Context, identifier string) {
 	if o.prometheusListen != "" {
 		metrics := prometheus.NewServer(identifier, o.prometheusListen, o.prometheusSync)
 		metrics.Listen(ctx)
+	}
+
+	if o.pprofListen != "" {
+		log.Infof("pprof listen address specified, will listen on %s", o.pprofListen)
+		server := pprof.NewServer(o.pprofListen)
+		go pprof.ListenAndWait(ctx, server)
 	}
 }
 
