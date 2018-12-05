@@ -21,7 +21,6 @@ A huge thanks to the following contributors for this release:
 
 * [@Joseph-Irving](https://github.com/Joseph-Irving)
 * [@max-lobur](https://github.com/max-lobur)
-* [@max-lobur](https://github.com/max-lobur)
 * [@fernandocarletti](https://github.com/fernandocarletti)
 * [@integrii](https://github.com/integrii)
 * [@duncward](https://github.com/duncward)
