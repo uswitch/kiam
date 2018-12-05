@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.0
+XX December 2018
+
+v3 introduces a change to the gRPC API. Servers are compatible with v2.x Agents, although v3 Agents require v3 Servers. A few other changes mean it's worth reading through [docs/UPGRADING.md](docs/UPGRADING.md) for more detail on moving from v2 to v3.
+
+Notable changes:
+
+* [#109](https://github.com/uswitch/kiam/pull/109) v3 API
+* [#110](https://github.com/uswitch/kiam/pull/110) Restrict metadata routes. Everything other than credentials **will be blocked by default**
+* [#122](https://github.com/uswitch/kiam/pull/122) Record Server error messages as Events on Pod
+* [#131](https://github.com/uswitch/kiam/pull/131) Replace go-metrics with native Prometheus metrics client
+* [#140](https://github.com/uswitch/kiam/pull/140) Example Grafana dashboard for Prometheus metrics
+* [#163](https://github.com/uswitch/kiam/pull/163) Server manifests use 127.0.0.1 rather than localhost to avoid DNS
+* [#173](https://github.com/uswitch/kiam/pull/173) Metadata Agent uses 301 rather than 308 redirects
+* [#180](https://github.com/uswitch/kiam/pull/180) Fix race condition with xtables.lock
+* [#193](https://github.com/uswitch/kiam/pull/193) Add optional pprof http handler to add monitoring in live clusters
+
 ## v2.8
 1st June 2018
 
