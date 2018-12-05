@@ -3,7 +3,7 @@
 ## v3.0
 XX December 2018
 
-v3 introduces a change to the gRPC API. Servers are compatible with v2.x Agents, although v3 Agents require v3 Servers. A few other changes mean it's worth reading through [docs/UPGRADING.md](docs/UPGRADING.md) for more detail on moving from v2 to v3.
+v3 introduces a change to the gRPC API. Servers are compatible with v2.x Agents although **v3 Agents require v3 Servers**. Other breaking changes have been made so it's worth reading through [docs/UPGRADING.md](docs/UPGRADING.md) for more detail on moving from v2 to v3. 
 
 Notable changes:
 
