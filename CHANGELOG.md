@@ -17,6 +17,25 @@ Notable changes:
 * [#180](https://github.com/uswitch/kiam/pull/180) Fix race condition with xtables.lock
 * [#193](https://github.com/uswitch/kiam/pull/193) Add optional pprof http handler to add monitoring in live clusters
 
+A huge thanks to the following contributors for this release:
+
+* [@Joseph-Irving](https://github.com/Joseph-Irving)
+* [@max-lobur](https://github.com/max-lobur)
+* [@max-lobur](https://github.com/max-lobur)
+* [@fernandocarletti](https://github.com/fernandocarletti)
+* [@integrii](https://github.com/integrii)
+* [@duncward](https://github.com/duncward)
+* [@stevenjm](https://github.com/stevenjm)
+* [@tasdikrahman](https://github.com/tasdikrahman)
+* [@word](https://github.com/word)
+* [@DewaldV](https://github.com/DewaldV)
+* [@roffe](https://github.com/roffe)
+* [@sambooo](https://github.com/sambooo)
+* [@idiamond-stripe](https://github.com/idiamond-stripe)
+* [@ash2k](https://github.com/ash2k)
+* [@moofish32](https://github.com/moofish32)
+* [@sp-joseluis-ledesma](https://github.com/sp-joseluis-ledesma)
+
 ## v2.8
 1st June 2018
 
