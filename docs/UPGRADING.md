@@ -12,9 +12,9 @@ Kiam changed significantly between v2.X and v3.0. Breaking changes are:
 
 We would suggest upgrading in the following way:
 
-1. Generate new TLS assets. You can use [docs/TLS.md](docs/TLS.md) to create new certificates, or use something like [cert-manager](https://github.com/jetstack/cert-manager) or [Vault](https://vaultproject.io). Given the TLS changes make sure that your server certificate supports names:
+1. Generate new TLS assets. You can use [docs/TLS.md](TLS.md) to create new certificates, or use something like [cert-manager](https://github.com/jetstack/cert-manager) or [Vault](https://vaultproject.io). Given the TLS changes make sure that your server certificate supports names:
     * `kiam-server`
     * `kiam-server:443`
     * `127.0.0.1`
-2. Create a new DaemonSet to deploy the v3 Server processes and should use the new TLS assets deployed above. This will ensure that you have new server processes running alongside the old servers. Once the v3 servers are running and passing their health checks you can proceed. **Please note that RBAC policy changes are required for the Server** and are documented in [deploy/server-rbac.yaml](deploy/server-rbac.yaml)
-3. Update the Agent DaemonSet to use the v3 image. Because the command has changed it's worth being careful when changing this as the existing configuration will not work with v3. One option is to ensure your DaemonSet uses a `OnDelete` [update strategy](https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/#daemonset-update-strategy): you can deploy new nodes running new agents connecting to new servers while leaving existing nodes as-is. 
+2. Create a new DaemonSet to deploy the v3 Server processes and should use the new TLS assets deployed above. This will ensure that you have new server processes running alongside the old servers. Once the v3 servers are running and passing their health checks you can proceed. **Please note that RBAC policy changes are required for the Server** and are documented in [deploy/server-rbac.yaml](../deploy/server-rbac.yaml)
+3. Update the Agent DaemonSet to use the v3 image. Because the command has changed it's worth being careful when changing this as the existing configuration will not work with v3. One option is to ensure your DaemonSet uses a `OnDelete` [update strategy](https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/#daemonset-update-strategy): you can deploy new nodes running new agents connecting to new servers while leaving existing nodes as-is.
