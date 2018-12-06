@@ -1,5 +1,40 @@
 # Changelog
 
+## v3.0
+6 December 2018
+
+v3 introduces a change to the gRPC API. Servers are compatible with v2.x Agents although **v3 Agents require v3 Servers**. Other breaking changes have been made so it's worth reading through [docs/UPGRADING.md](docs/UPGRADING.md) for more detail on moving from v2 to v3. 
+
+Notable changes:
+
+* [#109](https://github.com/uswitch/kiam/pull/109) v3 API
+* [#110](https://github.com/uswitch/kiam/pull/110) Restrict metadata routes. Everything other than credentials **will be blocked by default**
+* [#122](https://github.com/uswitch/kiam/pull/122) Record Server error messages as Events on Pod
+* [#131](https://github.com/uswitch/kiam/pull/131) Replace go-metrics with native Prometheus metrics client
+* [#140](https://github.com/uswitch/kiam/pull/140) Example Grafana dashboard for Prometheus metrics
+* [#163](https://github.com/uswitch/kiam/pull/163) Server manifests use 127.0.0.1 rather than localhost to avoid DNS
+* [#173](https://github.com/uswitch/kiam/pull/173) Metadata Agent uses 301 rather than 308 redirects
+* [#180](https://github.com/uswitch/kiam/pull/180) Fix race condition with xtables.lock
+* [#193](https://github.com/uswitch/kiam/pull/193) Add optional pprof http handler to add monitoring in live clusters
+
+A huge thanks to the following contributors for this release:
+
+* [@Joseph-Irving](https://github.com/Joseph-Irving)
+* [@max-lobur](https://github.com/max-lobur)
+* [@fernandocarletti](https://github.com/fernandocarletti)
+* [@integrii](https://github.com/integrii)
+* [@duncward](https://github.com/duncward)
+* [@stevenjm](https://github.com/stevenjm)
+* [@tasdikrahman](https://github.com/tasdikrahman)
+* [@word](https://github.com/word)
+* [@DewaldV](https://github.com/DewaldV)
+* [@roffe](https://github.com/roffe)
+* [@sambooo](https://github.com/sambooo)
+* [@idiamond-stripe](https://github.com/idiamond-stripe)
+* [@ash2k](https://github.com/ash2k)
+* [@moofish32](https://github.com/moofish32)
+* [@sp-joseluis-ledesma](https://github.com/sp-joseluis-ledesma)
+
 ## v2.8
 1st June 2018
 

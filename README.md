@@ -1,4 +1,7 @@
 # kiam
+
+[![Docker Repository on Quay](https://quay.io/repository/uswitch/kiam/status "Docker Repository on Quay")](https://quay.io/repository/uswitch/kiam)
+
 kiam runs as an agent on each node in your Kubernetes cluster and allows cluster users to associate IAM roles to Pods.
 
 Docker images are available at [https://quay.io/repository/uswitch/kiam](https://quay.io/repository/uswitch/kiam).

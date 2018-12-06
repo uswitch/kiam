@@ -34,7 +34,7 @@ var (
 		prometheus.HistogramOpts{
 			Namespace: "kiam",
 			Subsystem: "sts",
-			Name:      "assumerole_timing_milliseconds",
+			Name:      "assumerole_timing_seconds",
 			Help:      "Bucketed histogram of assumeRole timings",
 
 			// 1ms to 5min
