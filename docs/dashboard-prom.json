@@ -972,14 +972,14 @@
         "min": null,
         "mode": "spectrum"
       },
-      "dataFormat": "timeseries",
+      "dataFormat": "tsbuckets",
       "datasource": "$datasource",
       "description": "Bucketed histogram of handler timings. Tagged by handler",
       "gridPos": {
         "h": 5,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 24
       },
       "heatmap": {},
       "highlightCards": true,
@@ -990,8 +990,9 @@
       "links": [],
       "targets": [
         {
-          "expr": "sum(increase(kiam_metadata_handler_latency_seconds_bucket{handler=\"credentials\"}[$interval])) by (le)",
-          "format": "time_series",
+          "expr": "sum(rate(kiam_metadata_handler_latency_seconds_bucket{handler=\"credentials\", cluster=\"$cluster\"}[$interval])) by (le)",
+          "format": "heatmap",
+          "interval": "",
           "intervalFactor": 2,
           "legendFormat": "{{le}}",
           "refId": "A",
@@ -1012,14 +1013,14 @@
       "xBucketSize": null,
       "yAxis": {
         "decimals": null,
-        "format": "ms",
+        "format": "s",
         "logBase": 1,
         "max": null,
         "min": null,
         "show": true,
         "splitFactor": null
       },
-      "yBucketBound": "auto",
+      "yBucketBound": "upper",
       "yBucketNumber": null,
       "yBucketSize": null
     },
@@ -1037,14 +1038,14 @@
         "min": null,
         "mode": "spectrum"
       },
-      "dataFormat": "timeseries",
+      "dataFormat": "tsbuckets",
       "datasource": "$datasource",
       "description": "Bucketed histogram of handler timings. Tagged by handler",
       "gridPos": {
         "h": 5,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 24
       },
       "heatmap": {},
       "highlightCards": true,
@@ -1055,8 +1056,8 @@
       "links": [],
       "targets": [
         {
-          "expr": "sum(increase(kiam_metadata_handler_latency_seconds_bucket{handler=\"roleName\"}[$interval])) by (le)",
-          "format": "time_series",
+          "expr": "sum(rate(kiam_metadata_handler_latency_seconds_bucket{handler=\"roleName\", cluster=\"$cluster\"}[$interval])) by (le)",
+          "format": "heatmap",
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "{{le}}",
@@ -1084,7 +1085,7 @@
         "show": true,
         "splitFactor": null
       },
-      "yBucketBound": "auto",
+      "yBucketBound": "upper",
       "yBucketNumber": null,
       "yBucketSize": null
     },
@@ -1102,14 +1103,14 @@
         "min": null,
         "mode": "spectrum"
       },
-      "dataFormat": "timeseries",
+      "dataFormat": "tsbuckets",
       "datasource": "$datasource",
       "description": "Bucketed histogram of assumeRole timings",
       "gridPos": {
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 29
       },
       "heatmap": {},
       "highlightCards": true,
@@ -1120,8 +1121,8 @@
       "links": [],
       "targets": [
         {
-          "expr": "sum(increase(kiam_sts_assumerole_timing_seconds_bucket[$interval])) by (le)",
-          "format": "time_series",
+          "expr": "sum(rate(kiam_sts_assumerole_timing_seconds_bucket{cluster=\"$cluster\"}[$interval])) by (le)",
+          "format": "heatmap",
           "intervalFactor": 2,
           "legendFormat": "{{le}}",
           "refId": "A",
@@ -1142,7 +1143,7 @@
       "xBucketSize": null,
       "yAxis": {
         "decimals": null,
-        "format": "ms",
+        "format": "s",
         "logBase": 1,
         "max": null,
         "min": null,
