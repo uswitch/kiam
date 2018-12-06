@@ -9,7 +9,7 @@ var (
 		prometheus.HistogramOpts{
 			Namespace: "kiam",
 			Subsystem: "metadata",
-			Name:      "handler_latency_milliseconds",
+			Name:      "handler_latency_seconds",
 			Help:      "Bucketed histogram of handler timings",
 
 			// 1ms to 5min

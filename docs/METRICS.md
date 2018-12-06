@@ -37,7 +37,7 @@ daemonset status from kube-state-metrics & container metrics from cAdvisor if av
 
 #### Metadata Subsystem
 
-- `kiam_metadata_handler_latency_milliseconds` - Bucketed histogram of handler timings. Tagged by handler
+- `kiam_metadata_handler_latency_seconds` - Bucketed histogram of handler timings. Tagged by handler
 - `kiam_metadata_credential_fetch_errors_total` - Number of errors fetching the credentials for a pod
 - `kiam_metadata_credential_encode_errors_total` - Number of errors encoding credentials for a pod
 - `kiam_metadata_find_role_errors_total` - Number of errors finding the role for a pod
@@ -51,7 +51,7 @@ daemonset status from kube-state-metrics & container metrics from cAdvisor if av
 - `kiam_sts_cache_hit_total` - Number of cache hits to the metadata cache
 - `kiam_sts_cache_miss_total` - Number of cache misses to the metadata cache
 - `kiam_sts_issuing_errors_total` - Number of errors issuing credentials
-- `kiam_sts_assumerole_timing_milliseconds` - Bucketed histogram of assumeRole timings
+- `kiam_sts_assumerole_timing_seconds` - Bucketed histogram of assumeRole timings
 - `kiam_sts_assumerole_current` - Number of assume role calls currently executing
 
 #### K8s Subsystem
