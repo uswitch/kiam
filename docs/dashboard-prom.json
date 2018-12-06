@@ -990,7 +990,7 @@
       "links": [],
       "targets": [
         {
-          "expr": "sum(rate(kiam_metadata_handler_latency_seconds_bucket{handler=\"credentials\", cluster=\"$cluster\"}[$interval])) by (le)",
+          "expr": "sum(rate(kiam_metadata_handler_latency_seconds_bucket{handler=\"credentials\"}[$interval])) by (le)",
           "format": "heatmap",
           "interval": "",
           "intervalFactor": 2,
@@ -1056,7 +1056,7 @@
       "links": [],
       "targets": [
         {
-          "expr": "sum(rate(kiam_metadata_handler_latency_seconds_bucket{handler=\"roleName\", cluster=\"$cluster\"}[$interval])) by (le)",
+          "expr": "sum(rate(kiam_metadata_handler_latency_seconds_bucket{handler=\"roleName\"}[$interval])) by (le)",
           "format": "heatmap",
           "interval": "",
           "intervalFactor": 2,
@@ -1121,7 +1121,7 @@
       "links": [],
       "targets": [
         {
-          "expr": "sum(rate(kiam_sts_assumerole_timing_seconds_bucket{cluster=\"$cluster\"}[$interval])) by (le)",
+          "expr": "sum(rate(kiam_sts_assumerole_timing_seconds_bucket[$interval])) by (le)",
           "format": "heatmap",
           "intervalFactor": 2,
           "legendFormat": "{{le}}",
