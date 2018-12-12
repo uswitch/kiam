@@ -1,5 +1,7 @@
 # TLS
 
+**This guide will generate certificates with a short expiry. It will help you get something running but when deploying to production please ensure you automate certificates using a tool like Vault, cert-manager etc.**
+
 Kiam is split into two processes:
 
 * Agent. Responsible for receiving HTTP connections that Pods initiate to the metadata API (http://169.254.169.254). Credential requests are processed and anything else is forwarded to the AWS API. Communicates with the server via gRPC.
