@@ -49,6 +49,7 @@ connected.
 ```hcl
 resource "aws_iam_role" "server_node" {
   name = "server_node"
+
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -62,12 +63,13 @@ resource "aws_iam_role" "server_node" {
 }
 EOF
 }
-    
+
 resource "aws_iam_role_policy" "server_node" {
   name = "server_node"
   role = "${aws_iam_role.server_node.name}"
+
   policy = <<EOF
-  {
+{
   "Version": "2012-10-17",
   "Statement": [
     {
@@ -81,16 +83,16 @@ resource "aws_iam_role_policy" "server_node" {
   }
 EOF
 }
-    
+
 resource "aws_iam_instance_profile" "server_node" {
   name = "server_node"
   role = "${aws_iam_role.server_node.name}"
 }
 
-
 resource "aws_iam_role" "server_role" {
-  name = "kiam-server"
+  name        = "kiam-server"
   description = "Role the Kiam Server process assumes"
+
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -109,11 +111,11 @@ EOF
 }
 
 resource "aws_iam_policy" "server_policy" {
-  name = "kiam_server_policy"
+  name        = "kiam_server_policy"
   description = "Policy for the Kiam Server process"
-  
+
   policy = <<EOF
-  {
+{
   "Version": "2012-10-17",
   "Statement": [
     {
@@ -129,8 +131,8 @@ EOF
 }
 
 resource "aws_iam_policy_attachment" "server_policy_attach" {
-  name = "kiam-server-attachment"
-  roles = ["${aws_iam_role.server_role.name}"]
+  name       = "kiam-server-attachment"
+  roles      = ["${aws_iam_role.server_role.name}"]
   policy_arn = "${aws_iam_policy.server_policy.arn}"
 }
 ```
