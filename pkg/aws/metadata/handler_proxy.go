@@ -45,6 +45,10 @@ func (p *proxyHandler) Handle(ctx context.Context, w http.ResponseWriter, r *htt
 	if p.whitelistRouteRegexp.MatchString(r.URL.Path) {
 		writer := &teeWriter{w, http.StatusOK}
 		p.backingService.ServeHTTP(writer, r)
+
+		if writer.status == http.StatusOK {
+			success.WithLabelValues("proxy").Inc()
+		}
 		return writer.status, nil
 	}
 
