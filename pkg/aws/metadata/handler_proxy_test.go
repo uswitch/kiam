@@ -15,25 +15,26 @@ package metadata
 
 import (
 	"context"
-	"github.com/fortytw2/leaktest"
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/fortytw2/leaktest"
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-func performRequest(allowed, path string) (int, *httptest.ResponseRecorder) {
+func performRequest(allowed, path string, returnCode int) (int, *httptest.ResponseRecorder) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	var hits int
 	backingService := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits++
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(returnCode)
 	})
 	handler := newProxyHandler(backingService, regexp.MustCompile(allowed))
 	router := mux.NewRouter()
@@ -50,7 +51,7 @@ func performRequest(allowed, path string) (int, *httptest.ResponseRecorder) {
 func TestProxyDefaultBlacklistingRoot(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	hits, rr := performRequest("", "/")
+	hits, rr := performRequest("", "/", http.StatusOK)
 
 	if hits != 0 {
 		t.Error("unexpected reverse proxy hit")
@@ -83,7 +84,7 @@ func TestProxyFiltering(t *testing.T) {
 
 	requestsInitial := readPrometheusCounterValue("kiam_metadata_responses_total", "handler", "proxy")
 	blockedInitial := readPrometheusSimpleCounterValue("kiam_metadata_proxy_requests_blocked_total")
-	hits, rr := performRequest("foo.*", "/bar")
+	hits, rr := performRequest("foo.*", "/bar", http.StatusOK)
 
 	if hits != 0 {
 		t.Error("unexpected reverse proxy hit")
@@ -108,7 +109,7 @@ func TestProxyFiltering(t *testing.T) {
 func TestProxyFilteringSubpath(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	hits, rr := performRequest("foo.*", "/bar/baz")
+	hits, rr := performRequest("foo.*", "/bar/baz", http.StatusOK)
 
 	if hits != 0 {
 		t.Error("unexpected reverse proxy hit")
@@ -124,12 +125,25 @@ func TestProxyFilteringSubpath(t *testing.T) {
 func TestProxyWhitelisting(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	hits, rr := performRequest("foo.*", "/foo")
+	hits, rr := performRequest("foo.*", "/foo", http.StatusOK)
 
 	if hits != 1 {
 		t.Error("expected reverse proxy hit")
 	}
 	if rr.Code != http.StatusOK {
+		t.Error("unexpected status", rr.Code)
+	}
+}
+
+func TestErrorReturned(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	hits, rr := performRequest("foo.*", "/foo", http.StatusForbidden)
+
+	if hits != 1 {
+		t.Error("expected reverse proxy hit")
+	}
+	if rr.Code != http.StatusForbidden {
 		t.Error("unexpected status", rr.Code)
 	}
 }
