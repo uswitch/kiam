@@ -77,7 +77,7 @@ resource "aws_iam_role_policy" "server_node" {
       "Action": [
         "sts:AssumeRole"
       ],
-      "Resource": "arn:aws:iam:123456789012:role/kiam-server"
+      "Resource": "${aws_iam_role.server_role.arn}"
     }
     ]
   }
@@ -101,7 +101,7 @@ resource "aws_iam_role" "server_role" {
       "Sid": "",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::123456789012:role/server_node"
+        "AWS": "${aws_iam_role.server_node.arn}"
       },
       "Action": "sts:AssumeRole"
     }
