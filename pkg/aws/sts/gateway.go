@@ -15,10 +15,13 @@ package sts
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,15 +36,38 @@ type DefaultSTSGateway struct {
 	session *session.Session
 }
 
-func DefaultGateway(assumeRoleArn string) *DefaultSTSGateway {
-	if assumeRoleArn == "" {
-		return &DefaultSTSGateway{session: session.Must(session.NewSession())}
-	} else {
-		session := session.Must(session.NewSession(&aws.Config{
-			Credentials: stscreds.NewCredentials(session.Must(session.NewSession()), assumeRoleArn),
-		}))
-		return &DefaultSTSGateway{session: session}
+func DefaultGateway(assumeRoleArn, region string) *DefaultSTSGateway {
+	config := aws.NewConfig()
+	if assumeRoleArn != "" {
+		config.WithCredentials(stscreds.NewCredentials(session.Must(session.NewSession()), assumeRoleArn))
 	}
+
+	if region != "" {
+		config.WithRegion(region).WithEndpointResolver(endpoints.ResolverFunc(endpointFor))
+	}
+
+	session := session.Must(session.NewSession(config))
+	return &DefaultSTSGateway{session: session}
+}
+
+func endpointFor(service, region string, opts ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+	var url string
+
+	_, exists := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), region)
+	defaultResolver := endpoints.DefaultResolver()
+
+	// if the region doesn't exist or it is a fips endpoint, fallback to the default resolver
+	if !exists || strings.HasSuffix(region, "-fips") {
+		return defaultResolver.EndpointFor(service, region, opts...)
+	}
+
+	if strings.HasPrefix(region, "cn-") {
+		url = fmt.Sprintf("https://sts.%s.amazonaws.com.cn", region)
+	} else {
+		url = fmt.Sprintf("https://sts.%s.amazonaws.com", region)
+	}
+
+	return endpoints.ResolvedEndpoint{URL: url, SigningRegion: region}, nil
 }
 
 func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {

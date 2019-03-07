@@ -18,6 +18,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	log "github.com/sirupsen/logrus"
@@ -29,15 +33,12 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"io/ioutil"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
-	"net"
-	"time"
 )
 
 // Config controls the setup of the gRPC server
@@ -54,6 +55,7 @@ type Config struct {
 	ParallelFetcherProcesses int
 	PrefetchBufferSize       int
 	AssumeRoleArn            string
+	Region                   string
 }
 
 // TLSConfig controls TLS
@@ -231,7 +233,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	server.namespaces = k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 	server.eventRecorder = eventRecorder(client)
 
-	stsGateway := sts.DefaultGateway(config.AssumeRoleArn)
+	stsGateway := sts.DefaultGateway(config.AssumeRoleArn, config.Region)
 	arnResolver, err := newRoleARNResolver(config)
 	if err != nil {
 		return nil, err
