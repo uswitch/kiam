@@ -26,6 +26,7 @@ We have a [#kiam Slack channel](https://kubernetes.slack.com/messages/CBQLKVABH/
 * [Prometheus and StatsD metrics](docs/METRICS.md)
 * Uses the Kubernetes Events API to record IAM errors against the Pod so that cluster users can more readily diagnose IAM problems (via `kubectl describe pod ...`)
 * Text and JSON log formats
+* Optional regional STS endpoint support
 
 ## Overview
 From the [AWS documentation on IAM roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html):
