@@ -233,7 +233,11 @@ func NewServer(config *Config) (*KiamServer, error) {
 	server.namespaces = k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 	server.eventRecorder = eventRecorder(client)
 
-	stsGateway := sts.DefaultGateway(config.AssumeRoleArn, config.Region)
+	stsGateway, err := sts.DefaultGateway(config.AssumeRoleArn, config.Region)
+	if err != nil {
+		return nil, err
+	}
+
 	arnResolver, err := newRoleARNResolver(config)
 	if err != nil {
 		return nil, err

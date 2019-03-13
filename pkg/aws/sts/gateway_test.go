@@ -20,7 +20,10 @@ import (
 )
 
 func TestRegionalGateway(t *testing.T) {
-	gateway := DefaultGateway("", "us-west-2")
+	gateway, err := DefaultGateway("", "us-west-2")
+	if err != nil {
+		t.Error(err)
+	}
 
 	config := gateway.session.ClientConfig(sts.EndpointsID)
 
@@ -34,7 +37,10 @@ func TestRegionalGateway(t *testing.T) {
 }
 
 func TestRegionalGatewayCn(t *testing.T) {
-	gateway := DefaultGateway("", "cn-north-1")
+	gateway, err := DefaultGateway("", "cn-north-1")
+	if err != nil {
+		t.Error(err)
+	}
 
 	config := gateway.session.ClientConfig(sts.EndpointsID)
 
@@ -48,7 +54,10 @@ func TestRegionalGatewayCn(t *testing.T) {
 }
 
 func TestRegionalGatewayFips(t *testing.T) {
-	gateway := DefaultGateway("", "us-east-1-fips")
+	gateway, err := DefaultGateway("", "us-east-1-fips")
+	if err != nil {
+		t.Error(err)
+	}
 
 	config := gateway.session.ClientConfig(sts.EndpointsID)
 
@@ -57,6 +66,23 @@ func TestRegionalGatewayFips(t *testing.T) {
 	}
 
 	if config.Endpoint != "https://sts-fips.us-east-1.amazonaws.com" {
+		t.Error("Unexpected regional endpoint. Endpoint was: ", config.Endpoint)
+	}
+}
+
+func TestDefaultGlobalGateway(t *testing.T) {
+	gateway, err := DefaultGateway("", "")
+	if err != nil {
+		t.Error(err)
+	}
+
+	config := gateway.session.ClientConfig(sts.EndpointsID)
+
+	if config.SigningRegion != "us-east-1" {
+		t.Error("Unexpected region. Region was: ", config.SigningRegion)
+	}
+
+	if config.Endpoint != "https://sts.amazonaws.com" {
 		t.Error("Unexpected regional endpoint. Endpoint was: ", config.Endpoint)
 	}
 }

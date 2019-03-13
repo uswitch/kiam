@@ -16,6 +16,7 @@ package sts
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -32,42 +33,70 @@ type STSGateway interface {
 	Issue(ctx context.Context, role, session string, expiry time.Duration) (*Credentials, error)
 }
 
-type DefaultSTSGateway struct {
-	session *session.Session
+type regionalResolver struct {
+	endpoint endpoints.ResolvedEndpoint
 }
 
-func DefaultGateway(assumeRoleArn, region string) *DefaultSTSGateway {
+func (r *regionalResolver) EndpointFor(svc, region string, opts ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+	return r.endpoint, nil
+}
+
+func newRegionalResolver(region string) (endpoints.Resolver, error) {
+	var host string
+
+	defaultResolver := endpoints.DefaultResolver()
+
+	// if it is a FIPS region, let the default resolver give us a result.
+	if strings.HasSuffix(region, "-fips") {
+		endpoint, err := defaultResolver.EndpointFor("sts", region)
+		if err != nil {
+			return nil, err
+		}
+		return &regionalResolver{endpoint}, nil
+	}
+
+	if _, exists := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), region); !exists {
+		return nil, fmt.Errorf("Invalid region: %s", region)
+	}
+
+	if strings.HasPrefix(region, "cn-") {
+		host = fmt.Sprintf("sts.%s.amazonaws.com.cn", region)
+	} else {
+		host = fmt.Sprintf("sts.%s.amazonaws.com", region)
+	}
+
+	if _, err := net.LookupHost(host); err != nil {
+		return nil, fmt.Errorf("Regional STS endpoint does not exist: %s", host)
+	}
+
+	return &regionalResolver{endpoints.ResolvedEndpoint{
+		URL:           fmt.Sprintf("https://%s", host),
+		SigningRegion: region,
+	}}, nil
+}
+
+type DefaultSTSGateway struct {
+	session  *session.Session
+	resolver endpoints.Resolver
+}
+
+func DefaultGateway(assumeRoleArn, region string) (*DefaultSTSGateway, error) {
 	config := aws.NewConfig()
 	if assumeRoleArn != "" {
 		config.WithCredentials(stscreds.NewCredentials(session.Must(session.NewSession()), assumeRoleArn))
 	}
 
 	if region != "" {
-		config.WithRegion(region).WithEndpointResolver(endpoints.ResolverFunc(endpointFor))
+		resolver, err := newRegionalResolver(region)
+		if err != nil {
+			return nil, err
+		}
+
+		config.WithRegion(region).WithEndpointResolver(resolver)
 	}
 
 	session := session.Must(session.NewSession(config))
-	return &DefaultSTSGateway{session: session}
-}
-
-func endpointFor(service, region string, opts ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
-	var url string
-
-	_, exists := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), region)
-	defaultResolver := endpoints.DefaultResolver()
-
-	// if the region doesn't exist or it is a fips endpoint, fallback to the default resolver
-	if !exists || strings.HasSuffix(region, "-fips") {
-		return defaultResolver.EndpointFor(service, region, opts...)
-	}
-
-	if strings.HasPrefix(region, "cn-") {
-		url = fmt.Sprintf("https://sts.%s.amazonaws.com.cn", region)
-	} else {
-		url = fmt.Sprintf("https://sts.%s.amazonaws.com", region)
-	}
-
-	return endpoints.ResolvedEndpoint{URL: url, SigningRegion: region}, nil
+	return &DefaultSTSGateway{session: session}, nil
 }
 
 func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
