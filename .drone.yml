@@ -36,3 +36,16 @@ pipeline:
     secrets: [ docker_username, docker_password ]
     tags:
       - ${DRONE_TAG}
+
+  helm:
+    when:
+      event: push
+      branch: master
+    image: registry.usw.co/drone/helm-s3
+    secrets: [ aws_access_key_id, aws_secret_access_key ]
+    environment:
+      - AWS_REGION=eu-west-1
+    commands:
+      - helm repo add kiam-helm s3://kiam-helm/charts
+      - helm package helm/kiam
+      - helm s3 push *.tgz --ignore-if-exists kiam-helm
