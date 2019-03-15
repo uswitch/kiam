@@ -1,9 +1,21 @@
 # Changelog
 
+## v3.2
+15 March 2019
+
+Notable changes:
+
+* [#229](https://github.com/uswitch/kiam/pull/229) Support for Regional STS endpoint, this adds a new optional flag `--region` to the server.
+
+A huge thanks to the following contributors for this release:
+
+* [@cjbradfield](https://github.com/cjbradfield)
+* [@gwhorleyGH](https://github.com/gwhorleyGH)
+
 ## v3.0
 6 December 2018
 
-v3 introduces a change to the gRPC API. Servers are compatible with v2.x Agents although **v3 Agents require v3 Servers**. Other breaking changes have been made so it's worth reading through [docs/UPGRADING.md](docs/UPGRADING.md) for more detail on moving from v2 to v3. 
+v3 introduces a change to the gRPC API. Servers are compatible with v2.x Agents although **v3 Agents require v3 Servers**. Other breaking changes have been made so it's worth reading through [docs/UPGRADING.md](docs/UPGRADING.md) for more detail on moving from v2 to v3.
 
 Notable changes:
 
@@ -43,7 +55,7 @@ Notable changes:
 * [#62](https://github.com/uswitch/kiam/pull/62) Documented interfaces to specify when using Kiam with amazon-vpc-cni.
 * [#76](https://github.com/uswitch/kiam/pull/76) Wait for balancer to have addresses in Gateway. This helps prevent the following errors being reported by the health check command:
 ```
-WARN[0000] error checking health: rpc error: code = Unavailable desc = there is no address available 
+WARN[0000] error checking health: rpc error: code = Unavailable desc = there is no address available
 ```
 
 Thanks to the following people for contributing in this release:
@@ -58,7 +70,7 @@ Notable changes:
 
 * Fix [Issue 43](https://github.com/uswitch/kiam/issues/43): updates to metadata api paths on m5/c5 instances
 * [#41](https://github.com/uswitch/kiam/pull/41): Server allows for custom STS session durations with `--session-duration`
-* Server uses `cache.NewIndexerInformer` to maintain pod and namespace caches, this also addresses an error identified in [Issue 46](https://github.com/uswitch/kiam/issues/46). 
+* Server uses `cache.NewIndexerInformer` to maintain pod and namespace caches, this also addresses an error identified in [Issue 46](https://github.com/uswitch/kiam/issues/46).
 * [#54](https://github.com/uswitch/kiam/pull/54) Agents can use a `!` prefix on interfaces when configuring iptables rules. This makes it possible to use Kiam with Amazon and Lyft's CNI plugins.
 * Servers will wait for the pod and namespache caches to perform a sync with the Kubernetes API server before accepting gRPC connections. This may cause servers to take longer to start but ensures they have recent state before performing any operations.
 
