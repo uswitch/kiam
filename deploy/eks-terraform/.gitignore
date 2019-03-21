@@ -1,0 +1,19 @@
+### Terraform ##
+
+# Compiled files
+*.tfstate
+*.tfstate.*
+
+# Module directory
+.terraform/
+terraform.d
+
+# vim swap files
+*.swp
+
+# kiam ssl stuff
+*.pem
+*.csr
+
+# rendered manifests
+/manifests_rendered/*.yaml

@@ -1,0 +1,83 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  namespace: kiam
+  name: kiam-agent
+  labels:
+    app.kubernetes.io/name: kiam
+    app.kubernetes.io/version: "3.0"
+    app.kubernetes.io/component: agent
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9620"
+      labels:
+        app.kubernetes.io/name: kiam
+        app.kubernetes.io/version: "3.0"
+        app.kubernetes.io/component: agent
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+# since we use a taint for the server, we dont use a nodeselector for the DS, just install on ALL nodes possible
+#      nodeSelector:
+#        kiam: agent
+      volumes:
+        - name: ssl-certs
+          hostPath:
+            # for AWS linux or RHEL distros
+            #path: /etc/pki/ca-trust/extracted/pem/
+            path: /usr/share/ca-certificates
+        - name: tls
+          secret:
+            secretName: kiam-agent-tls
+        - name: xtables
+          hostPath:
+            path: /run/xtables.lock
+            type: FileOrCreate
+      containers:
+        - name: kiam
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN"]
+          image: quay.io/uswitch/kiam:v3.0 # USE A TAGGED RELEASE IN PRODUCTION
+          imagePullPolicy: Always
+          command:
+            - /kiam
+          args:
+            - agent
+            - --iptables
+            - --host-interface=!eth0
+            - --host=$(HOST_IP)
+            - --json-log
+            - --port=8181
+            - --cert=/etc/kiam/tls/agent.pem
+            - --key=/etc/kiam/tls/agent-key.pem
+            - --ca=/etc/kiam/tls/ca.pem
+            - --server-address=kiam-server:443
+            - --prometheus-listen-addr=0.0.0.0:9620
+            - --prometheus-sync-interval=5s
+            - --gateway-timeout-creation=3s
+          env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          volumeMounts:
+            - mountPath: /etc/ssl/certs
+              name: ssl-certs
+            - mountPath: /etc/kiam/tls
+              name: tls
+            - mountPath: /var/run/xtables.lock
+              name: xtables
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8181
+            initialDelaySeconds: 3
+            periodSeconds: 3

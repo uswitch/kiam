@@ -1,0 +1,21 @@
+{
+    "hosts": [
+        "kiam-server",
+        "kiam-server:443",
+        "127.0.0.1"
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C":  "DE",
+            "L":  "City",
+            "O":  "Org",
+            "OU": "Unit",
+            "ST": "State"
+        }
+    ]
+}
+
