@@ -1,6 +1,7 @@
+# For multiple clusters, just provide different <clustername>.tfvars
 EKS_CLUSTER=test
-ASSUMED_ROLE=$(shell cat test.tfvars | grep assumed_role | cut -d\" -f2)
-REGION=$(shell cat test.tfvars | grep region | cut -d\" -f2)
+ASSUMED_ROLE=$(shell cat $(EKS_CLUSTER).tfvars | grep assumed_role | cut -d\" -f2)
+REGION=$(shell cat $(EKS_CLUSTER).tfvars | grep region | cut -d\" -f2)
 CREDFILE=.assumerolecreds
 KUBECONFIG=kubeconfig-$(EKS_CLUSTER)
 MANIFESTS_FOLDER=manifests_rendered
@@ -52,7 +53,7 @@ bootstrap: access aws-auth kiam-ssl-setup kiam
 .PHONY: aws-auth
 	  $(KUBECTL) apply -f $(MANIFESTS_FOLDER)/aws-auth.yaml
 
-# create kubernetes secrets for the connection between kiam-agent and *-server from generated files.
+# Create kubernetes secrets for the connection between kiam-agent and *-server from generated files.
 # This is required for kiam to work.
 .PHONY: kiam-ssl-setup
 kiam-ssl-setup:
@@ -81,3 +82,6 @@ test-kiam:
 .PHONY: log-kiam
 log-kiam:
 	$(KUBECTL) logs -f -n kiam $$($(KUBECTL) get pods -n kiam | grep kiam-server | grep Running | cut -d' ' -f1 | head -n1)
+
+.PHONY: fulldeploy
+fulldeploy: tf-apply bootstrap test-kiam log-kiam
