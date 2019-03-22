@@ -51,6 +51,7 @@ access:
 bootstrap: access aws-auth kiam-ssl-setup kiam
 
 .PHONY: aws-auth
+aws-auth:
 	  $(KUBECTL) apply -f $(MANIFESTS_FOLDER)/aws-auth.yaml
 
 # Create kubernetes secrets for the connection between kiam-agent and *-server from generated files.
