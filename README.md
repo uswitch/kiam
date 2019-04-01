@@ -6,7 +6,7 @@ kiam runs as an agent on each node in your Kubernetes cluster and allows cluster
 
 Docker images are available at [https://quay.io/repository/uswitch/kiam](https://quay.io/repository/uswitch/kiam).
 
-@jbeda recorded an excellent TGIK video covering IAM configuration and Kiam installation:
+[@jbeda](https://github.com/jbeda) recorded an excellent TGIK video covering IAM configuration and Kiam installation:
 
 * [TGI Kubernetes 070: Assuming AWS roles with kube2iam/kiam](https://www.youtube.com/watch?v=vgs3Af_ew3c)
 
