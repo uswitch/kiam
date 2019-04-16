@@ -31,9 +31,10 @@ type agentCommand struct {
 	clientOptions
 	*http.ServerOptions
 
-	iptables      bool
-	hostIP        string
-	hostInterface string
+	iptables       bool
+	iptablesRemove bool
+	hostIP         string
+	hostInterface  string
 }
 
 func (cmd *agentCommand) Bind(parser parser) {
@@ -49,6 +50,7 @@ func (cmd *agentCommand) Bind(parser parser) {
 	parser.Flag("whitelist-route-regexp", "Proxy routes matching this regular expression").Default("^$").RegexpVar(&cmd.WhitelistRouteRegexp)
 
 	parser.Flag("iptables", "Add IPTables rules").Default("false").BoolVar(&cmd.iptables)
+	parser.Flag("iptables-remove", "Remove iptables rules at shutdown").Default("true").BoolVar(&cmd.iptablesRemove)
 	parser.Flag("host", "Host IP address.").Envar("HOST_IP").Required().StringVar(&cmd.hostIP)
 	parser.Flag("host-interface", "Network interface for pods to configure IPTables.").Default("docker0").StringVar(&cmd.hostInterface)
 }
@@ -63,7 +65,9 @@ func (opts *agentCommand) Run() {
 		if err != nil {
 			log.Fatal("error configuring iptables:", err.Error())
 		}
-		defer rules.Remove()
+		if opts.iptablesRemove {
+			defer rules.Remove()
+		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
