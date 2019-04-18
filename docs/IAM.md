@@ -79,8 +79,8 @@ resource "aws_iam_role_policy" "server_node" {
       ],
       "Resource": "${aws_iam_role.server_role.arn}"
     }
-    ]
-  }
+  ]
+}
 EOF
 }
 
