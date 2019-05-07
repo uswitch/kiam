@@ -15,5 +15,5 @@ const (
 
 // NewListWatch creates a ListWatch for the specified Resource
 func NewListWatch(client *kubernetes.Clientset, resource string) *cache.ListWatch {
-	return cache.NewListWatchFromClient(client.Core().RESTClient(), resource, "", fields.Everything())
+	return cache.NewListWatchFromClient(client.Core().RESTClient(), resource, "", fields.OneTermEqualSelector("status.phase", "Running"))
 }
