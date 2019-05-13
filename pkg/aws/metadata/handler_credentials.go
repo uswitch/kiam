@@ -78,8 +78,10 @@ func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requested
 		creds, err := c.client.GetCredentials(ctx, ip, requestedRole)
 		if err != nil {
 			if grpcStatus, ok := status.FromError(err); ok {
-				if grpcStatus.Message() == server.ErrPolicyForbidden.Error() || grpcStatus.Message() == server.ErrPolicyForbidden.Error() {
-					return backoff.Permanent(err)
+				if grpcStatus.Message() == server.ErrPolicyForbidden.Error() {
+					return backoff.Permanent(server.ErrPolicyForbidden)
+				} else if grpcStatus.Message() == server.ErrPodNotFound.Error() {
+					return backoff.Permanent(server.ErrPodNotFound)
 				}
 			}
 
