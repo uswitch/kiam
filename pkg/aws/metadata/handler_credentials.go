@@ -81,8 +81,6 @@ func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requested
 				switch grpcStatus.Message() {
 				case server.ErrPolicyForbidden.Error():
 					return backoff.Permanent(server.ErrPolicyForbidden)
-				case server.ErrPodNotFound.Error():
-					return backoff.Permanent(server.ErrPodNotFound)
 				}
 			}
 
