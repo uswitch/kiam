@@ -31,6 +31,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
+
+	status "google.golang.org/grpc/status"
 )
 
 // Client is the Server's client interface
@@ -123,6 +125,15 @@ func (g *KiamGateway) GetCredentials(ctx context.Context, ip, role string) (*sts
 	}
 	credentials, err := g.client.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: ip, Role: role})
 	if err != nil {
+		if grpcStatus, ok := status.FromError(err); ok {
+			switch grpcStatus.Message() {
+			case ErrPolicyForbidden.Error():
+				return nil, ErrPolicyForbidden
+			case ErrPodNotFound.Error():
+				return nil, ErrPodNotFound
+			}
+		}
+
 		return nil, err
 	}
 	return &sts.Credentials{

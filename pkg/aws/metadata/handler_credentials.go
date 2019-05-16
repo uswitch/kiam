@@ -24,8 +24,6 @@ import (
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/uswitch/kiam/pkg/statsd"
 	"net/http"
-
-	status "google.golang.org/grpc/status"
 )
 
 type credentialsHandler struct {
@@ -77,13 +75,9 @@ func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requested
 	op := func() error {
 		creds, err := c.client.GetCredentials(ctx, ip, requestedRole)
 		if err != nil {
-			if grpcStatus, ok := status.FromError(err); ok {
-				switch grpcStatus.Message() {
-				case server.ErrPolicyForbidden.Error():
-					return backoff.Permanent(server.ErrPolicyForbidden)
-				}
+			if err == server.ErrPolicyForbidden {
+				return backoff.Permanent(err)
 			}
-
 			return err
 		}
 		credsCh <- creds
