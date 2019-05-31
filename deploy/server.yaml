@@ -17,6 +17,11 @@ spec:
       serviceAccountName: kiam-server
       nodeSelector:
         kubernetes.io/role: master
+      # kops master nodes requires this tolerations
+      # tolerations:
+      # - key: "node-role.kubernetes.io/master"
+      #   effect: "NoSchedule"
+      #   operator: "Exists"        
       volumes:
         - name: ssl-certs
           hostPath:
