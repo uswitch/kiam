@@ -22,6 +22,8 @@ spec:
           hostPath:
             # for AWS linux or RHEL distros
             # path: /etc/pki/ca-trust/extracted/pem/
+            # debian or ubuntu distros
+            # path: /etc/ssl/certs
             path: /usr/share/ca-certificates
         - name: tls
           secret:
