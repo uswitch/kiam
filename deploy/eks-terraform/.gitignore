@@ -20,3 +20,5 @@ terraform.d
 
 # aws creds
 .assumerolecreds
+# kubeconfig
+kubeconfig-*
