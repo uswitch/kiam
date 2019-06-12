@@ -3,7 +3,7 @@
 #
 resource "aws_iam_role" "kiam_intermediary" {
   name        = "eks-${var.cluster_name}-kiam-intermediary"
-  description = "Role the Kiam server process assumes. If you want to use Kiam to assume any role R, THIS is the role that R must trust."
+  description = "Role the Kiam server process assumes. Any role that you Kiam to assume must trust THIS role."
 
   assume_role_policy = <<EOF
 {

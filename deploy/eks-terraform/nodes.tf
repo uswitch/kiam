@@ -120,7 +120,7 @@ data "aws_ami" "eks" {
 
   filter {
     name   = "name"
-    values = ["amazon-eks-node-1.11-*"]
+    values = ["amazon-eks-node-${var.cluster_version}-*"]
   }
 
   owners = ["602401143452"]
@@ -130,7 +130,7 @@ resource "aws_launch_configuration" "eks_node" {
   associate_public_ip_address = false
   iam_instance_profile        = "${aws_iam_instance_profile.eks_node.name}"
   image_id                    = "${data.aws_ami.eks.id}"
-  instance_type               = "m4.large"
+  instance_type               = "t3.small"
   name_prefix                 = "eks-${var.cluster_name}-worker-nodes-"
   security_groups             = ["${concat(list(aws_security_group.eks_nodes.id), var.extra_security_groups)}"]
   user_data_base64            = "${base64encode(local.eks_node_userdata)}"
@@ -142,10 +142,10 @@ resource "aws_launch_configuration" "eks_node" {
 }
 
 resource "aws_autoscaling_group" "eks_nodes" {
-  desired_capacity          = "3"
+  desired_capacity          = "2"
   launch_configuration      = "${aws_launch_configuration.eks_node.id}"
-  max_size                  = "3"
-  min_size                  = "3"
+  max_size                  = "2"
+  min_size                  = "2"
   wait_for_capacity_timeout = 0
 
   name                = "eks-${var.cluster_name}-nodes"
