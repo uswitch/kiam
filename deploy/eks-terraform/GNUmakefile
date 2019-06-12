@@ -1,34 +1,41 @@
 # For multiple clusters, just provide different <clustername>.tfvars
 EKS_CLUSTER=test
+
+# Extract some info from the given <clustername>.tfvars
 ASSUMED_ROLE=$(shell cat $(EKS_CLUSTER).tfvars | grep assumed_role | cut -d\" -f2)
 REGION=$(shell cat $(EKS_CLUSTER).tfvars | grep region | cut -d\" -f2)
+
+# Some static stuff
 CREDFILE=.assumerolecreds
 KUBECONFIG=kubeconfig-$(EKS_CLUSTER)
 MANIFESTS_FOLDER=manifests_rendered
 KUBECTL_CONTEXT=$(EKS_CLUSTER)
 
+# Commands
 # kubectl command with common parameters
 KUBECTL=kubectl --kubeconfig=$(KUBECONFIG) --context=$(KUBECTL_CONTEXT)
+# If you have both terraform 0.11.x and 0.12.x installed, you can use this to easily swap versions
+TERRAFORM=TF_IN_AUTOMATION=1 terraform-11
 
 .PHONY: check-terraform-format
 check-terraform-format:
-	terraform fmt -check
+	$(TERRAFORM) fmt -check
 
 .PHONY: tf-init
 tf-init: check-terraform-format
-	terraform init -reconfigure
+	$(TERRAFORM) init -reconfigure
 
 .PHONY: tf-plan
 tf-plan: tf-init
-	terraform plan -var-file=$(EKS_CLUSTER).tfvars
+	$(TERRAFORM) plan -var-file=$(EKS_CLUSTER).tfvars
 
 .PHONY: tf-apply
 tf-apply: tf-init
-	terraform apply -auto-approve -var-file=$(EKS_CLUSTER).tfvars
+	$(TERRAFORM) apply -auto-approve -var-file=$(EKS_CLUSTER).tfvars
 
 .PHONY: tf-refresh
 tf-refresh: tf-init
-	terraform refresh -var-file=$(EKS_CLUSTER).tfvars > /dev/null
+	$(TERRAFORM) refresh -var-file=$(EKS_CLUSTER).tfvars > /dev/null
 
 .PHONY: tf-clean
 tf-clean:
@@ -38,7 +45,7 @@ tf-clean:
 
 .PHONY: tf-destroy
 tf-destroy: tf-init
-	terraform destroy -var-file=$(EKS_CLUSTER).tfvars
+	$(TERRAFORM) destroy -var-file=$(EKS_CLUSTER).tfvars
 
 # Gain access to the EKS cluster by updating the kubeconfig
 .PHONY: access

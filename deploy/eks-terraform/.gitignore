@@ -17,3 +17,6 @@ terraform.d
 
 # rendered manifests
 /manifests_rendered/*.yaml
+
+# aws creds
+.assumerolecreds
