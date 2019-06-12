@@ -3,7 +3,7 @@ EKS_CLUSTER=test
 
 # Extract some info from the given <clustername>.tfvars
 ASSUMED_ROLE=$(shell cat $(EKS_CLUSTER).tfvars | grep assumed_role | cut -d\" -f2)
-REGION=$(shell cat $(EKS_CLUSTER).tfvars | grep region | cut -d\" -f2)
+REGION=$(shell cat $(EKS_CLUSTER).tfvars | grep "region =" | cut -d\" -f2)
 
 # Some static stuff
 CREDFILE=.assumerolecreds
@@ -15,7 +15,7 @@ KUBECTL_CONTEXT=$(EKS_CLUSTER)
 # kubectl command with common parameters
 KUBECTL=kubectl --kubeconfig=$(KUBECONFIG) --context=$(KUBECTL_CONTEXT)
 # If you have both terraform 0.11.x and 0.12.x installed, you can use this to easily swap versions
-TERRAFORM=TF_IN_AUTOMATION=1 terraform-11
+TERRAFORM=TF_IN_AUTOMATION=1 terraform
 
 .PHONY: check-terraform-format
 check-terraform-format:
@@ -45,6 +45,7 @@ tf-clean:
 
 .PHONY: tf-destroy
 tf-destroy: tf-init
+	# Append -auto-approve to delete without manual confirmation
 	$(TERRAFORM) destroy -var-file=$(EKS_CLUSTER).tfvars
 
 # Gain access to the EKS cluster by updating the kubeconfig
@@ -73,8 +74,8 @@ kiam-ssl-setup:
 	$(KUBECTL) create secret generic kiam-agent-tls -n kiam --from-file=ca.pem --from-file=agent.pem --from-file=agent-key.pem --dry-run -o yaml | $(KUBECTL) apply -f -
 
 # Deploy kiam
-# First clusterroles and stuff, then server, then agent
-# Note that the namespace is already applied in kiam-ssl-setup
+# First clusterroles and stuff, then server, then agent.
+# Note that the namespace is already applied in kiam-ssl-setup.
 .PHONY: kiam
 kiam:
 	$(KUBECTL) apply -f $(MANIFESTS_FOLDER)/kiam-base.yaml
@@ -86,10 +87,15 @@ kiam:
 .PHONY: test-kiam
 test-kiam:
 	$(KUBECTL) apply -f $(MANIFESTS_FOLDER)/kiam-test.yaml
-
-.PHONY: log-kiam
-log-kiam:
-	$(KUBECTL) logs -f -n kiam $$($(KUBECTL) get pods -n kiam | grep kiam-server | grep Running | cut -d' ' -f1 | head -n1)
+	sleep 10
+	# We check if the last line of the log of a kiam pod contains "fetched credentials".
+	# grep returns 1 if it does not find the line, causing GNU make to stop.
+	# This only tests whether kiam can assume roles. It does not test the communication between kiam server and agent.
+	$(KUBECTL) logs -n kiam $$($(KUBECTL) get pods -n kiam | grep kiam-server | grep Running | cut -d' ' -f1 | head -n1) --tail=1 | grep "fetched credentials"
+	@echo "Test successful"
 
 .PHONY: fulldeploy
-fulldeploy: tf-apply bootstrap test-kiam log-kiam
+fulldeploy: tf-apply bootstrap
+
+.PHONY: test
+test: fulldeploy test-kiam tf-destroy
