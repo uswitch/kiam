@@ -1,12 +1,12 @@
 terraform {
-  required_version = "~> 0.11.13"
+  required_version = "~> 0.11.14"
 }
 
 provider "aws" {
   profile = "${var.profile}"
   region  = "${var.region}"
 
-  version = "~> 2.2.0"
+  version = "~> 2.14.0"
 
   assume_role {
     role_arn = "${var.assumed_role}"
