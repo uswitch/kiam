@@ -81,7 +81,7 @@ type DefaultSTSGateway struct {
 }
 
 func DefaultGateway(assumeRoleArn, region string) (*DefaultSTSGateway, error) {
-	config := aws.NewConfig()
+        config := aws.NewConfig().WithCredentialsChainVerboseErrors(true)
 	if assumeRoleArn != "" {
 		config.WithCredentials(stscreds.NewCredentials(session.Must(session.NewSession()), assumeRoleArn))
 	}
