@@ -103,3 +103,29 @@ func TestReturnsCredentialsWithRetryAfterError(t *testing.T) {
 		t.Error("unexpected status", rr.Code)
 	}
 }
+
+func TestForbiddenRole(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	defer leaktest.Check(t)()
+
+	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/role", nil)
+	rr := httptest.NewRecorder()
+
+	valid := st.GetCredentialsResult{&sts.Credentials{}, nil}
+	e := st.GetCredentialsResult{nil, server.ErrPolicyForbidden}
+	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(e, valid)
+	handler := newCredentialsHandler(client, getBlankClientIP)
+	router := mux.NewRouter()
+	handler.Install(router)
+
+	router.ServeHTTP(rr, r.WithContext(ctx))
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Error("unexpected status", rr.Code)
+	}
+
+	if !strings.Contains(rr.Body.String(), "forbidden by policy") {
+		t.Error("unexpected error", rr.Body.String())
+	}
+}

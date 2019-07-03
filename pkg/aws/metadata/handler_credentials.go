@@ -75,6 +75,9 @@ func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requested
 	op := func() error {
 		creds, err := c.client.GetCredentials(ctx, ip, requestedRole)
 		if err != nil {
+			if err == server.ErrPolicyForbidden {
+				return backoff.Permanent(err)
+			}
 			return err
 		}
 		credsCh <- creds
