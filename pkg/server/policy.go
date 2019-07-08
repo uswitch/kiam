@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"regexp"
 
+	glob "github.com/ryanuber/go-glob"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	pb "github.com/uswitch/kiam/proto"
@@ -156,19 +157,31 @@ func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Conte
 		return nil, err
 	}
 
+	// Regex version, if we have one use it
 	expression := ns.GetAnnotations()[k8s.AnnotationPermittedKey]
-	if expression == "" {
-		return &namespacePolicyForbidden{expression: "(empty)", role: role}, nil
+	if expression != "" {
+		re, err := regexp.Compile(expression)
+		if err != nil {
+			return nil, err
+		}
+
+		if re.MatchString(role) {
+			return &allowed{}, nil
+		}
 	}
 
-	re, err := regexp.Compile(expression)
-	if err != nil {
-		return nil, err
+	// If we have other listed patterns, let use them
+	for _, rolePattern := range k8s.GetNamespaceRoleAnnotation(ns, k8s.AnnotationAllowedRoles) {
+		if glob.Glob(rolePattern, role) {
+			return &allowed{}, nil
+		}
 	}
 
-	if !re.MatchString(role) {
-		return &namespacePolicyForbidden{expression: expression, role: role}, nil
-	}
-
-	return &allowed{}, nil
+	return &namespacePolicyForbidden{
+		expression: fmt.Sprintf("(%s=%s %s=%s)",
+			k8s.AnnotationPermittedKey, ns.GetAnnotations()[k8s.AnnotationPermittedKey],
+			k8s.AnnotationAllowedRoles, ns.GetAnnotations()[k8s.AnnotationAllowedRoles],
+		),
+		role: role,
+	}, nil
 }

@@ -31,8 +31,10 @@ func PodFields(pod *v1.Pod) logrus.Fields {
 }
 
 func namespaceFields(n *v1.Namespace) logrus.Fields {
+	a := n.GetAnnotations()
 	return logrus.Fields{
-		"namespace":           n.Name,
-		"namespace.permitted": n.GetAnnotations()[AnnotationPermittedKey],
+		"namespace":               n.Name,
+		"namespace.permitted":     a[AnnotationPermittedKey],
+		"namespace.allowed-roles": a[AnnotationAllowedRoles],
 	}
 }

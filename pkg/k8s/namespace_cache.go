@@ -15,6 +15,7 @@ package k8s
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -26,6 +27,8 @@ const (
 	// AnnotationPermittedKey hold the name of the annotation for the regex expressing the
 	// roles that can be assumed by pods in that namespace.
 	AnnotationPermittedKey = "iam.amazonaws.com/permitted"
+	// AnnotationAllowedRoles contains a list of globs used to restrict what roles pods in a namespace can assume
+	AnnotationAllowedRoles = "iam.amazonaws.com/allowed-roles"
 )
 
 // NamespaceCache implements NamespaceFinder interface used to determine which roles
@@ -111,4 +114,18 @@ func (o *namespaceLogger) OnUpdate(old, new interface{}) {
 	}
 
 	log.WithFields(namespaceFields(namespace)).Debugf("updated namespace")
+}
+
+// GetNamespaceRoleAnnotation reads the "iam.amazonaws.com/allowed-roles" annotation off a namespace
+// and splits them as a JSON list (["role1", "role2", "role3"])
+func GetNamespaceRoleAnnotation(ns *v1.Namespace, namespaceKey string) []string {
+	rolesString := ns.GetAnnotations()[namespaceKey]
+	if rolesString != "" {
+		var decoded []string
+		if err := json.Unmarshal([]byte(rolesString), &decoded); err != nil {
+			log.Errorf("Unable to decode roles on namespace %s ( role annotation is '%s' ) with error: %s", ns.Name, rolesString, err)
+		}
+		return decoded
+	}
+	return nil
 }
