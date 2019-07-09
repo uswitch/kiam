@@ -1,5 +1,4 @@
-FROM golang:1.13.8 as build
-ENV GO111MODULE=on
+FROM golang:1.15.7-buster as build
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -16,7 +15,13 @@ COPY Makefile Makefile
 
 RUN make bin/kiam-linux-amd64
 
-FROM alpine:3.11
-RUN apk --no-cache add iptables
-COPY --from=build /workspace/bin/kiam-linux-amd64 /kiam
-CMD []
+FROM alpine:3.13
+
+COPY --from=build /workspace/bin/kiam-linux-amd64 /usr/local/bin/kiam
+
+RUN apk --no-cache add \
+    ca-certificates \
+    iptables \
+    && update-ca-certificates
+
+ENTRYPOINT ["kiam"]
