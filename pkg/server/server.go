@@ -33,7 +33,6 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -233,15 +232,16 @@ func NewServer(config *Config) (*KiamServer, error) {
 	server.namespaces = k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 	server.eventRecorder = eventRecorder(client)
 
-	stsGateway, err := sts.DefaultGateway(config.AssumeRoleArn, config.Region)
-	if err != nil {
-		return nil, err
-	}
-
 	arnResolver, err := newRoleARNResolver(config)
 	if err != nil {
 		return nil, err
 	}
+
+	stsGateway, err := sts.DefaultGateway(arnResolver.Resolve(config.AssumeRoleArn), config.Region)
+	if err != nil {
+		return nil, err
+	}
+
 	credentialsCache := sts.DefaultCache(
 		stsGateway, config.SessionName,
 		config.SessionDuration,
