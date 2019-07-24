@@ -43,13 +43,13 @@ func TestPrefetchRunningPods(t *testing.T) {
 	manager := NewManager(cache, announcer)
 	go manager.Run(ctx, 1)
 
-	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))
+	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role", ""))
 	role := <-requestedRoles
 	if role != "role" {
 		t.Error("should have requested role")
 	}
 
-	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Failed", "failed_role"))
+	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Failed", "failed_role", ""))
 	select {
 	case role = <-requestedRoles:
 		t.Error("didn't expect to request role, but was requested", role)

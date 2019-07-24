@@ -1,4 +1,4 @@
-// Copyright 2017 uSwitch
+// Copyright 2017-2019 uSwitch
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ type CredentialsCache interface {
 	Expiring() chan *RoleCredentials
 }
 
-// ARNResolver encapsulates resolution of roles into ARNs.
+// ARNResolver encapsulates resolution of roles into ARNs and external IDs.
 type ARNResolver interface {
-	Resolve(role string) string
+	Resolve(role string) (string, string)
 }

@@ -19,7 +19,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -177,11 +177,32 @@ func (s *PodCache) Run(ctx context.Context) error {
 
 // PodRole returns the IAM role specified in the annotation for the Pod
 func PodRole(pod *v1.Pod) string {
-	return pod.ObjectMeta.Annotations[AnnotationIAMRoleKey]
+
+	role := pod.ObjectMeta.Annotations[AnnotationIAMRoleKey]
+
+	if role == "" {
+		return ""
+	}
+
+	externalID := PodExternalID(pod)
+
+	if externalID == "" {
+		return role
+	}
+
+	return role + "|" + externalID
+
+}
+
+// PodExternalID returns the IAM external ID specified in the annotation for the Pod
+func PodExternalID(pod *v1.Pod) string {
+	return pod.ObjectMeta.Annotations[AnnotationIAMExternalIDKey]
 }
 
 // AnnotationIAMRoleKey is the key for the annotation specifying the IAM Role
 const AnnotationIAMRoleKey = "iam.amazonaws.com/role"
+
+const AnnotationIAMExternalIDKey = "iam.amazonaws.com/external-id"
 
 type podHandler struct {
 	pods chan<- *v1.Pod

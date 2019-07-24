@@ -29,18 +29,29 @@ func DefaultResolver(prefix string) *Resolver {
 }
 
 // Resolve converts from a role string into the absolute role arn.
-func (r *Resolver) Resolve(role string) string {
+func (r *Resolver) Resolve(role string) (string, string) {
+
 	if role == "" {
-		return ""
+		return "", ""
 	}
+
+	components := strings.Split(role, "|")
+
+	externalID := ""
+
+	if len(components) > 1 {
+		externalID = components[1]
+	}
+
+	role = components[0]
 
 	if strings.HasPrefix(role, "/") {
 		role = strings.TrimPrefix(role, "/")
 	}
 
 	if strings.HasPrefix(role, "arn:") {
-		return role
+		return role, externalID
 	}
 
-	return fmt.Sprintf("%s%s", r.prefix, role)
+	return fmt.Sprintf("%s%s", r.prefix, role), externalID
 }

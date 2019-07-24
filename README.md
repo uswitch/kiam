@@ -48,6 +48,20 @@ metadata:
     iam.amazonaws.com/role: reportingdb-reader
 ```
 
+kiam also supports the use of an external id annotation added to the `Pod` which
+maybe used to avoid [confused deputy scenarios in cross-organisation role assumption][confused-deputy],
+for example:
+
+```yaml
+kind: Pod
+metadata:
+  name: foo
+  namespace: cross-org-iam-example
+  annotations:
+    iam.amazonaws.com/role: arn:aws:iam::12345678901:role/trusted-partner
+    iam.amazonaws.com/external-id: d272840b-2859-41aa-b022-f4527bfef672
+```
+
 Further, all namespaces must also have an annotation with a regular expression expressing which roles are permitted to be assumed within that namespace. **Without the namespace annotation the pod will be unable to assume any roles.**
 
 ```yaml
@@ -145,3 +159,5 @@ Other improvements/changes we made were (largely driven out of how we have our s
 
 1. Use structured logging to improve the integration into our ELK setup with pod names, roles, access key ids etc.
 1. Use metrics to track response times, cache hit rates etc.
+
+[confused-deputy]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html

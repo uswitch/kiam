@@ -1,4 +1,4 @@
-// Copyright 2017 uSwitch
+// Copyright (c) 2017-2019 uSwitch
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ type credentialsCache struct {
 
 type RoleCredentials struct {
 	Role        string
+	ExternalId  string
 	Credentials *Credentials
 }
 
@@ -122,8 +123,8 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	cacheMiss.Inc()
 
 	issue := func() (interface{}, error) {
-		arn := c.arnResolver.Resolve(role)
-		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, c.sessionDuration)
+		arn, externalID := c.arnResolver.Resolve(role)
+		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, externalID, c.sessionDuration)
 		if err != nil {
 			errorIssuing.Inc()
 			logger.Errorf("error requesting credentials: %s", err.Error())

@@ -3,6 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -11,8 +14,6 @@ import (
 	"github.com/uswitch/kiam/pkg/testutil"
 	pb "github.com/uswitch/kiam/proto"
 	kt "k8s.io/client-go/tools/cache/testing"
-	"testing"
-	"time"
 )
 
 const (
@@ -61,7 +62,7 @@ func TestReturnsPolicyErrorWhenForbidden(t *testing.T) {
 
 	source := kt.NewFakeControllerSource()
 	defer source.Shutdown()
-	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
+	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role", ""))
 
 	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
@@ -82,7 +83,8 @@ func TestReturnsCredentials(t *testing.T) {
 
 	source := kt.NewFakeControllerSource()
 	defer source.Shutdown()
-	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
+	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role", ""))
+	source.Add(testutil.NewPodWithRole("ns", "name2", "192.168.0.2", "Running", "running_role", "with_external_id"))
 
 	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
@@ -100,6 +102,19 @@ func TestReturnsCredentials(t *testing.T) {
 	if creds.AccessKeyId != "A1234" {
 		t.Error("unexpected access key", creds.AccessKeyId)
 	}
+	creds, err = server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.2"})
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
+
+	if creds == nil {
+		t.Fatal("credentials were nil")
+	}
+
+	if creds.AccessKeyId != "A1234" {
+		t.Error("unexpected access key", creds.AccessKeyId)
+	}
+
 }
 
 type stubCredentialsProvider struct {

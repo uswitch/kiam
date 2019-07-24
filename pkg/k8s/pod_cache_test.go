@@ -16,12 +16,13 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 	kt "k8s.io/client-go/tools/cache/testing"
-	"testing"
-	"time"
 )
 
 func init() {
@@ -38,8 +39,8 @@ func TestFindsRunningPod(t *testing.T) {
 
 	source := kt.NewFakeControllerSource()
 	c := NewPodCache(source, time.Second, bufferSize)
-	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role"))
-	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
+	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role", ""))
+	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role", ""))
 	c.Run(ctx)
 	defer source.Shutdown()
 
@@ -60,9 +61,9 @@ func TestFindRoleActive(t *testing.T) {
 
 	source := kt.NewFakeControllerSource()
 	c := NewPodCache(source, time.Second, bufferSize)
-	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role"))
-	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "running_role"))
-	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
+	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role", ""))
+	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "running_role", ""))
+	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role", ""))
 	c.Run(ctx)
 	defer source.Shutdown()
 
@@ -86,7 +87,7 @@ func BenchmarkFindPodsByIP(b *testing.B) {
 	source := kt.NewFakeControllerSource()
 	c := NewPodCache(source, time.Second, bufferSize)
 	for i := 0; i < 1000; i++ {
-		source.Add(testutil.NewPodWithRole("ns", fmt.Sprintf("name-%d", i), fmt.Sprintf("ip-%d", i), "Running", "foo_role"))
+		source.Add(testutil.NewPodWithRole("ns", fmt.Sprintf("name-%d", i), fmt.Sprintf("ip-%d", i), "Running", "foo_role", ""))
 	}
 	c.Run(ctx)
 
@@ -109,7 +110,7 @@ func BenchmarkIsActiveRole(b *testing.B) {
 	// pods per role increases: there are more slice operations as the number of cache hits increases.
 	for i := 0; i < 1000; i++ {
 		role := i % 100
-		source.Add(testutil.NewPodWithRole("ns", fmt.Sprintf("name-%d", i), fmt.Sprintf("ip-%d", i), "Running", fmt.Sprintf("role-%d", role)))
+		source.Add(testutil.NewPodWithRole("ns", fmt.Sprintf("name-%d", i), fmt.Sprintf("ip-%d", i), "Running", fmt.Sprintf("role-%d", role), ""))
 	}
 	c := NewPodCache(source, time.Second, bufferSize)
 	c.Run(ctx)
