@@ -1487,7 +1487,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "max(kube_daemonset_status_desired_number_scheduled{namespace=\"$namespace\",daemonset=\".*kiam-server\"}) without (instance, pod)",
+              "expr": "max(kube_daemonset_status_desired_number_scheduled{namespace=\"$namespace\",daemonset=~\".*kiam-server\"}) without (instance, pod)",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -1664,7 +1664,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "min(kube_daemonset_status_number_available{namespace=\"$namespace\",daemonset=\".*kiam-agent\"}) without (instance, pod)",
+              "expr": "min(kube_daemonset_status_number_available{namespace=\"$namespace\",daemonset=~\".*kiam-agent\"}) without (instance, pod)",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -1926,7 +1926,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "max(kube_daemonset_status_desired_number_scheduled{namespace=\"$namespace\",daemonset=\".*kiam-agent\"}) without (instance, pod)",
+              "expr": "max(kube_daemonset_status_desired_number_scheduled{namespace=\"$namespace\",daemonset=~\".*kiam-agent\"}) without (instance, pod)",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
