@@ -61,7 +61,7 @@ func buildHTTPServer(config *ServerOptions, client server.Client) (*http.Server,
 	router := mux.NewRouter()
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
 
-	h := newHealthHandler(config.MetadataEndpoint)
+	h := newHealthHandler(client, config.MetadataEndpoint)
 	h.Install(router)
 
 	r := newRoleHandler(client, buildClientIP(config))

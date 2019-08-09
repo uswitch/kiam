@@ -16,14 +16,17 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"github.com/cenkalti/backoff"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/uswitch/kiam/pkg/server"
 	"github.com/uswitch/kiam/pkg/statsd"
 	"io/ioutil"
 	"net/http"
 )
 
 type healthHandler struct {
+	client   server.Client
 	endpoint string
 }
 
@@ -38,13 +41,23 @@ func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *
 		defer statsd.Client.NewTiming().Send("handler.health")
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/latest/meta-data/instance-id", h.endpoint), nil)
+	deep := req.URL.Query().Get("deep")
+	if deep != "" {
+		health, err := findServerHealth(ctx, h.client)
+		if err != nil {
+			return http.StatusInternalServerError, err
+		} else if health != "ok" {
+			return http.StatusInternalServerError, fmt.Errorf("server health: %s", health)
+		}
+	}
+
+	metaReq, err := http.NewRequest("GET", fmt.Sprintf("%s/latest/meta-data/instance-id", h.endpoint), nil)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("couldn't create request: %s", err)
 	}
 
 	client := &http.Client{}
-	resp, err := client.Do(req.WithContext(ctx))
+	resp, err := client.Do(metaReq.WithContext(ctx))
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("couldn't read metadata response: %s", err)
 	}
@@ -59,8 +72,32 @@ func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *
 	return http.StatusOK, nil
 }
 
-func newHealthHandler(endpoint string) *healthHandler {
+func findServerHealth(ctx context.Context, client server.Client) (string, error) {
+
+	healthCh := make(chan string, 1)
+	op := func() error {
+		health, err := client.Health(ctx)
+		if err != nil {
+			return err
+		}
+		healthCh <- health
+		return nil
+	}
+
+	strategy := backoff.NewExponentialBackOff()
+	strategy.InitialInterval = retryInterval
+
+	err := backoff.Retry(op, backoff.WithContext(strategy, ctx))
+	if err != nil {
+		return "", err
+	}
+
+	return <-healthCh, nil
+}
+
+func newHealthHandler(client server.Client, endpoint string) *healthHandler {
 	return &healthHandler{
+		client:   client,
 		endpoint: endpoint,
 	}
 }

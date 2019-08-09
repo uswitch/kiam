@@ -11,6 +11,7 @@ type StubClient struct {
 	credentialsCallCount int
 	roles                []GetRoleResult
 	rolesCallCount       int
+	health               string
 }
 
 // GetRoleResult is a return value from GetRole
@@ -42,11 +43,16 @@ func (c *StubClient) GetCredentials(ctx context.Context, ip, role string) (*sts.
 }
 
 func (c *StubClient) Health(ctx context.Context) (string, error) {
-	return "ok", nil
+	return c.health, nil
 }
 
 func (c *StubClient) WithRoles(roles ...GetRoleResult) *StubClient {
 	c.roles = roles
+	return c
+}
+
+func (c *StubClient) WithHealth(health string) *StubClient {
+	c.health = health
 	return c
 }
 
