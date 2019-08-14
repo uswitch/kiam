@@ -90,7 +90,6 @@ func NewGateway(ctx context.Context, address string, caFile, certificateFile, ke
 		grpc.WithBalancerName(roundrobin.Name),
 		grpc.WithDisableServiceConfig(),
 		grpc.WithBlock(),
-		grpc.WithWaitForHandshake(),
 		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 	}
 	conn, err := grpc.DialContext(ctx, dialAddress, dialOpts...)
