@@ -26,6 +26,15 @@ func TestAddsPrefix(t *testing.T) {
 	}
 }
 
+func TestReturnsEmpty(t *testing.T) {
+	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
+	role := resolver.Resolve("")
+
+	if role != "" {
+		t.Error("unexpected role, was:", role)
+	}
+}
+
 func TestAddsPrefixWithRoleBeginningWithSlash(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
 	role := resolver.Resolve("/myrole")
