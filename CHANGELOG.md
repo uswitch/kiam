@@ -1,4 +1,31 @@
 # Changelog
+## v3.4
+16 August 2019
+
+Notable Changes:
+* [#250](https://github.com/uswitch/kiam/pull/250) Policy forbidden errors (namespace annotation regex) are no longer retried
+* [#268](https://github.com/uswitch/kiam/pull/268) You can now healthcheck the agent with `/health?deep=anything` that will only return ok if the agent is up AND it can communicate with Kiam server successfully
+* [#276](https://github.com/uswitch/kiam/pull/276) Allow AssumeRoleArn prefix to be autodetected
+* [#279](https://github.com/uswitch/kiam/pull/279) grpc-go has been upgraded from 1.14.0 to 1.23.0
+* [#281](https://github.com/uswitch/kiam/pull/281) Kiam is now built with Go 1.12
+
+Thanks to these contributors for this release:
+* [@DReigada](https://github.com/DReigada)
+* [@mattmb](https://github.com/mattmb)
+* [@bhavin192](https://github.com/bhavin192)
+* [@derrickburns](https://github.com/derrickburns)
+* [@hoelzro](https://github.com/hoelzro)
+
+## v3.3
+2 July 2019
+
+Hi!
+
+It's been a while since our last release. Most changes have focused around documentation but there are 2 notable changes:
+
+[Increase verbosity of credential chain errors](https://github.com/uswitch/kiam/pull/257)
+[Allow agent to not remove iptables rules on host](https://github.com/uswitch/kiam/pull/253)
+Thanks to [@mwmix](https://github.com/mwmix) and [@theatrus](https://github.com/theatrus) for contributing the above.
 
 ## v3.2
 15 March 2019
