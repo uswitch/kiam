@@ -5,14 +5,14 @@ workspace:
 pipeline:
   test:
     secrets: [ codecov_token ]
-    image: golang:1.10
+    image: golang:1.12
     commands:
       - make test
       - make coverage.txt
       - ./ci/codecov.sh
 
   benchmarks:
-    image: golang:1.10
+    image: golang:1.12
     commands:
       - make bench
 
