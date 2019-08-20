@@ -36,3 +36,15 @@ pipeline:
     secrets: [ docker_username, docker_password ]
     tags:
       - ${DRONE_TAG}
+
+  helm-package:
+    image: alpine/helm:2.14.3
+    environment:
+      APP: kiam
+      REPO: github.com/uswitch/kiam-helm-charts.git
+    secrets: [ ci_user, ci_token, ci_email ]
+    commands:
+      sh ci/helm-package.sh
+    when:
+      event: push
+      branch: master
