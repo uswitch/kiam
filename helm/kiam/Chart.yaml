@@ -12,6 +12,6 @@ home: https://github.com/uswitch/kiam
 sources:
   - https://github.com/uswitch/kiam
 maintainers:
-  - name: ewbankkit
-    email: Kit_Ewbank@hotmail.com
+  - name: uswitch
+    email: cloud@uswitch.com
 engine: gotpl
