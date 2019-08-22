@@ -67,6 +67,22 @@ TLS assets must be created to mutually authenticate the agents and server proces
 
 Please also make note of how to configure IAM in your AWS account; notes in [docs/IAM.md](docs/IAM.md).
 
+### Helm
+
+We maintain and host Helm charts for Kiam, which are automatically packaged upon merging chart changes to the master branch in this repo.
+
+The charts can easily be installed by adding the Kiam Helm repository and running a `helm install`:
+
+```console
+$ helm repo add uswitch https://uswitch.github.io/kiam-helm-charts/charts/
+$ helm repo update
+$ helm install uswitch/kiam
+```
+
+More detailed Helm usage can be found on the Helm Hub:
+
+[Kiam - Helm Hub](https://hub.helm.sh/charts/uswitch/kiam)
+
 ## How it Works
 Kiam is split into two processes that run independently.
 

@@ -9,6 +9,7 @@ keywords:
   - iam
   - security
 home: https://github.com/uswitch/kiam
+icon: https://user-images.githubusercontent.com/44974642/63503185-ee2ce880-c4c6-11e9-9a65-c398db914289.png
 sources:
   - https://github.com/uswitch/kiam
 maintainers:
