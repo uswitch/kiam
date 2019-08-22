@@ -69,7 +69,7 @@ Please also make note of how to configure IAM in your AWS account; notes in [doc
 
 ### Helm
 
-We maintain and host Helm charts for Kiam, which are automatically packaged upon merging chart changes to the master branch in this repo.
+We maintain and host Helm charts for Kiam, which are automatically packaged upon merging chart changes to the master branch in this repo. The charts can be found in the repo [here](https://github.com/uswitch/kiam/tree/master/helm/kiam).
 
 The charts can easily be installed by adding the Kiam Helm repository and running a `helm install`:
 
