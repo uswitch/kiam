@@ -56,6 +56,7 @@ type Config struct {
 	PrefetchBufferSize       int
 	AssumeRoleArn            string
 	Region                   string
+	AnyNamespaceRole				 bool
 }
 
 // TLSConfig controls TLS
@@ -251,7 +252,12 @@ func NewServer(config *Config) (*KiamServer, error) {
 	)
 	server.credentialsProvider = credentialsCache
 	server.manager = prefetch.NewManager(credentialsCache, server.pods)
-	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
+
+	if config.AnyNamespaceRole {
+		server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver))
+	} else {
+		server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
+	}
 
 	certificate, err := tls.LoadX509KeyPair(config.TLS.ServerCert, config.TLS.ServerKey)
 	if err != nil {
