@@ -2,8 +2,9 @@
 ## 3.0.0
 4 September 2019
 
-Notable Changes:
-* The `extraEnv` parameters in `values.yaml` have been changed to support an array of options.
+<b>BREAKING CHANGES</b>:
+* [#292](https://github.com/uswitch/kiam/pull/292) The `extraEnv` parameters for both the agent and server in `values.yaml` have been changed to support an array of options. This adds support for creating env vars from configMaps or secretKeyRefs.</br>
+`Note:` This will break any existing Helm deployments which utilise the `extraEnv` parameters in `values.yaml`. You will need to update your `values.yaml` file to match the format in the [template](/helm/kiam/values.yaml#L93)
 
 ## 2.5.3
 29 August 2019
