@@ -256,9 +256,9 @@ server:
   ## Use hostNetwork for server
   ## Set this to true when running the servers on the same nodes as the agents
   useHostNetwork: false
-  ## Set this to true, if you do not want to filter permitted roles per namespace
+  ## Default role-name pattern used if undefined in namespace
   ## Facilitates migration from kube2iam: https://github.com/uswitch/kiam/issues/188
-  allowAllNamespaceRoles: false
+  rolePatternDefault: null
 
   ## Agent TLS Certificate filenames
   tlsCerts:
