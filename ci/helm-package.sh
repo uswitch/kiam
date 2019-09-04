@@ -25,9 +25,9 @@ else
   git checkout --track origin/gh-pages
   git pull
 
-  # add packaged helm chart and reindex
+  # index new chart and merge old index to preserve chart creation dates
+  helm repo index ${DRONE_WORKSPACE}/output/ --merge ${DRONE_WORKSPACE}/new-repo/charts/index.yaml
   mv ${DRONE_WORKSPACE}/output/* ${DRONE_WORKSPACE}/new-repo/charts/
-  helm repo index ${DRONE_WORKSPACE}/new-repo/charts/
 
   # stage and commit new files, push to remote
   git add .
