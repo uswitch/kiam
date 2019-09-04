@@ -88,7 +88,7 @@ spec:
             - --prometheus-sync-interval={{ .Values.server.prometheus.syncInterval }}
             {{- end }}
             {{- if .Values.server.rolePatternDefault }}
-            - --role-pattern-default='{{ .Values.server.rolePatternDefault }}'
+            - --role-pattern-default={{ .Values.server.rolePatternDefault }}
             {{- end }}
           {{- range $key, $value := .Values.server.extraArgs }}
             {{- if $value }}
