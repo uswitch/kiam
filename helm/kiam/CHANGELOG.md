@@ -1,0 +1,27 @@
+# Helm Chart Changelog
+## 3.0.0
+4 September 2019
+
+Notable Changes:
+* The `extraEnv` parameters in `values.yaml` have been changed to support an array of options.
+
+## 2.5.3
+29 August 2019
+
+Notable Changes:
+* [#288](https://github.com/uswitch/kiam/pull/288) Bug fix for correctly rendering port number for certificates.
+
+Many thanks to the following contributor for this release:
+* [@simnalamburt](https://github.com/simnalamburt)
+
+## 2.5.2
+27 August 2019
+
+Notable Changes:
+* [#285](https://github.com/uswitch/kiam/pull/285) and [#287](https://github.com/uswitch/kiam/pull/287) Chart is updated to include uSwitch logo.
+
+## 2.5.1
+20 August 2019
+
+Notable Changes:
+* [#283](https://github.com/uswitch/kiam/pull/283) Kiam Helm charts are added to the [uswitch/kiam](https://github.com/uswitch/kiam) repo.
