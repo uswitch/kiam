@@ -58,7 +58,7 @@ func (o *serverOptions) bind(parser parser) {
 	parser.Flag("session-refresh", "How soon STS Tokens should be refreshed before their expiration.").Default("5m").DurationVar(&o.SessionRefresh)
 	parser.Flag("assume-role-arn", "IAM Role to assume before processing requests").Default("").StringVar(&o.AssumeRoleArn)
 	parser.Flag("region", "AWS Region to use for regional STS calls (e.g. us-west-2). Defaults to the global endpoint.").Default("").StringVar(&o.Region)
-	parser.Flag("role-pattern-default", "Role filtering pattern used when not defined in namespace").Default("").StringVar(&o.RolePatternDefault)
+	parser.Flag("namespace-role-pattern-default", "Role filtering pattern to use when not defined by the namespace").Default("").StringVar(&o.RolePatternDefault)
 }
 
 func (opts *serverCommand) Run() {

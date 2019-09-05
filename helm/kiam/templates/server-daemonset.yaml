@@ -87,8 +87,8 @@ spec:
             - --prometheus-listen-addr=0.0.0.0:{{ .Values.server.prometheus.port }}
             - --prometheus-sync-interval={{ .Values.server.prometheus.syncInterval }}
             {{- end }}
-            {{- if .Values.server.rolePatternDefault }}
-            - --role-pattern-default={{ .Values.server.rolePatternDefault }}
+            {{- if .Values.server.namespaceRolePatternDefault }}
+            - --namespace-role-pattern-default={{ .Values.server.namespaceRolePatternDefault }}
             {{- end }}
           {{- range $key, $value := .Values.server.extraArgs }}
             {{- if $value }}
