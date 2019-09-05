@@ -92,7 +92,15 @@ agent:
   extraArgs: {}
   ## Additional container environment variables
   ##
-  extraEnv: {}
+
+  # - name: VARNAME1
+  #   value: value1
+  # - name: VARNAME2
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: existing-secret
+  #       key: varname2-key
+  extraEnv: []
 
   ## Additional container hostPath mounts
   ##
@@ -203,7 +211,15 @@ server:
   extraArgs: {}
   ## Additional container environment variables
   ##
-  extraEnv: {}
+
+  # - name: VARNAME1
+  #   value: value1
+  # - name: VARNAME2
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: existing-secret
+  #       key: varname2-key
+  extraEnv: []
 
   ## Additional container hostPath mounts
   ##
