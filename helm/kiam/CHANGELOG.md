@@ -1,6 +1,12 @@
 # Helm Chart Changelog
+## 3.0.1
+10 September 2019
+
+Notable Changes:
+* [#295](https://github.com/uswitch/kiam/pull/295) <b>BUG FIX</b> - The Kiam server and agent daemonset files have been updated to account for the change to the `values.yaml` file made in [#292](https://github.com/uswitch/kiam/pull/292). Without this change, users will experience issues when deploying the v3 release of the Chart with the extraEnv parameters set in `values.yaml`.
+
 ## 3.0.0
-4 September 2019
+5 September 2019
 
 <b>BREAKING CHANGES</b>:
 * [#292](https://github.com/uswitch/kiam/pull/292) The `extraEnv` parameters for both the agent and server in `values.yaml` have been changed to support an array of options. This adds support for creating env vars from configMaps or secretKeyRefs.</br>
