@@ -1,10 +1,18 @@
 ---
-apiVersion: extensions/v1beta1
-kind: DaemonSet
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   namespace: kube-system
   name: kiam-server
+  labels:
+    app: kiam
+    role: server
 spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kiam
+      role: server
   template:
     metadata:
       annotations:
@@ -14,6 +22,16 @@ spec:
         app: kiam
         role: server
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: "app"
+                operator: In
+                values:
+                - kiam
+            topologyKey: "kubernetes.io/hostname"
       serviceAccountName: kiam-server
       nodeSelector:
         kubernetes.io/role: master
