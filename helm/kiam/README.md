@@ -19,11 +19,31 @@ This chart bootstraps a [kiam](https://github.com/uswitch/kiam) deployment on a 
 
 ## Installing the Chart
 
-The chart generates a self signed TLS certificate by default.
-If you want to create and install your own, you can create TLS certificates and private keys as described [here](https://github.com/uswitch/kiam/blob/master/docs/TLS.md).
+To install the chart with the release name `my-release`:
 
-> **Tip**: The `hosts` field in the kiam server certificate should include the value _release-name_-server:_server-service-port_, e.g. `my-release-server:443`
+```console
+$ helm install uswitch/kiam --name my-release
+```
 
+The command deploys kiam on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+
+## Uninstalling the Chart
+
+To uninstall/delete the `my-release` deployment:
+
+```console
+$ helm delete my-release
+```
+
+The command removes all the Kubernetes components associated with the chart and deletes the release.
+
+## TLS Certificates
+
+`Note:` The chart generates a self signed TLS certificate by default, the values mentioned below only need changing if you plan to use your own TLS certificates.
+
+If needed, you can create TLS certificates and private keys as described [here](https://github.com/uswitch/kiam/blob/master/docs/TLS.md).
+
+> **Tip**: The `hosts` field in the kiam server certificate should include the value _release-name_-server:_server-service-port_, e.g. `my-release-server:443`</br>
 > If you don't include the exact hostname used by the kiam agent to connect to the server, you'll see a warning (which is really an error) in the agent logs similar to the following, and your pods will fail to obtain credentials:
 ```json
 {"level":"warning","msg":"error finding role for pod: rpc error: code = Unavailable desc = there is no connection available","pod.ip":"100.120.0.2","time":"2018-05-24T04:11:25Z"}
@@ -69,24 +89,6 @@ server:
     keyFileName: key
     caFileName: ca
 ```
-
-To install the chart with the release name `my-release`:
-
-```console
-$ helm install uswitch/kiam --name my-release
-```
-
-The command deploys kiam on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
-
-## Uninstalling the Chart
-
-To uninstall/delete the `my-release` deployment:
-
-```console
-$ helm delete my-release
-```
-
-The command removes all the Kubernetes components associated with the chart and deletes the release.
 
 ## Configuration
 
