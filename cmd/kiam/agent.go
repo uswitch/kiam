@@ -103,7 +103,6 @@ func (opts *agentCommand) run() error {
 	go func() {
 		errCh <- server.Serve()
 	}()
-	defer server.Stop(ctx)
 
 	select {
 	case err := <-errCh:
@@ -112,7 +111,12 @@ func (opts *agentCommand) run() error {
 			return err
 		}
 	case sig := <-stopChan:
-		log.Infof("received signal (%s) stopping now", sig.String())
+		log.Infof("received signal (%s): starting server shutdown", sig.String())
+		if err := server.Stop(ctx); err != nil {
+			log.Errorf("error shutting down server: %s", err.Error())
+			return err
+		}
+		log.Infoln("gracefully shutdown server")
 	}
 	log.Infoln("stopped")
 	return nil
