@@ -134,7 +134,7 @@ spec:
           resources:
 {{ toYaml .Values.agent.resources | indent 12 }}
         {{- end }}
-	{{- if .Values.imagePullSecret }}
+        {{- if .Values.imagePullSecret }}
       imagePullSecrets:
         - name: {{ .Values.imagePullSecret }}
       {{- end }}
