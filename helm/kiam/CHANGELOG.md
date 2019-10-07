@@ -1,4 +1,11 @@
 # Helm Chart Changelog
+
+## 3.1.0
+07 October 2019
+
+Notable Changes:
+* Update kiam release from 3.3 to 3.4
+
 ## 3.0.1
 10 September 2019
 
