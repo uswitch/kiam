@@ -1,4 +1,10 @@
 # Helm Chart Changelog
+## 3.1.0
+09 October 2019
+
+Notable Changes:
+* [#303](https://github.com/uswitch/kiam/pull/303) Added support for imagePullSecrets
+
 ## 3.0.1
 10 September 2019
 
