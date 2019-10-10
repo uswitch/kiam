@@ -1,5 +1,9 @@
 extraArgs: {}
 
+## The name of the secret to use if pulling images from a private registry.
+## Reference - https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+imagePullSecrets: {}
+
 agent:
   ## If false, agent will not be installed
   ##
