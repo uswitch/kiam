@@ -6,11 +6,17 @@
 Notable Changes:
 * [#303](https://github.com/uswitch/kiam/pull/303) Added support for imagePullSecrets
 
+Many thanks to the following contributor for this release:
+* [@junaid18183](https://github.com/junaid18183)
+
 ## 3.1.0
 07 October 2019
 
 Notable Changes:
 * [#304](https://github.com/uswitch/kiam/pull/304) Update kiam release from 3.3 to 3.4
+
+Many thanks to the following contributor for this release:
+* [@jeffb4](https://github.com/jeffb4)
 
 ## 3.0.1
 10 September 2019
