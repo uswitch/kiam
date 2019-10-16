@@ -3,8 +3,8 @@
 ## 4.0.0
 16 October 2019
 
-<b>BREAKING CHANGES</b>:
-* [#307](https://github.com/uswitch/kiam/pull/307) Upgraded Kubernetes Apps API version for the DaemonSets in order to support Kubernetes 1.16+.</br>
+**BREAKING CHANGES:**
+* [#307](https://github.com/uswitch/kiam/pull/307) Upgraded Kubernetes Apps API version for the DaemonSets in order to support Kubernetes 1.16+.  
 `Note:` This API change has the effect of dropping support for Kubernetes >1.9. This release WILL NOT work for Kubernetes clusters running versions earlier than 1.9.
 
 Many thanks to the following contributor for this release:
@@ -32,13 +32,13 @@ Many thanks to the following contributor for this release:
 10 September 2019
 
 Notable Changes:
-* [#295](https://github.com/uswitch/kiam/pull/295) <b>BUG FIX</b> - The Kiam server and agent daemonset files have been updated to account for the change to the `values.yaml` file made in [#292](https://github.com/uswitch/kiam/pull/292). Without this change, users will experience issues when deploying the v3 release of the Chart with the extraEnv parameters set in `values.yaml`.
+* [#295](https://github.com/uswitch/kiam/pull/295) **BUG FIX** - The Kiam server and agent daemonset files have been updated to account for the change to the `values.yaml` file made in [#292](https://github.com/uswitch/kiam/pull/292). Without this change, users will experience issues when deploying the v3 release of the Chart with the extraEnv parameters set in `values.yaml`.
 
 ## 3.0.0
 5 September 2019
 
-<b>BREAKING CHANGES</b>:
-* [#292](https://github.com/uswitch/kiam/pull/292) The `extraEnv` parameters for both the agent and server in `values.yaml` have been changed to support an array of options. This adds support for creating env vars from configMaps or secretKeyRefs.</br>
+**BREAKING CHANGES:**
+* [#292](https://github.com/uswitch/kiam/pull/292) The `extraEnv` parameters for both the agent and server in `values.yaml` have been changed to support an array of options. This adds support for creating env vars from configMaps or secretKeyRefs.  
 `Note:` This will break any existing Helm deployments which utilise the `extraEnv` parameters in `values.yaml`. You will need to update your `values.yaml` file to match the format in the [template](/helm/kiam/values.yaml#L93)
 
 ## 2.5.3
