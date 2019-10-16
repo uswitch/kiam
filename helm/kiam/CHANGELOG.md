@@ -1,5 +1,15 @@
 # Helm Chart Changelog
 
+## 4.0.0
+16 October 2019
+
+<b>BREAKING CHANGES</b>:
+* [#307](https://github.com/uswitch/kiam/pull/307) Upgraded Kubernetes Apps API version for the DaemonSets in order to support Kubernetes 1.16+.</br>
+`Note:` This API change has the effect of dropping support for Kubernetes >1.9. This release WILL NOT work for Kubernetes clusters running versions earlier than 1.9.
+
+Many thanks to the following contributor for this release:
+* [@velothump](https://github.com/velothump)
+
 ## 3.2.0
 10 October 2019
 
