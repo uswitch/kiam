@@ -114,7 +114,7 @@ type clientOptions struct {
 func (o *clientOptions) bind(parser parser) {
 	parser.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&o.serverAddress)
 	parser.Flag("server-address-refresh", "Interval to refresh server service endpoints ( deprecated )").Default("0s").DurationVar(&o.serverAddressRefresh)
-	parser.Flag("gateway-timeout-creation", "Timeout to create the kiam gateway ").Default("50ms").DurationVar(&o.timeoutKiamGateway)
+	parser.Flag("gateway-timeout-creation", "Timeout to create the kiam gateway ").Default("500ms").DurationVar(&o.timeoutKiamGateway)
 	if o.serverAddressRefresh > 0 {
 		log.Error("server-address-refresh is deprecated and not in use, please remove it from your configuration")
 	}
