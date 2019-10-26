@@ -1,0 +1,35 @@
+{{- if and .Values.server.prometheus.scrape .Values.server.prometheus.servicemonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "kiam.fullname" . }}-server
+{{- if .Values.server.prometheus.servicemonitor.namespace }}
+  namespace: {{ .Values.server.prometheus.servicemonitor.namespace }}
+{{- else }}
+  namespace: {{ .Release.Namespace | quote }}
+{{- end }}
+  labels:
+    app: {{ template "kiam.name" . }}
+    component: "{{ .Values.server.name }}"
+    release: {{ .Release.Name | quote }}
+{{- if .Values.server.prometheus.servicemonitor.labels }}
+{{ toYaml .Values.server.prometheus.servicemonitor.labels | indent 4 }}
+{{- end }}
+spec:
+  jobLabel: {{ template "kiam.fullname" . }}-server
+  selector:
+    matchLabels:
+      app: {{ template "kiam.name" . }}
+      component: "{{ .Values.server.name }}"
+  namespaceSelector:
+    matchNames:
+      {{- if .Values.server.prometheus.servicemonitor.namespace }}
+      - {{ .Values.server.prometheus.servicemonitor.namespace }}
+      {{- else }}
+      - {{ .Release.Namespace | quote }}
+      {{- end }}
+  endpoints:
+  - port: metrics
+    path: {{ .Values.server.prometheus.servicemonitor.path }}
+    interval: {{ .Values.server.prometheus.servicemonitor.interval }}
+{{- end }}
