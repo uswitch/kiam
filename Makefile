@@ -6,6 +6,7 @@ BIN_DARWIN = $(BIN)-darwin-$(ARCH)
 GIT_BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 IMG_NAMESPACE?=quay.io/uswitch
 IMG_TAG?=$(GIT_BRANCH)
+GO111MODULE=on
 REGISTRY?=$(IMG_NAMESPACE)/$(NAME)
 SOURCES := $(shell find . -iname '*.go') proto/service.pb.go
 

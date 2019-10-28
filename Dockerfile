@@ -1,4 +1,7 @@
 FROM golang:1.12-alpine3.10 as build
+ENV GO111MODULE=on
+ENV GOFLAGS -mod=vendor
+
 RUN apk add --no-cache make
 WORKDIR /go/src/github.com/uswitch/kiam
 ADD . .
