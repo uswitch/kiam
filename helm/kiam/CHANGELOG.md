@@ -1,5 +1,14 @@
 # Helm Chart Changelog
 
+## 4.1.0
+28 October 2019
+
+Notable Changes:
+* [#314](https://github.com/uswitch/kiam/pull/314) Added support for Prometheus Operator ServiceMonitors.
+
+Many thanks to the following contributor for this release:
+* [@mikhailadvani](https://github.com/mikhailadvani)
+
 ## 4.0.0
 16 October 2019
 
@@ -14,7 +23,7 @@ Many thanks to the following contributor for this release:
 10 October 2019
 
 Notable Changes:
-* [#303](https://github.com/uswitch/kiam/pull/303) Added support for imagePullSecrets
+* [#303](https://github.com/uswitch/kiam/pull/303) Added support for imagePullSecrets.
 
 Many thanks to the following contributor for this release:
 * [@junaid18183](https://github.com/junaid18183)
