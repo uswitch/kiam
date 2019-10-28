@@ -117,6 +117,10 @@ Parameter | Description | Default
 `agent.prometheus.port` | Agent Prometheus metrics port | `9620`
 `agent.prometheus.scrape` | Whether or not Prometheus metrics for the agent should be scraped | `true`
 `agent.prometheus.syncInterval` | Agent Prometheus synchronization interval | `5s`
+`agent.prometheus.servicemonitor.enabled` | Whether servicemonitor resource should be deployed for the agent | `false`
+`agent.prometheus.servicemonitor.path` | Agent prometheus scrape path | `/metrics`
+`agent.prometheus.servicemonitor.interval` | Agent prometheus scrape interval from servicemonitor | `10s`
+`agent.prometheus.servicemonitor.labels` | Custom labels for agent servicemonitor | `{}`
 `agent.podAnnotations` | Annotations to be added to agent pods | `{}`
 `agent.podLabels` | Labels to be added to agent pods | `{}`
 `agent.priorityClassName` | Agent pods priority class name | `""`
@@ -147,6 +151,10 @@ Parameter | Description | Default
 `server.prometheus.port` | Server Prometheus metrics port | `9620`
 `server.prometheus.scrape` | Whether or not Prometheus metrics for the server should be scraped | `true`
 `server.prometheus.syncInterval` | Server Prometheus synchronization interval | `5s`
+`server.prometheus.servicemonitor.enabled` | Whether servicemonitor resource should be deployed for the server | `false`
+`server.prometheus.servicemonitor.path` | Server prometheus scrape path | `/metrics`
+`server.prometheus.servicemonitor.interval` | Server prometheus scrape interval from servicemonitor | `10s`
+`server.prometheus.servicemonitor.labels` | Custom labels for server servicemonitor | `{}`
 `server.podAnnotations` | Annotations to be added to server pods | `{}`
 `server.podLabels` | Labels to be added to server pods | `{}`
 `server.probes.serverAddress` | Address that readyness and liveness probes will hit | `127.0.0.1`

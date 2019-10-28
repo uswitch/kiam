@@ -40,6 +40,11 @@ agent:
     scrape: true
     port: 9620
     syncInterval: 5s
+    servicemonitor:
+      enabled: false
+      path: /metrics
+      interval: 10s
+      labels: {}
   ## Annotations to be added to pods
   ##
   podAnnotations: {}
@@ -163,6 +168,11 @@ server:
     scrape: true
     port: 9620
     syncInterval: 5s
+    servicemonitor:
+      enabled: false
+      path: /metrics
+      interval: 10s
+      labels: {}
   ## Annotations to be added to pods
   ##
   podAnnotations: {}
