@@ -1,5 +1,14 @@
 # Helm Chart Changelog
 
+## 4.2.0
+30 October 2019
+
+Notable Changes:
+* [#310](https://github.com/uswitch/kiam/pull/310) Updated the default `values.yaml` gatewayTimeoutCreation to 1s.
+
+Many thanks to the following contributor for this release:
+* [@zytek](https://github.com/zytek)
+
 ## 4.1.0
 28 October 2019
 
