@@ -7,7 +7,7 @@ pipeline:
     secrets: [ codecov_token ]
     image: golang:1.12
     environment:
-      - GO111MODULE=on
+      GO111MODULE: "on"
     commands:
       - make test
       - make coverage.txt
