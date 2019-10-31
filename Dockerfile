@@ -5,7 +5,6 @@ ENV GO111MODULE=on
 RUN apk add --no-cache make
 WORKDIR /go/src/github.com/uswitch/kiam
 ADD . .
-RUN go mod download
 RUN make bin/kiam-linux-amd64
 
 FROM alpine:3.8
