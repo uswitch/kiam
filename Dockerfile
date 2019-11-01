@@ -2,7 +2,7 @@ FROM golang:1.12-alpine3.10 as build
 ENV GO111MODULE=on
 
 
-RUN apk add --no-cache make
+RUN apk add --no-cache make git
 WORKDIR /go/src/github.com/uswitch/kiam
 ADD . .
 RUN go mod download
