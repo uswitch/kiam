@@ -28,6 +28,13 @@ agent:
   log:
     jsonOutput: true
     level: info
+
+  ## if true, liveness probe will fail if the agent is not
+  ## able to communicate with servers, which may happen on
+  ## certificate change
+  ##
+  deepLivenessProbe: false
+
   ## Host networking settings
   ##
   host:
