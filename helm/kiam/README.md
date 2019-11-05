@@ -27,6 +27,13 @@ $ helm install uswitch/kiam --name my-release
 
 The command deploys kiam on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
+## Key Configuration
+The default helm configuration will probably not work out-of-the-box. You will most likely need to adjust the following:
+
+* Kiam will _not_ work without an appropriate iptables rule. As there are security & operational implications with making kiam responsible for inserting & removing the rule (see [#202](https://github.com/uswitch/kiam/issues/202) & [#253](https://github.com/uswitch/kiam/pull/253)), the `agent.host.iptables` parameter is set to `false` by default. Either configure the iptables rule separately from Kiam, or use `--set agent.host.iptables=true`.
+* Kiam requires SSL certs from the host system to be mounted into the kiam-server pod in order to be able to contact the AWS meta-data API. If the SSL cert directory on the host(s) you intend to run the kiam-server on does not match the default (`/usr/share/ca-certificates`), you will need to set the `server.sslCertHostPath` variable.
+
+
 ## Uninstalling the Chart
 
 To uninstall/delete the `my-release` deployment:
@@ -144,6 +151,7 @@ Parameter | Description | Default
 `server.cache.syncInterval` | Pod cache synchronization interval | `1m`
 `server.extraArgs` | Additional server container arguments | `{}`
 `server.extraEnv` | Additional server container environment variables | `{}`
+`server.sslCertHostPath` | Path to SSL certs on host machinee | `/usr/share/ca-certificates`
 `server.extraHostPathMounts` | Additional server container hostPath mounts | `[]`
 `server.log.jsonOutput` | Whether or not to output server log in JSON format | `true`
 `server.log.level` | Server log level (`debug`, `info`, `warn` or `error`) | `info`

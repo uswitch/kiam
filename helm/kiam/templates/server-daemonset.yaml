@@ -49,6 +49,9 @@ spec:
             {{else}}
             secretName: {{ template "kiam.fullname" . }}-server
             {{- end }}
+        - name: ssl-certs
+          hostPath:
+            path: {{ .Values.server.sslCertHostPath }}
       {{- range .Values.server.extraHostPathMounts }}
         - name: {{ .name }}
           hostPath:
@@ -101,6 +104,9 @@ spec:
           volumeMounts:
             - mountPath: /etc/kiam/tls
               name: tls
+            - mountPath: /etc/ssl/certs
+              name: ssl-certs
+              readOnly: true
           {{- range .Values.server.extraHostPathMounts }}
             - name: {{ .name }}
               mountPath: {{ .mountPath }}
