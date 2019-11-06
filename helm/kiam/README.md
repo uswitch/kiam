@@ -30,8 +30,6 @@ The command deploys kiam on the Kubernetes cluster in the default configuration.
 ## Key Configuration
 The default helm configuration will probably not work out-of-the-box. You will most likely need to adjust the following:
 
-* Kiam will _not_ work without an appropriate iptables rule. As there are security & operational implications with making kiam responsible for inserting & removing the rule (see [#202](https://github.com/uswitch/kiam/issues/202) & [#253](https://github.com/uswitch/kiam/pull/253)), the `agent.host.iptables` parameter is set to `false` by default. Either configure the iptables rule separately from Kiam, or use `--set agent.host.iptables=true`.
-* Kiam requires SSL certs from the host system to be mounted into the kiam-server pod in order to be able to contact the AWS meta-data API. If the SSL cert directory on the host(s) you intend to run the kiam-server on does not match the default (`/usr/share/ca-certificates`), you will need to set the `server.sslCertHostPath` variable.
 * Kiam requires SSL certs from the host system to be mounted into the kiam-server pod in order to be able to contact the AWS meta-data API. If the SSL cert directory on the host(s) you intend to run the kiam-server on does not match the default (`/usr/share/ca-certificates`), you will need to set the `server.sslCertHostPath` variable.
 * Kiam will _not_ work without an appropriate iptables rule. As there are security & operational implications with making kiam responsible for inserting & removing the rule (see [#202](https://github.com/uswitch/kiam/issues/202) & [#253](https://github.com/uswitch/kiam/pull/253)), the `agent.host.iptables` parameter is set to `false` by default. Either configure the iptables rule separately from Kiam, or use `--set agent.host.iptables=true`.
 
@@ -39,17 +37,18 @@ The default helm configuration will probably not work out-of-the-box. You will m
 The most secure way to configure `kiam` is to install its `iptables` rule before starting Docker on the host, and leave it in place. This way when `kiam` is not able to serve credentials, any clients attempting to refresh credentials will get an error, and they should continue to use their cached credentials while periodically retrying to refresh them. Likewise clients attempting to get credentials for the first time will get nothing, rather than get the credentials associated with the host they are running on.
 
 You can [read the code](https://github.com/uswitch/kiam/blob/master/cmd/kiam/iptables.go), but the definitive way to see the `iptables` rule `kiam` installs is to `--set agent.host.iptables=true`, deploy the agent, find the pod name for an agent pod and exec into it:
-`
-kubectl exec -it kiam-agent-qhtgr -- iptables -t nat -S PREROUTING | grep 169.254.169.254/32
-`
+```bash
+kiam_pod=$(kubectl get pods | grep kiam-agent | awk '{print $1}' | head -n 1)
+kubectl exec -it $kiam_pod -- iptables -t nat -S PREROUTING | grep 169.254.169.254/32
+```
 This will print out the arguments to follow `iptables -t nat` needed to install the rule. However, the arguments will include the IP address of the machine, so you cannot just copy and paste them verbatim. You can, however, use it to double-check you have the correct rule installed. 
 
 This command works on `debian` hosts on AWS when using `calico` networking:
-`
+```bash
 /sbin/iptables -t nat -A PREROUTING -d 169.254.169.254/32 \
         -i cali+ -p tcp -m tcp --dport 80 -j DNAT \
         --to-destination $(curl -s http://169.254.169.254/latest/meta-data/local-ipv4):8181
-`     
+```
 Replace `cali+` with the CNI interface name you are passing to `kiam-agent` as `--host-interface` and if you are using exclamation point to invert it, e.g. `!eth0` be sure to escape the exclamation point so it is not interpreted by the shell. 
 
 See [this example](https://github.com/cloudposse/reference-architectures/blob/5cad9b5d97dd3e92257ca2ef37ca6b8ff96940d0/templates/kops/kops-private-topology.yaml.gotmpl#L137-L156) for how to install the `iptables` rule using a `systemd` unit installed as a `kops` install hook.
