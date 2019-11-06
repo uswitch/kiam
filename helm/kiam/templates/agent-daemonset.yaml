@@ -81,6 +81,9 @@ spec:
             {{- if .Values.agent.host.iptables }}
             - --iptables
             {{- end }}
+            {{- if not .Values.agent.host.iptablesRemoveOnShutdown }}
+            - --no-iptables-remove
+            {{- end }}
             - --host-interface={{ .Values.agent.host.interface }}
             {{- if .Values.agent.log.jsonOutput }}
             - --json-log
