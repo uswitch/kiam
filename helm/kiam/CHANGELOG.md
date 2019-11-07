@@ -1,5 +1,17 @@
 # Helm Chart Changelog
 
+## 5.0.0
+7 November 2019
+
+**BREAKING CHANGES:**
+* [#322](https://github.com/uswitch/kiam/pull/322) The chart has been updated to include support for the `--no-iptables-remove` Kiam flag, which is now **enabled by default.**  
+`Note:` Using your existing `values.yaml` with this chart will result in the flag being turned on with no user input. This flag leaves the iptables rule (which is necessary for the Kiam agent processes to intercept requests to the metadata API) in place after the Kiam agent has been shutdown.  
+Please see the following links for related discussion: [Issue 202](https://github.com/uswitch/kiam/issues/202) and [PR #253](https://github.com/uswitch/kiam/pull/253).
+
+Many thanks to the following contributors for this release:
+* [@zytek](https://github.com/zytek)  
+* [@Nuru](https://github.com/Nuru)
+
 ## 4.2.0
 30 October 2019
 
