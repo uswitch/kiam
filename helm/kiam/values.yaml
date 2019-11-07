@@ -32,6 +32,10 @@ agent:
   ##
   host:
     iptables: false
+    # do not remove iptables forwarding rules when kiam-agent terminates
+    # needed for RollingUpdate strategy and for security reeasons
+    # see https://github.com/uswitch/kiam/issues/202 and https://github.com/uswitch/kiam/pull/253
+    iptablesRemoveOnShutdown: false
     port: 8181
     interface: cali+
   ## Prometheus metrics
