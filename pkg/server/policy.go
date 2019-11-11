@@ -125,10 +125,11 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 type NamespacePermittedRoleNamePolicy struct {
 	namespaces k8s.NamespaceFinder
 	pods       k8s.PodGetter
+	resolver   sts.ARNResolver
 }
 
-func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.PodGetter) *NamespacePermittedRoleNamePolicy {
-	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p}
+func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.PodGetter, resolver sts.ARNResolver) *NamespacePermittedRoleNamePolicy {
+	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p, resolver: resolver}
 }
 
 type namespacePolicyForbidden struct {
@@ -145,6 +146,8 @@ func (f *namespacePolicyForbidden) Explanation() string {
 }
 
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
+
+	role = p.resolver.Resolve(role)
 
 	pod, err := p.pods.GetPodByIP(podIP)
 	if err != nil {
