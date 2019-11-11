@@ -113,6 +113,7 @@ Parameter | Description | Default
 `agent.host.port` | Agent's listening port | `8181`
 `agent.log.jsonOutput` | Whether or not to output agent log in JSON format | `true`
 `agent.log.level` | Agent log level (`debug`, `info`, `warn` or `error`) | `info`
+`agent.deepLivenessProbe` | Fail liveness probe if the server is not accessible | `false`
 `agent.nodeSelector` | Node labels for agent pod assignment | `{}`
 `agent.prometheus.port` | Agent Prometheus metrics port | `9620`
 `agent.prometheus.scrape` | Whether or not Prometheus metrics for the agent should be scraped | `true`

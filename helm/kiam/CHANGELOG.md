@@ -1,5 +1,14 @@
 # Helm Chart Changelog
 
+## 5.1.0
+8 November 2019
+
+Notable changes:
+* [#319](https://github.com/uswitch/kiam/pull/319) Optional [deep liveness check](https://github.com/uswitch/kiam/pull/268) has been added to the helm chart.
+
+Many thanks to the following contributor for this release:
+* [@stanvit](https://github.com/stanvit)
+
 ## 5.0.0
 7 November 2019
 
