@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/k8sc/official"
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -33,7 +33,7 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -251,7 +251,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 	)
 	server.credentialsProvider = credentialsCache
 	server.manager = prefetch.NewManager(credentialsCache, server.pods)
-	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
+	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods, arnResolver))
 
 	certificate, err := tls.LoadX509KeyPair(config.TLS.ServerCert, config.TLS.ServerKey)
 	if err != nil {
