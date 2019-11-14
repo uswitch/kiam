@@ -263,7 +263,7 @@ func TestAllowedWithARNResolverBaseRole(t *testing.T) {
 }
 
 func TestNotAllowedWithoutARNResolverBaseRole(t *testing.T) {
-	n := testutil.NewNamespace("red", "arn:aws:iam::123456789012:role/.*")
+	n := testutil.NewNamespace("red", "arn:aws:iam::123456789012:role/*")
 	nf := kt.NewNamespaceFinder(n)
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	pf := kt.NewStubFinder(p)
@@ -325,5 +325,49 @@ func TestNotAllowedWithoutSubPathRegexInNamespace(t *testing.T) {
 
 	if decision.IsAllowed() {
 		t.Error("expected to be forbidden- namespace regex DOES NOT match role subpath")
+	}
+}
+
+func TestAllowedWithExactSubPathInNamespace(t *testing.T) {
+	n := testutil.NewNamespace("red", "arn:aws:iam::account-id:role/subpath/red_role")
+	nf := kt.NewNamespaceFinder(n)
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
+	pf := kt.NewStubFinder(p)
+	arnResolver := sts.DefaultResolver("arn:aws:iam::account-id:role/subpath/")
+
+	policy := NewNamespacePermittedRoleNamePolicy(nf, pf, arnResolver)
+	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace matches role subpath", decision.Explanation())
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(nf, pf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace matches role subpath", decision.Explanation())
+	}
+}
+
+func TestNotAllowedWithoutExactSubPathInNamespace(t *testing.T) {
+	n := testutil.NewNamespace("red", "arn:aws:iam::account-id:role/subpath/blue_role")
+	nf := kt.NewNamespaceFinder(n)
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
+	pf := kt.NewStubFinder(p)
+	arnResolver := sts.DefaultResolver("arn:aws:iam::account-id:role/subpath/")
+
+	policy := NewNamespacePermittedRoleNamePolicy(nf, pf, arnResolver)
+	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace role DOES NOT match role subpath")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(nf, pf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace role DOES NOT match role subpath")
 	}
 }
