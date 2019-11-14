@@ -235,3 +235,66 @@ func TestNotAllowedWithoutNamespaceAnnotationWithSlash(t *testing.T) {
 		t.Error("expected failure, empty namespace policy annotation")
 	}
 }
+
+func TestNotAllowedWithBadNamespaceAnnotationRegex(t *testing.T) {
+	n := testutil.NewNamespace("red", "o")
+	nf := kt.NewNamespaceFinder(n)
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
+	pf := kt.NewStubFinder(p)
+
+	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace regex doesn't match role")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace regex doesn't match role")
+	}
+}
+
+func TestNotAllowedWithoutWildcardNamespaceAnnotationRegex(t *testing.T) {
+	n := testutil.NewNamespace("red", "role")
+	nf := kt.NewNamespaceFinder(n)
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
+	pf := kt.NewStubFinder(p)
+
+	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace regex doesn't match role")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace regex doesn't match role")
+	}
+}
+
+func TestAllowedWithWildcardNamespaceAnnotationRegex(t *testing.T) {
+	n := testutil.NewNamespace("red", ".*role")
+	nf := kt.NewNamespaceFinder(n)
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
+	pf := kt.NewStubFinder(p)
+
+	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace regex matches role:", decision.Explanation())
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace regex matches role:", decision.Explanation())
+	}
+}
