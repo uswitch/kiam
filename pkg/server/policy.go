@@ -161,7 +161,7 @@ func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Conte
 		return &namespacePolicyForbidden{expression: "(empty)", role: role}, nil
 	}
 
-	re, err := regexp.Compile(expression)
+	re, err := regexp.Compile("^" + expression + "$")
 	if err != nil {
 		return nil, err
 	}
