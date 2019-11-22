@@ -168,6 +168,12 @@ server:
     tag: v3.4
     pullPolicy: IfNotPresent
 
+  ## Run as Deployment instead of Daemonset
+  ##
+  deployment:
+    enabled: false
+    replicas: 3
+
   ## Logging settings
   ##
   log:
