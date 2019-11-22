@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 
 	status "google.golang.org/grpc/status"
 )
@@ -53,7 +54,7 @@ const (
 )
 
 // NewGateway constructs a gRPC client to talk to the server
-func NewGateway(ctx context.Context, address string, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
+func NewGateway(ctx context.Context, address string, caFile, certificateFile, keyFile string, keepaliveParams keepalive.ClientParameters) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
 	}
@@ -85,6 +86,7 @@ func NewGateway(ctx context.Context, address string, caFile, certificateFile, ke
 	dialAddress := fmt.Sprintf("dns:///%s", address)
 
 	dialOpts := []grpc.DialOption{
+		grpc.WithKeepaliveParams(keepaliveParams),
 		grpc.WithTransportCredentials(creds),
 		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(retry.UnaryClientInterceptor(callOpts...), grpc_prometheus.UnaryClientInterceptor)),
 		grpc.WithBalancerName(roundrobin.Name),

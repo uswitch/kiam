@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/keepalive"
 	"github.com/uswitch/kiam/pkg/pprof"
 	"github.com/uswitch/kiam/pkg/prometheus"
 	"github.com/uswitch/kiam/pkg/statsd"
@@ -109,9 +110,13 @@ type clientOptions struct {
 	serverAddress        string
 	serverAddressRefresh time.Duration
 	timeoutKiamGateway   time.Duration
+	keepaliveParams      keepalive.ClientParameters
 }
 
 func (o *clientOptions) bind(parser parser) {
+	parser.Flag("grpc-keepalive-time-ms", "gRPC keepalive time").Default("10s").DurationVar(&o.keepaliveParams.Time)
+	parser.Flag("grpc-keepalive-timeout-ms", "gRPC keepalive timeout").Default("2s").DurationVar(&o.keepaliveParams.Timeout)
+	parser.Flag("grpc-keepalive-permit-without-stream", "gRPC keepalive ping even with no RPC").BoolVar(&o.keepaliveParams.PermitWithoutStream)
 	parser.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&o.serverAddress)
 	parser.Flag("server-address-refresh", "Interval to refresh server service endpoints ( deprecated )").Default("0s").DurationVar(&o.serverAddressRefresh)
 	parser.Flag("gateway-timeout-creation", "Timeout to create the kiam gateway ").Default("1s").DurationVar(&o.timeoutKiamGateway)
