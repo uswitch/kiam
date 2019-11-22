@@ -82,7 +82,7 @@ func (opts *agentCommand) Run() {
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
 
-	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.caPath, opts.certificatePath, opts.keyPath)
+	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.caPath, opts.certificatePath, opts.keyPath, opts.keepaliveParams)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
