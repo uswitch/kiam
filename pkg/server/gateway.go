@@ -52,6 +52,12 @@ const (
 	RetryInterval = 10 * time.Millisecond
 )
 
+var kacp = keepalive.ClientParameters{
+	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
+	Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
+	PermitWithoutStream: true,             // send pings even without active streams
+}
+
 // NewGateway constructs a gRPC client to talk to the server
 func NewGateway(ctx context.Context, address string, caFile, certificateFile, keyFile string) (*KiamGateway, error) {
 	callOpts := []retry.CallOption{
@@ -85,6 +91,7 @@ func NewGateway(ctx context.Context, address string, caFile, certificateFile, ke
 	dialAddress := fmt.Sprintf("dns:///%s", address)
 
 	dialOpts := []grpc.DialOption{
+		grpc.WithKeepaliveParams(kacp),
 		grpc.WithTransportCredentials(creds),
 		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(retry.UnaryClientInterceptor(callOpts...), grpc_prometheus.UnaryClientInterceptor)),
 		grpc.WithBalancerName(roundrobin.Name),
