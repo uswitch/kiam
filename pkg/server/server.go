@@ -33,12 +33,14 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
+	
 )
 
 var kaep = keepalive.EnforcementPolicy{
@@ -289,7 +291,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 
 	grpcServer := grpc.NewServer(
 		grpc.KeepaliveEnforcementPolicy(kaep), 
-		grpc.KeepaliveParams(kasp))
+		grpc.KeepaliveParams(kasp),
 		grpc.Creds(creds),
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
