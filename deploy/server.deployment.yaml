@@ -35,11 +35,6 @@ spec:
       serviceAccountName: kiam-server
       nodeSelector:
         kubernetes.io/role: master
-      # kops master nodes requires this tolerations
-      # tolerations:
-      # - key: "node-role.kubernetes.io/master"
-      #   effect: "NoSchedule"
-      #   operator: "Exists"        
       volumes:
         - name: ssl-certs
           hostPath:
@@ -102,19 +97,3 @@ spec:
             initialDelaySeconds: 3
             periodSeconds: 10
             timeoutSeconds: 10
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: kiam-server
-  namespace: kube-system
-spec:
-  clusterIP: None
-  selector:
-    app: kiam
-    role: server
-  ports:
-  - name: grpclb
-    port: 443
-    targetPort: 443
-    protocol: TCP
