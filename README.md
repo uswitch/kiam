@@ -63,6 +63,18 @@ When your process starts an AWS SDK library will normally use a chain of credent
 ## Deploying to Kubernetes
 Please see the `deploy` directory for example manifests for deploying to Kubernetes.
 
+There are two options for deployment of `kiam-server`, a `Deployment` and a `DaemonSet`. Some users have found the termination handling of the `DaemonSet` pods causes issues when cycling master nodes (see https://github.com/uswitch/kiam/issues/245). Only deploy **one** of the two `server.*.yaml` files, not _both_.
+
+```
+kubectl apply -f deploy/server.deployment.yaml
+kubectl apply -f deploy/service.yaml
+```
+or
+```
+kubectl apply -f deploy/server.daemonset.yaml
+kubectl apply -f deploy/service.yaml
+```
+
 TLS assets must be created to mutually authenticate the agents and server processes; notes are in [docs/TLS.md](docs/TLS.md).
 
 Please also make note of how to configure IAM in your AWS account; notes in [docs/IAM.md](docs/IAM.md).
