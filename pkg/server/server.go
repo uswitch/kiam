@@ -43,12 +43,12 @@ import (
 	
 )
 
-var kaep = keepalive.EnforcementPolicy{
+var keepAliveEnforcementPolicy = keepalive.EnforcementPolicy{
 	MinTime:             5 * time.Second, // If a client pings more than once every 5 seconds, terminate the connection
 	PermitWithoutStream: true,            // Allow pings even when there are no active streams
 }
 
-var kasp = keepalive.ServerParameters{
+var keepAliveServerParams = keepalive.ServerParameters{
 	MaxConnectionIdle:     15 * time.Second, // If a client is idle for 15 seconds, send a GOAWAY
 	MaxConnectionAge:      30 * time.Second, // If any connection is alive for more than 30 seconds, send a GOAWAY
 	MaxConnectionAgeGrace: 5 * time.Second,  // Allow 5 seconds for pending RPCs to complete before forcibly closing connections
@@ -290,8 +290,8 @@ func NewServer(config *Config) (*KiamServer, error) {
 	})
 
 	grpcServer := grpc.NewServer(
-		grpc.KeepaliveEnforcementPolicy(kaep), 
-		grpc.KeepaliveParams(kasp),
+		grpc.KeepaliveEnforcementPolicy(keepAliveEnforcementPolicy), 
+		grpc.KeepaliveParams(keepAliveServerParams),
 		grpc.Creds(creds),
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),

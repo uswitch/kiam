@@ -53,7 +53,7 @@ const (
 	RetryInterval = 10 * time.Millisecond
 )
 
-var kacp = keepalive.ClientParameters{
+var keepAliveClientParams = keepalive.ClientParameters{
 	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
 	Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
 	PermitWithoutStream: true,             // send pings even without active streams
@@ -92,7 +92,7 @@ func NewGateway(ctx context.Context, address string, caFile, certificateFile, ke
 	dialAddress := fmt.Sprintf("dns:///%s", address)
 
 	dialOpts := []grpc.DialOption{
-		grpc.WithKeepaliveParams(kacp),
+		grpc.WithKeepaliveParams(keepAliveClientParams),
 		grpc.WithTransportCredentials(creds),
 		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(retry.UnaryClientInterceptor(callOpts...), grpc_prometheus.UnaryClientInterceptor)),
 		grpc.WithBalancerName(roundrobin.Name),
