@@ -1,5 +1,16 @@
 # Helm Chart Changelog
 
+## 5.2.0
+27 November 2019
+
+Notable changes:
+* [#320](https://github.com/uswitch/kiam/pull/320) The default SSL host path set for the Kiam server has been updated to match the default in the repo's deployment manifests. This path can now be configured from its own `values.yaml` option.  
+Also, the Helm README has been updated to include documentation for key configuration elements.
+
+Many thanks to the following contributors for this release:
+* [@MVJosh](https://github.com/MVJosh)
+* [@Nuru](https://github.com/Nuru)
+
 ## 5.1.0
 8 November 2019
 
