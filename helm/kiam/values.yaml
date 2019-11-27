@@ -252,16 +252,16 @@ server:
   #       key: varname2-key
   extraEnv: []
 
+  # Location of SSL certs on host
+  ## Running on Amazon Linux or RHEL distros:
+  #   /etc/pki/ca-trust/extracted/pem
+  ## else:
+  #   /usr/share/ca-certificates
+  sslCertHostPath: /usr/share/ca-certificates
+
   ## Additional container hostPath mounts
   ##
   extraHostPathMounts: []
-    # - name: ssl-certs
-    #   mountPath: /etc/ssl/certs
-    ## Running on Amazon Linux or RHEL distros:
-    #   hostPath: /etc/pki/ca-trust/extracted/pem
-    ## else:
-    #   hostPath: /usr/share/ca-certificates
-    #   readOnly: true
 
   service:
     port: 443
