@@ -1,5 +1,14 @@
 # Helm Chart Changelog
 
+## 5.3.0
+27 November 2019
+
+Notable changes:
+* [#332](https://github.com/uswitch/kiam/pull/332) The option of running the Kiam server component as a Deployment, rather than a Daemonset, has been added to the chart - this can be configured in the `values.yaml`.
+
+Many thanks to the following contributor for this release:
+* [@denniswebb](https://github.com/denniswebb)
+
 ## 5.2.0
 27 November 2019
 
