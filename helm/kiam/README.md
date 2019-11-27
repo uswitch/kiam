@@ -51,8 +51,6 @@ This command works on `debian` hosts on AWS when using `calico` networking:
 ```
 Replace `cali+` with the CNI interface name you are passing to `kiam-agent` as `--host-interface` and if you are using exclamation point to invert it, e.g. `!eth0` be sure to escape the exclamation point so it is not interpreted by the shell. 
 
-See [this example](https://github.com/cloudposse/reference-architectures/blob/5cad9b5d97dd3e92257ca2ef37ca6b8ff96940d0/templates/kops/kops-private-topology.yaml.gotmpl#L137-L156) for how to install the `iptables` rule using a `systemd` unit installed as a `kops` install hook.
-
 It is safe to have the rule installed twice, so you can test your installation by installing the rule once via the `kiam-agent` and once some other way, in which case you should see the same rule installed twice when you print out the rules. If the 2 rules are identical, then you have the install correct and can revert `agent.host.iptables` to false. 
 
 
