@@ -81,6 +81,9 @@ spec:
             {{- if .Values.agent.host.iptables }}
             - --iptables
             {{- end }}
+            {{- if not .Values.agent.host.iptablesRemoveOnShutdown }}
+            - --no-iptables-remove
+            {{- end }}
             - --host-interface={{ .Values.agent.host.interface }}
             {{- if .Values.agent.log.jsonOutput }}
             - --json-log
@@ -126,7 +129,11 @@ spec:
           {{- end }}
           livenessProbe:
             httpGet:
+              {{- if .Values.agent.deepLivenessProbe }}
+              path: /health?deep=1
+              {{- else }}
               path: /ping
+              {{- end }}
               port: {{ .Values.agent.host.port }}
             initialDelaySeconds: 3
             periodSeconds: 3
