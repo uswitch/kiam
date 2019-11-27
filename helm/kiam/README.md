@@ -30,7 +30,7 @@ The command deploys kiam on the Kubernetes cluster in the default configuration.
 ## Key Configuration
 The default helm configuration will probably not work out-of-the-box. You will most likely need to adjust the following:
 
-* Kiam requires SSL certs from the host system to be mounted into the kiam-server pod in order to be able to contact the AWS meta-data API. If the SSL cert directory on the host(s) you intend to run the kiam-server on does not match the default (`/usr/share/ca-certificates`), you will need to set the `server.sslCertHostPath` variable.
+* Kiam requires trusted SSL root certificates from the host system to be mounted into the kiam-server pod in order to be able to contact the AWS meta-data API. If the SSL cert directory on the host(s) you intend to run the kiam-server on does not match the default (`/usr/share/ca-certificates`), you will need to set the `server.sslCertHostPath` variable.
 * Kiam will _not_ work without an appropriate iptables rule. As there are security & operational implications with making kiam responsible for inserting & removing the rule (see [#202](https://github.com/uswitch/kiam/issues/202) & [#253](https://github.com/uswitch/kiam/pull/253)), the `agent.host.iptables` parameter is set to `false` by default. Either configure the iptables rule separately from Kiam, or use `--set agent.host.iptables=true`.
 
 ### Adding `iptables` rule separately
