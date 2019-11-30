@@ -163,6 +163,4 @@ spec:
       imagePullSecrets:
         - name: {{ .Values.imagePullSecrets }}
       {{- end }}
-  updateStrategy:
-    type: {{ .Values.server.updateStrategy }}
 {{- end }}
