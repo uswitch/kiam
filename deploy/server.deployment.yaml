@@ -1,10 +1,18 @@
 ---
-apiVersion: extensions/v1beta1
-kind: DaemonSet
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   namespace: kube-system
   name: kiam-server
+  labels:
+    app: kiam
+    role: server
 spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kiam
+      role: server
   template:
     metadata:
       annotations:
@@ -14,14 +22,19 @@ spec:
         app: kiam
         role: server
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: "app"
+                operator: In
+                values:
+                - kiam
+            topologyKey: "kubernetes.io/hostname"
       serviceAccountName: kiam-server
       nodeSelector:
         kubernetes.io/role: master
-      # kops master nodes requires this tolerations
-      # tolerations:
-      # - key: "node-role.kubernetes.io/master"
-      #   effect: "NoSchedule"
-      #   operator: "Exists"        
       volumes:
         - name: ssl-certs
           hostPath:
@@ -84,19 +97,3 @@ spec:
             initialDelaySeconds: 3
             periodSeconds: 10
             timeoutSeconds: 10
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: kiam-server
-  namespace: kube-system
-spec:
-  clusterIP: None
-  selector:
-    app: kiam
-    role: server
-  ports:
-  - name: grpclb
-    port: 443
-    targetPort: 443
-    protocol: TCP
