@@ -322,6 +322,8 @@ serviceAccounts:
   agent:
     create: true
     name:
+    annotations: {}
   server:
     create: true
     name:
+    annotations: {}
