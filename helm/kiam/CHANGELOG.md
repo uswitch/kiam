@@ -1,9 +1,13 @@
 # Helm Chart Changelog
 
-## 5.4.0 (unreleased)
+## 5.4.0
+10 December 2019
 
 Notable changes:
-* [#336](https://github.com/uswitch/kiam/pull/336) Add optional service-account annotations for server and agent.  Fix deployment to work with helm v3 and custom SSL host path.
+* [#336](https://github.com/uswitch/kiam/pull/336) Add optional service-account annotations for server and agent. Fix deployment to work with helm v3 by removing the erroneous `updateStrategy` field and add support for the custom SSL host path.
+
+Many thanks to the following contributor for this release:
+* [@tyrken](https://github.com/tyrken)
 
 ## 5.3.0
 27 November 2019
@@ -18,7 +22,7 @@ Many thanks to the following contributor for this release:
 27 November 2019
 
 Notable changes:
-* [#320](https://github.com/uswitch/kiam/pull/320) The default SSL host path set for the Kiam server has been updated to match the default in the repo's deployment manifests. This path can now be configured from its own `values.yaml` option.
+* [#320](https://github.com/uswitch/kiam/pull/320) The default SSL host path set for the Kiam server has been updated to match the default in the repo's deployment manifests. This path can now be configured from its own `values.yaml` option.  
 Also, the Helm README has been updated to include documentation for key configuration elements.
 
 Many thanks to the following contributors for this release:
@@ -38,8 +42,8 @@ Many thanks to the following contributor for this release:
 7 November 2019
 
 **BREAKING CHANGES:**
-* [#322](https://github.com/uswitch/kiam/pull/322) The chart has been updated to include support for the `--no-iptables-remove` Kiam flag, which is now **enabled by default.**
-`Note:` Using your existing `values.yaml` with this chart will result in the flag being turned on with no user input. This flag leaves the iptables rule (which is necessary for the Kiam agent processes to intercept requests to the metadata API) in place after the Kiam agent has been shutdown.
+* [#322](https://github.com/uswitch/kiam/pull/322) The chart has been updated to include support for the `--no-iptables-remove` Kiam flag, which is now **enabled by default.**  
+`Note:` Using your existing `values.yaml` with this chart will result in the flag being turned on with no user input. This flag leaves the iptables rule (which is necessary for the Kiam agent processes to intercept requests to the metadata API) in place after the Kiam agent has been shutdown.  
 Please see the following links for related discussion: [Issue 202](https://github.com/uswitch/kiam/issues/202) and [PR #253](https://github.com/uswitch/kiam/pull/253).
 
 Many thanks to the following contributors for this release:
@@ -68,7 +72,7 @@ Many thanks to the following contributor for this release:
 16 October 2019
 
 **BREAKING CHANGES:**
-* [#307](https://github.com/uswitch/kiam/pull/307) Upgraded Kubernetes Apps API version for the DaemonSets in order to support Kubernetes 1.16+.
+* [#307](https://github.com/uswitch/kiam/pull/307) Upgraded Kubernetes Apps API version for the DaemonSets in order to support Kubernetes 1.16+.  
 `Note:` This API change has the effect of dropping support for Kubernetes >1.9. This release WILL NOT work for Kubernetes clusters running versions earlier than 1.9.
 
 Many thanks to the following contributor for this release:
@@ -102,7 +106,7 @@ Notable Changes:
 5 September 2019
 
 **BREAKING CHANGES:**
-* [#292](https://github.com/uswitch/kiam/pull/292) The `extraEnv` parameters for both the agent and server in `values.yaml` have been changed to support an array of options. This adds support for creating env vars from configMaps or secretKeyRefs.
+* [#292](https://github.com/uswitch/kiam/pull/292) The `extraEnv` parameters for both the agent and server in `values.yaml` have been changed to support an array of options. This adds support for creating env vars from configMaps or secretKeyRefs.  
 `Note:` This will break any existing Helm deployments which utilise the `extraEnv` parameters in `values.yaml`. You will need to update your `values.yaml` file to match the format in the [template](/helm/kiam/values.yaml#L93)
 
 ## 2.5.3
