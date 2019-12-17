@@ -1,4 +1,17 @@
 # Changelog
+## v3.5
+17 December 2019
+
+Notable Changes:
+* [#337](https://github.com/uswitch/kiam/pull/337) Enable gRPC keepalive to detect dead TCP connections between agent and server
+* [#330](https://github.com/uswitch/kiam/pull/330) Update AWS SDK to allow for use of [IAM Roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) for kiam-server
+* [#315](https://github.com/uswitch/kiam/pull/315) Switch to using go modules
+
+Thanks to these contributors for this release:
+* [@mechpen](https://github.com/mechpen)
+* [@nirnanaaa](https://github.com/nirnanaaa)
+* [@chrisfowles](https://github.com/chrisfowles)
+
 ## v3.4
 16 August 2019
 
