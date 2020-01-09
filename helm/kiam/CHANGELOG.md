@@ -1,5 +1,11 @@
 # Helm Chart Changelog
 
+## 5.5.0
+09 January 2020
+
+Notable changes:
+* [#x](https://github.com/uswitch/kiam/pull/x) Update kiam release from 3.4 to 3.5.
+
 ## 5.4.0
 10 December 2019
 

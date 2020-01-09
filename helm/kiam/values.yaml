@@ -15,7 +15,7 @@ agent:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.4
+    tag: v3.5
     pullPolicy: IfNotPresent
 
   ## agent whitelist of proxy routes matching this reg-ex
@@ -165,7 +165,7 @@ server:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.4
+    tag: v3.5
     pullPolicy: IfNotPresent
 
   ## Run as Deployment instead of Daemonset
