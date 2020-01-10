@@ -4,7 +4,7 @@
 09 January 2020
 
 Notable changes:
-* [#x](https://github.com/uswitch/kiam/pull/x) Update kiam release from 3.4 to 3.5.
+* [#353](https://github.com/uswitch/kiam/pull/353) Update kiam release from 3.4 to 3.5.
 * Optional gRPC keepalive [#337](https://github.com/uswitch/kiam/pull/337) configuration has been added to the chart for the agent under the `keepaliveParams:` field.
 
 ## 5.4.0
