@@ -137,7 +137,7 @@ agent:
   ##
   gatewayTimeoutCreation: 1s
 
-  ## gRPC keepalice variables
+  ## gRPC keepalive variables
   ##
   keepaliveParams:
     time:
