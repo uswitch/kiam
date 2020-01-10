@@ -134,9 +134,9 @@ Parameter | Description | Default
 `agent.extraEnv` | Additional agent container environment variables | `{}`
 `agent.extraHostPathMounts` | Additional agent container hostPath mounts | `[]`
 `agent.gatewayTimeoutCreation` | Agent's timeout when creating the kiam gateway | `1s`
-`agent.keepaliveParams.time` | gRPC keepalive time in ms, uses agent default | `null`
-`agent.keepaliveParams.timeout` | gRPC keepalive timeout in ms, uses agent default | `null`
-`agent.keepaliveParams.permitWithoutStream` | gRPC keepalive ping even with no RPC, uses agent default | `null`
+`agent.keepaliveParams.time` | gRPC keepalive time | `10s`
+`agent.keepaliveParams.timeout` | gRPC keepalive timeout | `2s`
+`agent.keepaliveParams.permitWithoutStream` | gRPC keepalive ping even with no RPC | `false`
 `agent.host.ip` | IP address of host | `$(HOST_IP)`
 `agent.host.iptables` | Add iptables rule | `false`
 `agent.host.interface` | Agent's host interface for proxying AWS metadata | `cali+`
