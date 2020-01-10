@@ -109,7 +109,7 @@ spec:
             - --grpc-keepalive-timeout-ms={{ .Values.agent.keepaliveParams.timeout }}
             {{- end }}
             {{- if .Values.agent.keepaliveParams.PermitWithoutStream }}
-            - --grpc-keepalive-permit-without-stream={{ .Values.agent.keepaliveParams.PermitWithoutStream }}
+            - --grpc-keepalive-permit-without-stream
             {{- end }}
           {{- range $key, $value := .Values.agent.extraArgs }}
             {{- if $value }}
