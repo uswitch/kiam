@@ -15,7 +15,7 @@ agent:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.4
+    tag: v3.5
     pullPolicy: IfNotPresent
 
   ## agent whitelist of proxy routes matching this reg-ex
@@ -137,6 +137,14 @@ agent:
   ##
   gatewayTimeoutCreation: 1s
 
+  ## gRPC keepalive variables
+  ##
+  keepaliveParams:
+    time:
+    timeout:
+    ## gRPC keepalive ping even with no RPC
+    # permitWithoutStream: true
+
   ## Base64-encoded PEM values for agent's CA certificate(s), certificate and private key
   ##
   tlsFiles:
@@ -165,7 +173,7 @@ server:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.4
+    tag: v3.5
     pullPolicy: IfNotPresent
 
   ## Run as Deployment instead of Daemonset
