@@ -1,11 +1,14 @@
 # Helm Chart Changelog
 
 ## 5.5.0
-09 January 2020
+13 January 2020
 
 Notable changes:
 * [#353](https://github.com/uswitch/kiam/pull/353) Update kiam release from 3.4 to 3.5.
 * Optional gRPC keepalive [#337](https://github.com/uswitch/kiam/pull/337) configuration has been added to the chart for the agent under the `keepaliveParams:` field.
+
+Many thanks to the following contributor for this release:
+* [@johnmccabe](https://github.com/johnmccabe)
 
 ## 5.4.0
 10 December 2019
