@@ -19,6 +19,18 @@ pipeline:
       GO111MODULE: "on"
     commands:
       - make bench
+  
+  helm-test-v2:
+    image:  alpine/helm:2.14.3
+    commands:
+      - helm lint helm/kiam
+      - helm template helm/kiam
+
+  helm-test-v3:
+    image:  alpine/helm:3.0.2
+    commands:
+      - helm lint helm/kiam
+      - helm template helm/kiam
 
   docker:
     when:
@@ -52,3 +64,4 @@ pipeline:
     when:
       event: push
       branch: master
+      
