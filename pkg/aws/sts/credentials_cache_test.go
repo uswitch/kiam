@@ -25,9 +25,9 @@ type stubGateway struct {
 	requestedRole string
 }
 
-func (s *stubGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
+func (s *stubGateway) Issue(ctx context.Context, roleARN string, sessionName string, externalID string, expiry time.Duration) (*Credentials, error) {
 	s.issueCount = s.issueCount + 1
-	s.requestedRole = roleARN
+	s.requestedRole = roleARN + "|" + externalID
 	return s.c, nil
 }
 
@@ -36,17 +36,17 @@ func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
 	cache := DefaultCache(stubGateway, "session", 15*time.Minute, 5*time.Minute, DefaultResolver("prefix:"))
 	ctx := context.Background()
 
-	creds, _ := cache.CredentialsForRole(ctx, "role")
+	creds, _ := cache.CredentialsForRole(ctx, "role|external")
 	if creds.Code != "foo" {
 		t.Error("didnt return expected credentials code, was", creds.Code)
 	}
 
-	cache.CredentialsForRole(ctx, "role")
+	cache.CredentialsForRole(ctx, "role|external")
 	if stubGateway.issueCount != 1 {
 		t.Error("expected creds to be cached")
 	}
 
-	if stubGateway.requestedRole != "prefix:role" {
+	if stubGateway.requestedRole != "prefix:role|external" {
 		t.Error("unexpected role, was:", stubGateway.requestedRole)
 	}
 }

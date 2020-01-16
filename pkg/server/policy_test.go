@@ -24,7 +24,7 @@ import (
 )
 
 func TestRequestedRolePolicy(t *testing.T) {
-	p := testutil.NewPodWithRole("namespace", "name", "192.168.0.1", testutil.PhaseRunning, "myrole")
+	p := testutil.NewPodWithRole("namespace", "name", "192.168.0.1", testutil.PhaseRunning, "myrole", "")
 	f := kt.NewStubFinder(p)
 
 	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
@@ -61,7 +61,7 @@ func TestRequestedRolePolicy(t *testing.T) {
 
 func TestRequestedRolePolicyWithSlash(t *testing.T) {
 	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
-	p := testutil.NewPodWithRole("namespace", "name", "192.168.0.1", testutil.PhaseRunning, "/myrole")
+	p := testutil.NewPodWithRole("namespace", "name", "192.168.0.1", testutil.PhaseRunning, "/myrole", "")
 	f := kt.NewStubFinder(p)
 
 	policy := NewRequestingAnnotatedRolePolicy(f, arnResolver)
@@ -123,7 +123,7 @@ func TestErrorWhenPodNotFound(t *testing.T) {
 func TestNamespacePolicy(t *testing.T) {
 	n := testutil.NewNamespace("red", "^red.*$|^.red.*$")
 	nf := kt.NewNamespaceFinder(n)
-	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role", "")
 	pf := kt.NewStubFinder(p)
 
 	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
@@ -160,7 +160,7 @@ func TestNamespacePolicy(t *testing.T) {
 func TestNamespacePolicyWithSlash(t *testing.T) {
 	n := testutil.NewNamespace("red", "^red.*$|^.red.*$")
 	nf := kt.NewNamespaceFinder(n)
-	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role", "")
 	pf := kt.NewStubFinder(p)
 
 	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
@@ -197,7 +197,7 @@ func TestNamespacePolicyWithSlash(t *testing.T) {
 func TestNotAllowedWithoutNamespaceAnnotation(t *testing.T) {
 	n := testutil.NewNamespace("red", "")
 	nf := kt.NewNamespaceFinder(n)
-	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role", "")
 	pf := kt.NewStubFinder(p)
 
 	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
@@ -218,7 +218,7 @@ func TestNotAllowedWithoutNamespaceAnnotation(t *testing.T) {
 func TestNotAllowedWithoutNamespaceAnnotationWithSlash(t *testing.T) {
 	n := testutil.NewNamespace("red", "")
 	nf := kt.NewNamespaceFinder(n)
-	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role", "")
 	pf := kt.NewStubFinder(p)
 
 	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)

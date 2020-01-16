@@ -30,7 +30,7 @@ import (
 )
 
 type STSGateway interface {
-	Issue(ctx context.Context, role, session string, expiry time.Duration) (*Credentials, error)
+	Issue(ctx context.Context, role, session, externalId string, expiry time.Duration) (*Credentials, error)
 }
 
 type regionalResolver struct {
@@ -76,12 +76,11 @@ func newRegionalResolver(region string) (endpoints.Resolver, error) {
 }
 
 type DefaultSTSGateway struct {
-	session  *session.Session
-	resolver endpoints.Resolver
+	session *session.Session
 }
 
 func DefaultGateway(assumeRoleArn, region string) (*DefaultSTSGateway, error) {
-        config := aws.NewConfig().WithCredentialsChainVerboseErrors(true)
+	config := aws.NewConfig().WithCredentialsChainVerboseErrors(true)
 	if assumeRoleArn != "" {
 		config.WithCredentials(stscreds.NewCredentials(session.Must(session.NewSession()), assumeRoleArn))
 	}
@@ -99,7 +98,7 @@ func DefaultGateway(assumeRoleArn, region string) (*DefaultSTSGateway, error) {
 	return &DefaultSTSGateway{session: session}, nil
 }
 
-func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
+func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName, externalId string, expiry time.Duration) (*Credentials, error) {
 	timer := prometheus.NewTimer(assumeRole)
 	defer timer.ObserveDuration()
 	if statsd.Enabled {
@@ -114,6 +113,9 @@ func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName stri
 		DurationSeconds: aws.Int64(int64(expiry.Seconds())),
 		RoleArn:         aws.String(roleARN),
 		RoleSessionName: aws.String(sessionName),
+	}
+	if externalId != "" {
+		in.ExternalId = aws.String(externalId)
 	}
 	resp, err := svc.AssumeRoleWithContext(ctx, in)
 	if err != nil {

@@ -48,6 +48,19 @@ metadata:
     iam.amazonaws.com/role: reportingdb-reader
 ```
 
+kiam also supports the use of an external id annotation added to the `Pod` which
+maybe used to avoid [confused deputy scenarios in cross-organisation role assumption](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html),
+for example:
+
+```yaml
+kind: Pod
+metadata:
+  name: foo
+  namespace: cross-org-iam-example
+  annotations:
+    iam.amazonaws.com/role: arn:aws:iam::12345678901:role/trusted-partner
+    iam.amazonaws.com/external-id: d272840b-2859-41aa-b022-f4527bfef672
+
 Further, all namespaces must also have an annotation with a regular expression expressing which roles are permitted to be assumed within that namespace. **Without the namespace annotation the pod will be unable to assume any roles.**
 
 ```yaml

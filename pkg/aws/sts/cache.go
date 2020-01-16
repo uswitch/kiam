@@ -26,7 +26,6 @@ import (
 
 type credentialsCache struct {
 	arnResolver     ARNResolver
-	baseARN         string
 	cache           *cache.Cache
 	expiring        chan *RoleCredentials
 	sessionName     string
@@ -37,6 +36,7 @@ type credentialsCache struct {
 
 type RoleCredentials struct {
 	Role        string
+	ExternalId  string
 	Credentials *Credentials
 }
 
@@ -122,8 +122,8 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	cacheMiss.Inc()
 
 	issue := func() (interface{}, error) {
-		arn := c.arnResolver.Resolve(role)
-		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, c.sessionDuration)
+		arn, externalID := c.arnResolver.Resolve(role)
+		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, externalID, c.sessionDuration)
 		if err != nil {
 			errorIssuing.Inc()
 			logger.Errorf("error requesting credentials: %s", err.Error())
