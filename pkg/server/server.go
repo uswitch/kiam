@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package server
 
 import (
@@ -215,42 +216,28 @@ func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {
 
 // NewServer constructs a new server.
 func NewServer(config *Config) (*KiamServer, error) {
-	server := &KiamServer{parallelFetchers: config.ParallelFetcherProcesses}
-
-	listener, err := net.Listen("tcp", config.BindAddress)
-	if err != nil {
-		return nil, err
-	}
-	server.listener = listener
-
-	client, err := official.NewClient(config.KubeConfig)
-	if err != nil {
-		log.Fatalf("couldn't create kubernetes client: %s", err.Error())
-	}
-
-	server.pods = k8s.NewPodCache(k8s.NewListWatch(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
-	server.namespaces = k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
-	server.eventRecorder = eventRecorder(client)
-
 	arnResolver, err := newRoleARNResolver(config)
 	if err != nil {
 		return nil, err
 	}
-
 	stsGateway, err := sts.DefaultGateway(arnResolver.Resolve(config.AssumeRoleArn), config.Region)
 	if err != nil {
 		return nil, err
 	}
-
 	credentialsCache := sts.DefaultCache(
-		stsGateway, config.SessionName,
+		stsGateway,
+		config.SessionName,
 		config.SessionDuration,
 		config.SessionRefresh,
 		arnResolver,
 	)
-	server.credentialsProvider = credentialsCache
-	server.manager = prefetch.NewManager(credentialsCache, server.pods)
-	server.assumePolicy = Policies(NewRequestingAnnotatedRolePolicy(server.pods, arnResolver), NewNamespacePermittedRoleNamePolicy(server.namespaces, server.pods))
+
+	client, err := official.NewClient(config.KubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	podCache := k8s.NewPodCache(k8s.NewListWatch(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
+	namespaceCache := k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 
 	cert, caPool, err := loadCerts(config.TLS.ServerCert, config.TLS.ServerKey, config.TLS.CA)
 	if err != nil {
@@ -263,16 +250,32 @@ func NewServer(config *Config) (*KiamServer, error) {
 		Certificates: []tls.Certificate{cert},
 		ClientCAs:    caPool,
 	})
-
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
 	)
-	pb.RegisterKiamServiceServer(grpcServer, server)
-	server.server = grpcServer
 
-	return server, nil
+	listener, err := net.Listen("tcp", config.BindAddress)
+	if err != nil {
+		return nil, err
+	}
+	srv := &KiamServer{
+		listener:            listener,
+		server:              grpcServer,
+		pods:                podCache,
+		namespaces:          namespaceCache,
+		eventRecorder:       eventRecorder(client),
+		manager:             prefetch.NewManager(credentialsCache, podCache),
+		credentialsProvider: credentialsCache,
+		assumePolicy: Policies(
+			NewRequestingAnnotatedRolePolicy(podCache, arnResolver),
+			NewNamespacePermittedRoleNamePolicy(namespaceCache, podCache),
+		),
+		parallelFetchers: config.ParallelFetcherProcesses,
+	}
+	pb.RegisterKiamServiceServer(grpcServer, srv)
+	return srv, nil
 }
 
 // Serve starts the server, starting all components and listening for gRPC
@@ -292,6 +295,7 @@ func (k *KiamServer) Serve(ctx context.Context) {
 // Stop performs a graceful shutdown of the gRPC server
 func (k *KiamServer) Stop() {
 	k.server.GracefulStop()
+	k.listener.Close()
 }
 
 func eventRecorder(kubeClient *kubernetes.Clientset) record.EventRecorder {
