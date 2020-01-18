@@ -18,13 +18,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/statsd"
 	pb "github.com/uswitch/kiam/proto"
@@ -59,28 +58,20 @@ func NewGateway(ctx context.Context, address string, caFile, certificateFile, ke
 		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
 	}
 
-	certificate, err := tls.LoadX509KeyPair(certificateFile, keyFile)
-	if err != nil {
-		return nil, fmt.Errorf("error loading keypair: %v", err)
-	}
-	certPool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile(caFile)
-	if err != nil {
-		return nil, fmt.Errorf("error reading SSL cert: %v", err)
-	}
-	if ok := certPool.AppendCertsFromPEM(ca); !ok {
-		return nil, fmt.Errorf("error appending certs from ca")
-	}
-
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing hostname: %v", err)
 	}
+	cert, caPool, err := loadCerts(certificateFile, keyFile, caFile)
+	if err != nil {
+		return nil, err
+	}
+	clientTLSMetrics.update(x509.ExtKeyUsageClientAuth, &cert, caPool)
 
 	creds := credentials.NewTLS(&tls.Config{
 		ServerName:   host,
-		Certificates: []tls.Certificate{certificate},
-		RootCAs:      certPool,
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caPool,
 	})
 
 	dialAddress := fmt.Sprintf("dns:///%s", address)
