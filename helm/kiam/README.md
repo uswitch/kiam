@@ -133,6 +133,7 @@ Parameter | Description | Default
 `agent.extraArgs` | Additional agent container arguments | `{}`
 `agent.extraEnv` | Additional agent container environment variables | `{}`
 `agent.extraHostPathMounts` | Additional agent container hostPath mounts | `[]`
+`agent.initContainers` | Agent initContainers | `[]`
 `agent.gatewayTimeoutCreation` | Agent's timeout when creating the kiam gateway | `1s`
 `agent.keepaliveParams.time` | gRPC keepalive time | `10s`
 `agent.keepaliveParams.timeout` | gRPC keepalive timeout | `2s`
@@ -177,6 +178,7 @@ Parameter | Description | Default
 `server.extraEnv` | Additional server container environment variables | `{}`
 `server.sslCertHostPath` | Path to SSL certs on host machinee | `/usr/share/ca-certificates`
 `server.extraHostPathMounts` | Additional server container hostPath mounts | `[]`
+`server.initContainers` | Server initContainers | `[]`
 `server.log.jsonOutput` | Whether or not to output server log in JSON format | `true`
 `server.log.level` | Server log level (`debug`, `info`, `warn` or `error`) | `info`
 `server.nodeSelector` | Node labels for server pod assignment | `{}`

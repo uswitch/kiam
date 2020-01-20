@@ -133,6 +133,23 @@ agent:
     #   hostPath: /usr/share/ca-certificates
     #   readOnly: true
 
+  ## Agent initContainers
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ##
+  initContainers: []
+    ## Check kiam-server dns hostname
+    # - name: check-dns
+    #   image: busybox:1.31
+    #   imagePullPolicy: IfNotPresent
+    #   command: ['sh', '-c', 'until nslookup kiam-server; do sleep 1; done;']
+    #   resources:
+    #     requests:
+    #       cpu: 20m
+    #       memory: 16Mi
+    #     limits:
+    #       cpu: 20m
+    #       memory: 16Mi
+
   ## Timeout when creating the kiam gateway
   ##
   gatewayTimeoutCreation: 1s
@@ -270,6 +287,23 @@ server:
   ## Additional container hostPath mounts
   ##
   extraHostPathMounts: []
+
+  ## Server initContainers
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ##
+  initContainers: []
+    ## Check kiam-server dns hostname
+    # - name: check-dns
+    #   image: busybox:1.31
+    #   imagePullPolicy: IfNotPresent
+    #   command: ['sh', '-c', 'until nslookup kiam-server; do sleep 1; done;']
+    #   resources:
+    #     requests:
+    #       cpu: 20m
+    #       memory: 16Mi
+    #     limits:
+    #       cpu: 20m
+    #       memory: 16Mi
 
   service:
     port: 443

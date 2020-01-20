@@ -60,6 +60,10 @@ spec:
       {{- if .Values.server.priorityClassName }}
       priorityClassName: {{ .Values.server.priorityClassName | quote }}
       {{- end }}
+      {{- if .Values.server.initContainers }}
+      initContainers:
+{{ toYaml .Values.server.initContainers | indent 8 }}
+      {{- end }}
       containers:
         - name: {{ template "kiam.name" . }}-{{ .Values.server.name }}
           image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
