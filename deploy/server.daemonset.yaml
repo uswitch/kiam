@@ -1,86 +1,110 @@
----
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  namespace: kube-system
+  annotations:
+    deprecated.daemonset.template.generation: "0"
+  creationTimestamp: null
+  labels:
+    app: kiam
+    role: server
   name: kiam-server
+  namespace: kube-system
 spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: kiam
+      role: server
   template:
     metadata:
       annotations:
-        prometheus.io/scrape: "true"
         prometheus.io/port: "9620"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
       labels:
         app: kiam
         role: server
     spec:
-      serviceAccountName: kiam-server
-      nodeSelector:
-        kubernetes.io/role: master
-      # kops master nodes requires this tolerations
-      # tolerations:
-      # - key: "node-role.kubernetes.io/master"
-      #   effect: "NoSchedule"
-      #   operator: "Exists"        
-      volumes:
-        - name: ssl-certs
-          hostPath:
-            # for AWS linux or RHEL distros
-            # path: /etc/pki/ca-trust/extracted/pem/
-            # debian or ubuntu distros
-            # path: /etc/ssl/certs
-            path: /usr/share/ca-certificates
-        - name: tls
-          secret:
-            secretName: kiam-server-tls
       containers:
-        - name: kiam
-          image: quay.io/uswitch/kiam:master # USE A TAGGED RELEASE IN PRODUCTION
-          imagePullPolicy: Always
-          command:
+      - args:
+        - server
+        - --json-log
+        - --level=warn
+        - --bind=0.0.0.0:443
+        - --cert=/etc/kiam/tls/server.pem
+        - --key=/etc/kiam/tls/server-key.pem
+        - --ca=/etc/kiam/tls/ca.pem
+        - --role-base-arn-autodetect
+        - --sync=1m
+        - --prometheus-listen-addr=0.0.0.0:9620
+        - --prometheus-sync-interval=5s
+        command:
+        - /kiam
+        image: quay.io/uswitch/kiam:master
+        imagePullPolicy: Always
+        livenessProbe:
+          exec:
+            command:
             - /kiam
-          args:
-            - server
-            - --json-log
-            - --level=warn
-            - --bind=0.0.0.0:443
+            - health
             - --cert=/etc/kiam/tls/server.pem
             - --key=/etc/kiam/tls/server-key.pem
             - --ca=/etc/kiam/tls/ca.pem
-            - --role-base-arn-autodetect
-            - --sync=1m
-            - --prometheus-listen-addr=0.0.0.0:9620
-            - --prometheus-sync-interval=5s
-          volumeMounts:
-            - mountPath: /etc/ssl/certs
-              name: ssl-certs
-            - mountPath: /etc/kiam/tls
-              name: tls
-          livenessProbe:
-            exec:
-              command:
-              - /kiam
-              - health
-              - --cert=/etc/kiam/tls/server.pem
-              - --key=/etc/kiam/tls/server-key.pem
-              - --ca=/etc/kiam/tls/ca.pem
-              - --server-address=127.0.0.1:443
-              - --gateway-timeout-creation=1s
-              - --timeout=5s
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 10
-          readinessProbe:
-            exec:
-              command:
-              - /kiam
-              - health
-              - --cert=/etc/kiam/tls/server.pem
-              - --key=/etc/kiam/tls/server-key.pem
-              - --ca=/etc/kiam/tls/ca.pem
-              - --server-address=127.0.0.1:443
-              - --gateway-timeout-creation=1s
-              - --timeout=5s
-            initialDelaySeconds: 3
-            periodSeconds: 10
-            timeoutSeconds: 10
+            - --server-address=127.0.0.1:443
+            - --gateway-timeout-creation=1s
+            - --timeout=5s
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: kiam
+        readinessProbe:
+          exec:
+            command:
+            - /kiam
+            - health
+            - --cert=/etc/kiam/tls/server.pem
+            - --key=/etc/kiam/tls/server-key.pem
+            - --ca=/etc/kiam/tls/ca.pem
+            - --server-address=127.0.0.1:443
+            - --gateway-timeout-creation=1s
+            - --timeout=5s
+          failureThreshold: 3
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/ssl/certs
+          name: ssl-certs
+        - mountPath: /etc/kiam/tls
+          name: tls
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        kubernetes.io/role: master
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: kiam-server
+      serviceAccountName: kiam-server
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - hostPath:
+          path: /usr/share/ca-certificates
+          type: ""
+        name: ssl-certs
+      - name: tls
+        secret:
+          defaultMode: 420
+          secretName: kiam-server-tls
+  updateStrategy:
+    type: OnDelete
+status:
+  currentNumberScheduled: 0
+  desiredNumberScheduled: 0
+  numberMisscheduled: 0
+  numberReady: 0

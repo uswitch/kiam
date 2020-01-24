@@ -1,74 +1,105 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  namespace: kube-system
+  annotations:
+    deprecated.daemonset.template.generation: "0"
+  creationTimestamp: null
+  labels:
+    app: kiam
+    role: agent
   name: kiam-agent
+  namespace: kube-system
 spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: kiam
+      role: agent
   template:
     metadata:
       annotations:
-        prometheus.io/scrape: "true"
         prometheus.io/port: "9620"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
       labels:
         app: kiam
         role: agent
     spec:
-      hostNetwork: true
+      containers:
+      - args:
+        - agent
+        - --iptables
+        - --host-interface=cali+
+        - --json-log
+        - --port=8181
+        - --cert=/etc/kiam/tls/agent.pem
+        - --key=/etc/kiam/tls/agent-key.pem
+        - --ca=/etc/kiam/tls/ca.pem
+        - --server-address=kiam-server:443
+        - --prometheus-listen-addr=0.0.0.0:9620
+        - --prometheus-sync-interval=5s
+        - --gateway-timeout-creation=1s
+        command:
+        - /kiam
+        env:
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        image: quay.io/uswitch/kiam:master
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: 8181
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: kiam
+        resources: {}
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+          procMount: Default
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/ssl/certs
+          name: ssl-certs
+        - mountPath: /etc/kiam/tls
+          name: tls
+        - mountPath: /var/run/xtables.lock
+          name: xtables
       dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
       nodeSelector:
         kubernetes.io/role: node
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
       volumes:
-        - name: ssl-certs
-          hostPath:
-            # for AWS linux or RHEL distros
-            # path: /etc/pki/ca-trust/extracted/pem/
-            # debian or ubuntu distros
-            # path: /etc/ssl/certs
-            path: /usr/share/ca-certificates
-        - name: tls
-          secret:
-            secretName: kiam-agent-tls
-        - name: xtables
-          hostPath:
-            path: /run/xtables.lock
-            type: FileOrCreate
-      containers:
-        - name: kiam
-          securityContext:
-            capabilities:
-              add: ["NET_ADMIN"]
-          image: quay.io/uswitch/kiam:master # USE A TAGGED RELEASE IN PRODUCTION
-          imagePullPolicy: Always
-          command:
-            - /kiam
-          args:
-            - agent
-            - --iptables
-            - --host-interface=cali+
-            - --json-log
-            - --port=8181
-            - --cert=/etc/kiam/tls/agent.pem
-            - --key=/etc/kiam/tls/agent-key.pem
-            - --ca=/etc/kiam/tls/ca.pem
-            - --server-address=kiam-server:443
-            - --prometheus-listen-addr=0.0.0.0:9620
-            - --prometheus-sync-interval=5s
-            - --gateway-timeout-creation=1s
-          env:
-            - name: HOST_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          volumeMounts:
-            - mountPath: /etc/ssl/certs
-              name: ssl-certs
-            - mountPath: /etc/kiam/tls
-              name: tls
-            - mountPath: /var/run/xtables.lock
-              name: xtables
-          livenessProbe:
-            httpGet:
-              path: /ping
-              port: 8181
-            initialDelaySeconds: 3
-            periodSeconds: 3
+      - hostPath:
+          path: /usr/share/ca-certificates
+          type: ""
+        name: ssl-certs
+      - name: tls
+        secret:
+          defaultMode: 420
+          secretName: kiam-agent-tls
+      - hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate
+        name: xtables
+  updateStrategy:
+    type: OnDelete
+status:
+  currentNumberScheduled: 0
+  desiredNumberScheduled: 0
+  numberMisscheduled: 0
+  numberReady: 0
