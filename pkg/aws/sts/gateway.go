@@ -38,7 +38,11 @@ type regionalResolver struct {
 }
 
 func (r *regionalResolver) EndpointFor(svc, region string, opts ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
-	return r.endpoint, nil
+	if svc == "sts" {
+		return r.endpoint, nil
+	}
+
+	return endpoints.DefaultResolver().EndpointFor(svc, region, opts...)
 }
 
 func newRegionalResolver(region string) (endpoints.Resolver, error) {
@@ -81,7 +85,7 @@ type DefaultSTSGateway struct {
 }
 
 func DefaultGateway(assumeRoleArn, region string) (*DefaultSTSGateway, error) {
-        config := aws.NewConfig().WithCredentialsChainVerboseErrors(true)
+	config := aws.NewConfig().WithCredentialsChainVerboseErrors(true)
 	if assumeRoleArn != "" {
 		config.WithCredentials(stscreds.NewCredentials(session.Must(session.NewSession()), assumeRoleArn))
 	}
