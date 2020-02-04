@@ -148,8 +148,11 @@ spec:
               path: /ping
               {{- end }}
               port: {{ .Values.agent.host.port }}
-            initialDelaySeconds: 3
-            periodSeconds: 3
+            initialDelaySeconds: {{ .Values.agent.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.agent.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.agent.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.agent.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.agent.livenessProbe.failureThreshold }}
         {{- if .Values.agent.resources }}
           resources:
 {{ toYaml .Values.agent.resources | indent 12 }}
