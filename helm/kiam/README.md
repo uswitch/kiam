@@ -165,6 +165,11 @@ Parameter | Description | Default
 `agent.tolerations` | Tolerations to be applied to agent pods | `[]`
 `agent.affinity` | Node affinity for pod assignment | `{}`
 `agent.updateStrategy` | Strategy for agent DaemonSet updates (requires Kubernetes 1.6+) | `OnDelete`
+`agent.livenessProbe.initialDelaySeconds` | Delay before liveness probe is initiated | 3
+`agent.livenessProbe.periodSeconds` | How often to perform the probe | 3
+`agent.livenessProbe.timeoutSeconds` | When the probe times out | 1
+`agent.livenessProbe.successThreshold` | Minimum consecutive successes for the probe to be considered successful after having failed. | 1
+`agent.livenessProbe.failureThreshold` | Minimum consecutive failures for the probe to be considered failed after having succeeded. | 3
 `server.enabled` | If true, create server | `true`
 `server.name` | Server container name | `server`
 `server.gatewayTimeoutCreation` | Server's timeout when creating the kiam gateway | `1s`
@@ -206,6 +211,16 @@ Parameter | Description | Default
 `server.affinity` | Node affinity for pod assignment | `{}`
 `server.updateStrategy` | Strategy for server DaemonSet updates (requires Kubernetes 1.6+) | `OnDelete`
 `server.useHostNetwork` | If true, use hostNetwork on server to bypass agent iptable rules | `false`
+`server.livenessProbe.initialDelaySeconds` | Delay before liveness probe is initiated | 10
+`server.livenessProbe.periodSeconds` | How often to perform the probe | 10
+`server.livenessProbe.timeoutSeconds` | When the probe times out | 10
+`server.livenessProbe.successThreshold` | Minimum consecutive successes for the probe to be considered successful after having failed. | 1
+`server.livenessProbe.failureThreshold` | Minimum consecutive failures for the probe to be considered failed after having succeeded. | 3
+`server.readinessProbe.initialDelaySeconds` | Delay before readiness probe is initiated | 10
+`server.readinessProbe.periodSeconds` | How often to perform the probe | 10
+`server.readinessProbe.timeoutSeconds` | When the probe times out | 10
+`server.readinessProbe.successThreshold` | Minimum consecutive successes for the probe to be considered successful after having failed. | 1
+`server.readinessProbe.failureThreshold` | Minimum consecutive failures for the probe to be considered failed after having succeeded. | 3
 `rbac.create` | If `true`, create & use RBAC resources | `true`
 `psp.create` | If `true`, create Pod Security Policies for the agent and server when enabled | `false`
 `imagePullSecrets` | The name of the secret to use if pulling from a private registry | `nil`

@@ -1,5 +1,14 @@
 # Helm Chart Changelog
 
+## 5.6.0
+24 January 2020
+
+Notable changes:
+* [#361](https://github.com/uswitch/kiam/pull/361) Add ability to configure the agent and server readiness/liveness probes from the `values.yaml`.
+
+Many thanks to the following contributor for this release:
+* [@caiohasouza](https://github.com/caiohasouza)
+
 ## 5.5.0
 13 January 2020
 
