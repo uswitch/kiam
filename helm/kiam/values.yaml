@@ -133,6 +133,11 @@ agent:
     #   hostPath: /usr/share/ca-certificates
     #   readOnly: true
 
+  ## Agent initContainers
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ##
+  initContainers: []
+
   ## Timeout when creating the kiam gateway
   ##
   gatewayTimeoutCreation: 1s
@@ -280,6 +285,11 @@ server:
   ## Additional container hostPath mounts
   ##
   extraHostPathMounts: []
+
+  ## Server initContainers
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ##
+  initContainers: []
 
   service:
     port: 443

@@ -65,6 +65,10 @@ spec:
       {{- if .Values.agent.priorityClassName }}
       priorityClassName: {{ .Values.agent.priorityClassName | quote }}
       {{- end }}
+      {{- if .Values.agent.initContainers }}
+      initContainers:
+{{ toYaml .Values.agent.initContainers | indent 8 }}
+      {{- end }}
       containers:
         - name: {{ template "kiam.name" . }}-{{ .Values.agent.name }}
         {{- if .Values.agent.host.iptables }}
