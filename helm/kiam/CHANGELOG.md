@@ -1,5 +1,34 @@
 # Helm Chart Changelog
 
+## 5.4.0
+10 December 2019
+
+Notable changes:
+* [#336](https://github.com/uswitch/kiam/pull/336) Add optional service-account annotations for server and agent. Fix deployment to work with helm v3 by removing the erroneous `updateStrategy` field and add support for the custom SSL host path.
+
+Many thanks to the following contributor for this release:
+* [@tyrken](https://github.com/tyrken)
+
+## 5.3.0
+27 November 2019
+
+Notable changes:
+* [#332](https://github.com/uswitch/kiam/pull/332) The option of running the Kiam server component as a Deployment, rather than a Daemonset, has been added to the chart - this can be configured in the `values.yaml`.
+
+Many thanks to the following contributor for this release:
+* [@denniswebb](https://github.com/denniswebb)
+
+## 5.2.0
+27 November 2019
+
+Notable changes:
+* [#320](https://github.com/uswitch/kiam/pull/320) The default SSL host path set for the Kiam server has been updated to match the default in the repo's deployment manifests. This path can now be configured from its own `values.yaml` option.  
+Also, the Helm README has been updated to include documentation for key configuration elements.
+
+Many thanks to the following contributors for this release:
+* [@MVJosh](https://github.com/MVJosh)
+* [@Nuru](https://github.com/Nuru)
+
 ## 5.1.0
 8 November 2019
 
@@ -18,7 +47,7 @@ Many thanks to the following contributor for this release:
 Please see the following links for related discussion: [Issue 202](https://github.com/uswitch/kiam/issues/202) and [PR #253](https://github.com/uswitch/kiam/pull/253).
 
 Many thanks to the following contributors for this release:
-* [@zytek](https://github.com/zytek)  
+* [@zytek](https://github.com/zytek)
 * [@Nuru](https://github.com/Nuru)
 
 ## 4.2.0

@@ -27,6 +27,33 @@ $ helm install uswitch/kiam --name my-release
 
 The command deploys kiam on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
+## Key Configuration
+The default helm configuration will probably not work out-of-the-box. You will most likely need to adjust the following:
+
+* Kiam requires trusted SSL root certificates from the host system to be mounted into the kiam-server pod in order to be able to contact the AWS meta-data API. If the SSL cert directory on the host(s) you intend to run the kiam-server on does not match the default (`/usr/share/ca-certificates`), you will need to set the `server.sslCertHostPath` variable.
+* Kiam will _not_ work without an appropriate iptables rule. As there are security & operational implications with making kiam responsible for inserting & removing the rule (see [#202](https://github.com/uswitch/kiam/issues/202) & [#253](https://github.com/uswitch/kiam/pull/253)), the `agent.host.iptables` parameter is set to `false` by default. Either configure the iptables rule separately from Kiam, or use `--set agent.host.iptables=true`.
+
+### Adding `iptables` rule separately
+The most secure way to configure `kiam` is to install its `iptables` rule before starting Docker on the host, and leave it in place. This way when `kiam` is not able to serve credentials, any clients attempting to refresh credentials will get an error, and they should continue to use their cached credentials while periodically retrying to refresh them. Likewise clients attempting to get credentials for the first time will get nothing, rather than get the credentials associated with the host they are running on.
+
+You can [read the code](https://github.com/uswitch/kiam/blob/master/cmd/kiam/iptables.go), but the definitive way to see the `iptables` rule `kiam` installs is to `--set agent.host.iptables=true`, deploy the agent, find the pod name for an agent pod and exec into it:
+```bash
+kiam_pod=$(kubectl get pods | grep kiam-agent | awk '{print $1}' | head -n 1)
+kubectl exec -it $kiam_pod -- iptables -t nat -S PREROUTING | grep 169.254.169.254/32
+```
+This will print out the arguments to follow `iptables -t nat` needed to install the rule. However, the arguments will include the IP address of the machine, so you cannot just copy and paste them verbatim. You can, however, use it to double-check you have the correct rule installed. 
+
+This command works on `debian` hosts on AWS when using `calico` networking:
+```bash
+/sbin/iptables -t nat -A PREROUTING -d 169.254.169.254/32 \
+        -i cali+ -p tcp -m tcp --dport 80 -j DNAT \
+        --to-destination $(curl -s http://169.254.169.254/latest/meta-data/local-ipv4):8181
+```
+Replace `cali+` with the CNI interface name you are passing to `kiam-agent` as `--host-interface` and if you are using exclamation point to invert it, e.g. `!eth0` be sure to escape the exclamation point so it is not interpreted by the shell. 
+
+It is safe to have the rule installed twice, so you can test your installation by installing the rule once via the `kiam-agent` and once some other way, in which case you should see the same rule installed twice when you print out the rules. If the 2 rules are identical, then you have the install correct and can revert `agent.host.iptables` to false. 
+
+
 ## Uninstalling the Chart
 
 To uninstall/delete the `my-release` deployment:
@@ -106,7 +133,7 @@ Parameter | Description | Default
 `agent.extraArgs` | Additional agent container arguments | `{}`
 `agent.extraEnv` | Additional agent container environment variables | `{}`
 `agent.extraHostPathMounts` | Additional agent container hostPath mounts | `[]`
-`agent.gatewayTimeoutCreation` | Agent's timeout when creating the kiam gateway | `50ms`
+`agent.gatewayTimeoutCreation` | Agent's timeout when creating the kiam gateway | `1s`
 `agent.host.ip` | IP address of host | `$(HOST_IP)`
 `agent.host.iptables` | Add iptables rule | `false`
 `agent.host.interface` | Agent's host interface for proxying AWS metadata | `cali+`
@@ -137,7 +164,7 @@ Parameter | Description | Default
 `agent.updateStrategy` | Strategy for agent DaemonSet updates (requires Kubernetes 1.6+) | `OnDelete`
 `server.enabled` | If true, create server | `true`
 `server.name` | Server container name | `server`
-`server.gatewayTimeoutCreation` | Server's timeout when creating the kiam gateway | `50ms`
+`server.gatewayTimeoutCreation` | Server's timeout when creating the kiam gateway | `1s`
 `server.image.repository` | Server image | `quay.io/uswitch/kiam`
 `server.image.tag` | Server image tag | `v3.4`
 `server.image.pullPolicy` | Server image pull policy | `Always`
@@ -145,6 +172,7 @@ Parameter | Description | Default
 `server.cache.syncInterval` | Pod cache synchronization interval | `1m`
 `server.extraArgs` | Additional server container arguments | `{}`
 `server.extraEnv` | Additional server container environment variables | `{}`
+`server.sslCertHostPath` | Path to SSL certs on host machinee | `/usr/share/ca-certificates`
 `server.extraHostPathMounts` | Additional server container hostPath mounts | `[]`
 `server.log.jsonOutput` | Whether or not to output server log in JSON format | `true`
 `server.log.level` | Server log level (`debug`, `info`, `warn` or `error`) | `info`

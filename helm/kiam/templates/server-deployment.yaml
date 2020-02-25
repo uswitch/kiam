@@ -1,6 +1,6 @@
-{{- if and .Values.server.enabled ( eq .Values.server.deployment.enabled false) -}}
+{{- if and .Values.server.enabled .Values.server.deployment.enabled -}}
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   labels:
     app: {{ template "kiam.name" . }}
@@ -10,6 +10,12 @@ metadata:
     release: {{ .Release.Name }}
   name: {{ template "kiam.fullname" . }}-server
 spec:
+  replicas: {{ .Values.server.deployment.replicas }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
   selector:
     matchLabels:
       app: {{ template "kiam.name" . }}
@@ -37,8 +43,21 @@ spec:
     {{- end }}
       tolerations:
 {{ toYaml .Values.server.tolerations | indent 8 }}
-      {{- if .Values.server.affinity }}
       affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                      - {{ template "kiam.name" . }}
+                  - key: "component"
+                    operator: In
+                    values:
+                      - {{ .Values.server.name }}
+              topologyKey: "kubernetes.io/hostname"
+      {{- if .Values.server.affinity }}
 {{ toYaml .Values.server.affinity | indent 10 }}
       {{- end }}
       volumes:
@@ -150,6 +169,4 @@ spec:
       imagePullSecrets:
         - name: {{ .Values.imagePullSecrets }}
       {{- end }}
-  updateStrategy:
-    type: {{ .Values.server.updateStrategy }}
 {{- end }}

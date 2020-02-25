@@ -168,6 +168,12 @@ server:
     tag: v3.4
     pullPolicy: IfNotPresent
 
+  ## Run as Deployment instead of Daemonset
+  ##
+  deployment:
+    enabled: false
+    replicas: 3
+
   ## Logging settings
   ##
   log:
@@ -246,16 +252,16 @@ server:
   #       key: varname2-key
   extraEnv: []
 
+  # Location of SSL certs on host
+  ## Running on Amazon Linux or RHEL distros:
+  #   /etc/pki/ca-trust/extracted/pem
+  ## else:
+  #   /usr/share/ca-certificates
+  sslCertHostPath: /usr/share/ca-certificates
+
   ## Additional container hostPath mounts
   ##
   extraHostPathMounts: []
-    # - name: ssl-certs
-    #   mountPath: /etc/ssl/certs
-    ## Running on Amazon Linux or RHEL distros:
-    #   hostPath: /etc/pki/ca-trust/extracted/pem
-    ## else:
-    #   hostPath: /usr/share/ca-certificates
-    #   readOnly: true
 
   service:
     port: 443
@@ -316,6 +322,8 @@ serviceAccounts:
   agent:
     create: true
     name:
+    annotations: {}
   server:
     create: true
     name:
+    annotations: {}
