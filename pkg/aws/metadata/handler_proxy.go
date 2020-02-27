@@ -44,6 +44,9 @@ func (w *teeWriter) WriteHeader(statusCode int) {
 func (p *proxyHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
 	if p.whitelistRouteRegexp.MatchString(r.URL.Path) {
 		writer := &teeWriter{w, http.StatusOK}
+		// Passing the request through with no RemoteAddr prevents the backing service adding an X-Forwarded-For header.
+		// This is important, because v2 of the EC2 Instance Metadata API blocks all requests containing such a header
+		r.RemoteAddr = ""
 		p.backingService.ServeHTTP(writer, r)
 
 		if writer.status == http.StatusOK {
