@@ -92,14 +92,14 @@ const (
 func findRole(ctx context.Context, client server.Client, ip string) (string, error) {
 	logger := log.WithField("pod.ip", ip)
 
-	roleCh := make(chan string, 1)
+	var role string
 	op := func() error {
-		role, err := client.GetRole(ctx, ip)
+		var err error
+		role, err = client.GetRole(ctx, ip)
 		if err != nil {
 			logger.Warnf("error finding role for pod: %s", err.Error())
 			return err
 		}
-		roleCh <- role
 		return nil
 	}
 
@@ -111,7 +111,7 @@ func findRole(ctx context.Context, client server.Client, ip string) (string, err
 		return "", err
 	}
 
-	return <-roleCh, nil
+	return role, nil
 }
 
 func newRoleHandler(client server.Client, getClientIP clientIPFunc) *roleHandler {
