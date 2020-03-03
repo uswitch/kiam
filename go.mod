@@ -1,6 +1,6 @@
 module github.com/uswitch/kiam
 
-go 1.12
+go 1.13
 
 require (
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect
@@ -11,7 +11,6 @@ require (
 	github.com/coreos/go-iptables v0.3.0
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/go-ini/ini v1.37.0 // indirect
 	github.com/gogo/protobuf v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20180513044358-24b0969c4cb7 // indirect
 	github.com/golang/protobuf v1.2.0
@@ -36,7 +35,6 @@ require (
 	github.com/prometheus/common v0.0.0-20180518154759-7600349dcfe1 // indirect
 	github.com/prometheus/procfs v0.0.0-20180601124529-94663424ae5a // indirect
 	github.com/sirupsen/logrus v1.0.5
-	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/pflag v1.0.1 // indirect
 	github.com/stretchr/testify v1.4.0 // indirect
 	github.com/uswitch/k8sc v0.0.0-20170525133932-475c8175b340
@@ -49,7 +47,6 @@ require (
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/ini.v1 v1.51.0 // indirect
 	k8s.io/api v0.0.0-20180521142803-feb48db456a5
 	k8s.io/apimachinery v0.0.0-20180515182440-31dade610c05
 	k8s.io/client-go v7.0.0+incompatible

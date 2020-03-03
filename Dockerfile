@@ -1,4 +1,4 @@
-FROM golang:1.12.5 as build
+FROM golang:1.13.8 as build
 ENV GO111MODULE=on
 
 WORKDIR /workspace
