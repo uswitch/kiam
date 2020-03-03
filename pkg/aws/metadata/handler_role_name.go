@@ -44,7 +44,7 @@ func trailingSlashSuffixRedirectHandler(rw http.ResponseWriter, req *http.Reques
 	http.Redirect(rw, req, u.String(), http.StatusMovedPermanently)
 }
 
-func (h *roleHandler) Install(router *mux.Router) {
+func InstallAsRoleNameHandler(h handler, router *mux.Router) {
 	handler := adapt(withMeter("roleName", h))
 	router.Handle("/{version}/meta-data/iam/security-credentials/", handler)
 	router.HandleFunc("/{version}/meta-data/iam/security-credentials", trailingSlashSuffixRedirectHandler)

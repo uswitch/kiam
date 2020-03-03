@@ -38,7 +38,7 @@ func performRequest(allowed, path string, method string, returnCode int) (int, *
 	})
 	handler := newProxyHandler(backingService, regexp.MustCompile(allowed))
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsProxyHandler(handler, router)
 
 	r, _ := http.NewRequest(method, path, nil)
 	rr := httptest.NewRecorder()

@@ -30,7 +30,7 @@ type healthHandler struct {
 	endpoint string
 }
 
-func (h *healthHandler) Install(router *mux.Router) {
+func InstallAsHealthHandler(h handler, router *mux.Router) {
 	router.Handle("/health", adapt(withMeter("health", h)))
 }
 

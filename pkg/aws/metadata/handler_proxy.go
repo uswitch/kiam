@@ -29,8 +29,8 @@ type proxyHandler struct {
 
 var tokenRouteRegexp = regexp.MustCompile("^/?[^/]+/api/token$")
 
-func (p *proxyHandler) Install(router *mux.Router) {
-	router.PathPrefix("/").Handler(adapt(withMeter("proxy", p)))
+func InstallAsProxyHandler(h handler, router *mux.Router) {
+	router.PathPrefix("/").Handler(adapt(withMeter("proxy", h)))
 }
 
 type teeWriter struct {

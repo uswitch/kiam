@@ -31,7 +31,7 @@ func TestReturnsCredentials(t *testing.T) {
 	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(st.GetCredentialsResult{&sts.Credentials{AccessKeyId: "A1", SecretAccessKey: "S1"}, nil})
 	handler := newCredentialsHandler(client, getBlankClientIP)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsCredentialsHandler(handler, router)
 
 	router.ServeHTTP(rr, r.WithContext(ctx))
 
@@ -70,7 +70,7 @@ func TestReturnsErrorWithNoPod(t *testing.T) {
 	client := st.NewStubClient().WithCredentials(st.GetCredentialsResult{nil, server.ErrPodNotFound})
 	handler := newCredentialsHandler(client, getBlankClientIP)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsCredentialsHandler(handler, router)
 
 	router.ServeHTTP(rr, r.WithContext(ctx))
 
@@ -95,7 +95,7 @@ func TestReturnsCredentialsWithRetryAfterError(t *testing.T) {
 	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(e, valid)
 	handler := newCredentialsHandler(client, getBlankClientIP)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsCredentialsHandler(handler, router)
 
 	router.ServeHTTP(rr, r.WithContext(ctx))
 
@@ -117,7 +117,7 @@ func TestForbiddenRole(t *testing.T) {
 	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(e, valid)
 	handler := newCredentialsHandler(client, getBlankClientIP)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsCredentialsHandler(handler, router)
 
 	router.ServeHTTP(rr, r.WithContext(ctx))
 

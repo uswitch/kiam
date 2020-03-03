@@ -31,8 +31,8 @@ type credentialsHandler struct {
 	getClientIP clientIPFunc
 }
 
-func (c *credentialsHandler) Install(router *mux.Router) {
-	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", c)))
+func InstallAsCredentialsHandler(h handler, router *mux.Router) {
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", h)))
 }
 
 func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {

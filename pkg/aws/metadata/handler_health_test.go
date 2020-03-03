@@ -25,7 +25,7 @@ func TestHealthReturn(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newHealthHandler(st.NewStubClient(), testServer.URL)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsHealthHandler(handler, router)
 	router.ServeHTTP(rr, r)
 	if rr.Code != http.StatusOK {
 		t.Error("expected 200 response, was", rr.Code)
@@ -54,7 +54,7 @@ func TestDeepHealthBadReturn(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newHealthHandler(st.NewStubClient().WithHealth("bad"), testServer.URL)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsHealthHandler(handler, router)
 	router.ServeHTTP(rr, r)
 	if rr.Code != http.StatusInternalServerError {
 		t.Error("expected 500 response, was", rr.Code)
@@ -76,7 +76,7 @@ func TestDeepHealthReturn(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newHealthHandler(st.NewStubClient().WithHealth("ok"), testServer.URL)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsHealthHandler(handler, router)
 	router.ServeHTTP(rr, r)
 	if rr.Code != http.StatusOK {
 		t.Error("expected 200 response, was", rr.Code)

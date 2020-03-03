@@ -22,7 +22,7 @@ func TestRedirectsToCanonicalPath(t *testing.T) {
 
 	handler := newRoleHandler(nil, nil)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsRoleNameHandler(handler, router)
 
 	router.ServeHTTP(rr, r)
 
@@ -58,7 +58,7 @@ func TestIncrementsPrometheusCounter(t *testing.T) {
 
 	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsRoleNameHandler(handler, router)
 
 	router.ServeHTTP(rr, r)
 
@@ -79,7 +79,7 @@ func TestReturnRoleWhenClientResponds(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsRoleNameHandler(handler, router)
 
 	router.ServeHTTP(rr, r)
 
@@ -100,7 +100,7 @@ func TestReturnRoleWhenRetryingFollowingError(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", fmt.Errorf("unexpected error")}, st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsRoleNameHandler(handler, router)
 
 	router.ServeHTTP(rr, r)
 
@@ -121,7 +121,7 @@ func TestReturnsEmptyRoleWhenClientSucceedsWithEmptyRole(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", nil}), getBlankClientIP)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsRoleNameHandler(handler, router)
 
 	router.ServeHTTP(rr, r)
 
@@ -140,7 +140,7 @@ func TestReturnErrorWhenPodNotFoundWithinTimeout(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"", server.ErrPodNotFound}), getBlankClientIP)
 	router := mux.NewRouter()
-	handler.Install(router)
+	InstallAsRoleNameHandler(handler, router)
 
 	router.ServeHTTP(rr, r.WithContext(ctx))
 

@@ -61,22 +61,22 @@ func buildHTTPServer(config *ServerOptions, client server.Client) (*http.Server,
 	router := mux.NewRouter()
 	router.Handle("/ping", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "pong") }))
 
-	h := newHealthHandler(client, config.MetadataEndpoint)
-	h.Install(router)
-
-	r := newRoleHandler(client, buildClientIP(config))
-	r.Install(router)
-
-	c := newCredentialsHandler(client, buildClientIP(config))
-	c.Install(router)
-
 	metadataURL, err := url.Parse(config.MetadataEndpoint)
 	if err != nil {
 		return nil, err
 	}
 
+	h := newHealthHandler(client, config.MetadataEndpoint)
+	InstallAsHealthHandler(h, router)
+
+	r := newRoleHandler(client, buildClientIP(config))
+	InstallAsRoleNameHandler(NewAuthenticatingHandler(r, *metadataURL), router)
+
+	c := newCredentialsHandler(client, buildClientIP(config))
+	InstallAsCredentialsHandler(NewAuthenticatingHandler(c, *metadataURL), router)
+
 	p := newProxyHandler(httputil.NewSingleHostReverseProxy(metadataURL), config.WhitelistRouteRegexp)
-	p.Install(router)
+	InstallAsProxyHandler(p, router)
 
 	listen := fmt.Sprintf(":%d", config.ListenPort)
 	return &http.Server{Addr: listen, Handler: loggingHandler(router)}, nil
