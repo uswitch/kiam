@@ -17,13 +17,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/cenkalti/backoff"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/uswitch/kiam/pkg/statsd"
-	"net/http"
 )
 
 type credentialsHandler struct {
@@ -32,7 +33,9 @@ type credentialsHandler struct {
 }
 
 func (c *credentialsHandler) Install(router *mux.Router) {
-	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", adapt(withMeter("credentials", c)))
+	handler := adapt(withMeter("credentials", c))
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}/", handler)
+	router.Handle("/{version}/meta-data/iam/security-credentials/{role:.*}", handler)
 }
 
 func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {

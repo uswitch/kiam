@@ -3,21 +3,40 @@ package metadata
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/fortytw2/leaktest"
 	"github.com/gorilla/mux"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/server"
 	"github.com/uswitch/kiam/pkg/statsd"
 	st "github.com/uswitch/kiam/pkg/testutil/server"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
 )
 
 func init() {
 	statsd.New("", "", time.Millisecond)
+}
+
+func TestReturnsCredentialsWithTrailingSlash(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/role/", nil)
+	rr := httptest.NewRecorder()
+
+	client := st.NewStubClient().WithRoles(st.GetRoleResult{"role", nil}).WithCredentials(st.GetCredentialsResult{&sts.Credentials{AccessKeyId: "A1", SecretAccessKey: "S1"}, nil})
+	handler := newCredentialsHandler(client, getBlankClientIP)
+	router := mux.NewRouter()
+	handler.Install(router)
+
+	router.ServeHTTP(rr, r)
+
+	if rr.Code != http.StatusOK {
+		t.Error("expected ok, was", rr.Code)
+	}
 }
 
 func TestReturnsCredentials(t *testing.T) {
