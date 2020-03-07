@@ -30,8 +30,8 @@ import (
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/security/advancedtls"
 
 	status "google.golang.org/grpc/status"
 )
@@ -45,8 +45,9 @@ type Client interface {
 
 // KiamGateway is the client to interact with KiamServer
 type KiamGateway struct {
-	conn   *grpc.ClientConn
-	client pb.KiamServiceClient
+	conn      *grpc.ClientConn
+	client    pb.KiamServiceClient
+	tlsConfig *dynamicTLSConfig
 }
 
 const (
@@ -54,49 +55,66 @@ const (
 )
 
 // NewGateway constructs a gRPC client to talk to the server
-func NewGateway(ctx context.Context, address string, caFile, certificateFile, keyFile string, keepaliveParams keepalive.ClientParameters) (*KiamGateway, error) {
-	callOpts := []retry.CallOption{
-		retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
-	}
-
+func NewGateway(ctx context.Context, address string, caFile, certificateFile, keyFile string, keepaliveParams keepalive.ClientParameters) (_ *KiamGateway, err error) {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing hostname: %v", err)
 	}
-	cert, caPool, err := loadCerts(certificateFile, keyFile, caFile)
+
+	notifyFn := clientTLSMetrics.notifyFunc(x509.ExtKeyUsageClientAuth)
+	tlsConfig, err := newDynamicTLSConfig(certificateFile, keyFile, caFile, notifyFn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading tls certificates: %v", err)
 	}
-	clientTLSMetrics.update(x509.ExtKeyUsageClientAuth, &cert, caPool)
-
-	creds := credentials.NewTLS(&tls.Config{
-		ServerName:   host,
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      caPool,
+	defer func() {
+		if err != nil {
+			tlsConfig.Close()
+		}
+	}()
+	creds, err := advancedtls.NewClientCreds(&advancedtls.ClientOptions{
+		GetClientCertificate: func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			return tlsConfig.LoadCert(), nil
+		},
+		RootCertificateOptions: advancedtls.RootCertificateOptions{
+			GetRootCAs: func(_ *advancedtls.GetRootCAsParams) (*advancedtls.GetRootCAsResults, error) {
+				return &advancedtls.GetRootCAsResults{TrustCerts: tlsConfig.LoadCACerts()}, nil
+			},
+		},
+		ServerNameOverride: host,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("error creating grpc credentials: %v", err)
+	}
 
-	dialAddress := fmt.Sprintf("dns:///%s", address)
-
-	dialOpts := []grpc.DialOption{
+	conn, err := grpc.DialContext(ctx, "dns:///"+address,
 		grpc.WithKeepaliveParams(keepaliveParams),
 		grpc.WithTransportCredentials(creds),
-		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(retry.UnaryClientInterceptor(callOpts...), grpc_prometheus.UnaryClientInterceptor)),
+		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+			retry.UnaryClientInterceptor(
+				retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
+			),
+			grpc_prometheus.UnaryClientInterceptor,
+		)),
 		grpc.WithBalancerName(roundrobin.Name),
 		grpc.WithDisableServiceConfig(),
 		grpc.WithBlock(),
 		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
-	}
-	conn, err := grpc.DialContext(ctx, dialAddress, dialOpts...)
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing grpc server: %v", err)
 	}
-	client := pb.NewKiamServiceClient(conn)
-	return &KiamGateway{conn: conn, client: client}, nil
+	gw := &KiamGateway{
+		conn:      conn,
+		client:    pb.NewKiamServiceClient(conn),
+		tlsConfig: tlsConfig,
+	}
+	return gw, nil
 }
 
 // Close disconnects the connection
 func (g *KiamGateway) Close() {
 	g.conn.Close()
+	g.tlsConfig.Close()
 }
 
 // GetRole returns the role for the identified Pod

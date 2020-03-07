@@ -32,7 +32,7 @@ import (
 	"github.com/uswitch/kiam/pkg/statsd"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/security/advancedtls"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -67,6 +67,7 @@ type TLSConfig struct {
 
 // KiamServer is the gRPC server. Construct with NewServer.
 type KiamServer struct {
+	tlsConfig           *dynamicTLSConfig
 	listener            net.Listener
 	server              *grpc.Server
 	pods                *k8s.PodCache
@@ -215,7 +216,7 @@ func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {
 }
 
 // NewServer constructs a new server.
-func NewServer(config *Config) (*KiamServer, error) {
+func NewServer(config *Config) (_ *KiamServer, err error) {
 	arnResolver, err := newRoleARNResolver(config)
 	if err != nil {
 		return nil, err
@@ -239,17 +240,30 @@ func NewServer(config *Config) (*KiamServer, error) {
 	podCache := k8s.NewPodCache(k8s.NewListWatch(client, k8s.ResourcePods), config.PodSyncInterval, config.PrefetchBufferSize)
 	namespaceCache := k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 
-	cert, caPool, err := loadCerts(config.TLS.ServerCert, config.TLS.ServerKey, config.TLS.CA)
+	notifyFn := serverTLSMetrics.notifyFunc(x509.ExtKeyUsageServerAuth)
+	tlsConfig, err := newDynamicTLSConfig(config.TLS.ServerCert, config.TLS.ServerKey, config.TLS.CA, notifyFn)
 	if err != nil {
 		return nil, err
 	}
-	serverTLSMetrics.update(x509.ExtKeyUsageServerAuth, &cert, caPool)
-
-	creds := credentials.NewTLS(&tls.Config{
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		Certificates: []tls.Certificate{cert},
-		ClientCAs:    caPool,
+	defer func() {
+		if err != nil {
+			tlsConfig.Close()
+		}
+	}()
+	creds, err := advancedtls.NewServerCreds(&advancedtls.ServerOptions{
+		GetCertificate: func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			return tlsConfig.LoadCert(), nil
+		},
+		RootCertificateOptions: advancedtls.RootCertificateOptions{
+			GetRootCAs: func(_ *advancedtls.GetRootCAsParams) (*advancedtls.GetRootCAsResults, error) {
+				return &advancedtls.GetRootCAsResults{TrustCerts: tlsConfig.LoadCACerts()}, nil
+			},
+		},
+		RequireClientCert: true,
 	})
+	if err != nil {
+		return nil, err
+	}
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
@@ -261,6 +275,7 @@ func NewServer(config *Config) (*KiamServer, error) {
 		return nil, err
 	}
 	srv := &KiamServer{
+		tlsConfig:           tlsConfig,
 		listener:            listener,
 		server:              grpcServer,
 		pods:                podCache,
@@ -296,6 +311,7 @@ func (k *KiamServer) Serve(ctx context.Context) {
 func (k *KiamServer) Stop() {
 	k.server.GracefulStop()
 	k.listener.Close()
+	k.tlsConfig.Close()
 }
 
 func eventRecorder(kubeClient *kubernetes.Clientset) record.EventRecorder {
