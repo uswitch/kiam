@@ -122,15 +122,6 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 	return &allowed{}, nil
 }
 
-type NamespacePermittedRoleNamePolicy struct {
-	namespaces k8s.NamespaceFinder
-	pods       k8s.PodGetter
-}
-
-func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.PodGetter) *NamespacePermittedRoleNamePolicy {
-	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p}
-}
-
 type namespacePolicyForbidden struct {
 	expression string
 	role       string
@@ -142,6 +133,16 @@ func (f *namespacePolicyForbidden) IsAllowed() bool {
 
 func (f *namespacePolicyForbidden) Explanation() string {
 	return fmt.Sprintf("namespace policy expression '%s' forbids role '%s'", f.expression, f.role)
+}
+
+type NamespacePermittedRoleNamePolicy struct {
+	namespaces        k8s.NamespaceFinder
+	pods              k8s.PodGetter
+	defaultExpression string
+}
+
+func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.PodGetter, d string) *NamespacePermittedRoleNamePolicy {
+	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p, defaultExpression: d}
 }
 
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
@@ -157,6 +158,10 @@ func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Conte
 	}
 
 	expression := ns.GetAnnotations()[k8s.AnnotationPermittedKey]
+	if expression == "" {
+		expression = p.defaultExpression
+	}
+
 	if expression == "" {
 		return &namespacePolicyForbidden{expression: "(empty)", role: role}, nil
 	}
