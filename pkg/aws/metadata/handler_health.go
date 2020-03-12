@@ -73,15 +73,11 @@ func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *
 }
 
 func findServerHealth(ctx context.Context, client server.Client) (string, error) {
-
-	healthCh := make(chan string, 1)
+	var health string
 	op := func() error {
-		health, err := client.Health(ctx)
-		if err != nil {
-			return err
-		}
-		healthCh <- health
-		return nil
+		var err error
+		health, err = client.Health(ctx)
+		return err
 	}
 
 	strategy := backoff.NewExponentialBackOff()
@@ -92,7 +88,7 @@ func findServerHealth(ctx context.Context, client server.Client) (string, error)
 		return "", err
 	}
 
-	return <-healthCh, nil
+	return health, nil
 }
 
 func newHealthHandler(client server.Client, endpoint string) *healthHandler {
