@@ -44,32 +44,56 @@ func TestDynamicTLS(t *testing.T) {
 	})
 	check(t, "Failed to create symlink", os.Symlink(data0, data))
 
-	// create config
-	certsCh := make(chan *tlsCerts, 1)
+	type result struct {
+		cert *tls.Certificate
+		pool *x509.CertPool
+		err  error
+	}
+	ch := make(chan result, 1)
 	wantCert := func(want *tls.Certificate) {
 		t.Helper()
-		select {
-		case got := <-certsCh:
-			if !reflect.DeepEqual(got.cert.Certificate, want.Certificate) {
-				t.Fatal("Unexpected cert")
+		timeout := time.NewTimer(5 * time.Second)
+		defer timeout.Stop()
+		var err error
+		for {
+			select {
+			case got := <-ch:
+				if got.err != nil {
+					// This can occur if a filesystem event triggers a reload
+					// and a symlink flip happens between reading the public
+					// and private keys. They won't match due to this race,
+					// but will immediately be reloaded again and will match.
+					t.Logf("Unexpected error, may be transient: %v", got.err)
+					err = got.err
+					continue
+				}
+				if !reflect.DeepEqual(got.cert.Certificate, want.Certificate) {
+					t.Fatal("Unexpected cert")
+				}
+				if !reflect.DeepEqual(got.cert.PrivateKey, want.PrivateKey) {
+					t.Fatal("Unexpected key")
+				}
+				return // OK
+			case <-timeout.C:
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+				t.Fatal("Timeout waiting for certs")
 			}
-			if !reflect.DeepEqual(got.cert.PrivateKey, want.PrivateKey) {
-				t.Fatal("Unexpected key")
-			}
-		case <-time.After(10 * time.Second):
-			t.Fatal("Timeout waiting for certs")
 		}
 	}
+
+	// create config
 	cfg, err := newDynamicTLSConfig(
 		filepath.Join(dir, "cert.pem"),
 		filepath.Join(dir, "key.pem"),
 		filepath.Join(dir, "roots.pem"),
 		func(cert *tls.Certificate, pool *x509.CertPool, err error) {
 			select {
-			case <-certsCh:
+			case <-ch:
 			default:
 			}
-			certsCh <- &tlsCerts{cert, pool}
+			ch <- result{cert, pool, err}
 		},
 	)
 	check(t, "Failed to initialize config", err)
