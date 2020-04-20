@@ -79,7 +79,9 @@ func (o telemetryOptions) start(ctx context.Context, identifier string) {
 	)
 
 	if err != nil {
-		log.Fatalf("Error initing statsd: %v", err)
+		log.Errorf("Error initing statsd: %v", err)
+		log.Error("Continuing startup with statsd disabled...")
+		statsd.New("", "", o.statsDInterval)
 	}
 
 	if o.prometheusListen != "" {
