@@ -24,6 +24,11 @@ import (
 	"time"
 )
 
+type ExternalIDRole struct {
+	role       string
+	externalID string
+}
+
 func init() {
 	statsd.New("", "", time.Millisecond)
 }
@@ -34,10 +39,13 @@ func TestPrefetchRunningPods(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	requestedRoles := make(chan string)
+	requestedRoles := make(chan ExternalIDRole)
 	announcer := kt.NewStubAnnouncer()
 	cache := testutil.NewStubCredentialsCache(func(role string, externalID string) (*sts.Credentials, error) {
-		requestedRoles <- role
+		res := new(ExternalIDRole)
+		res.role = role
+		res.externalID = externalID
+		requestedRoles <- *res
 		return &sts.Credentials{}, nil
 	})
 	manager := NewManager(cache, announcer)
@@ -45,14 +53,20 @@ func TestPrefetchRunningPods(t *testing.T) {
 
 	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role", ""))
 	role := <-requestedRoles
-	if role != "role" {
+	if role.role != "role" {
 		t.Error("should have requested role")
+	}
+
+	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role", "external id"))
+	role = <-requestedRoles
+	if role.role != "role" || role.externalID != "external id" {
+		t.Error("should have requested role with external id")
 	}
 
 	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Failed", "failed_role", ""))
 	select {
 	case role = <-requestedRoles:
-		t.Error("didn't expect to request role, but was requested", role)
+		t.Error("didn't expect to request role, but was requested", role.role)
 	case <-time.After(time.Second):
 		return
 	}
