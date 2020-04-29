@@ -19,73 +19,53 @@ import (
 
 func TestAddsPrefix(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	role, externalID := resolver.Resolve("myrole")
+	role := resolver.Resolve("myrole")
 
 	if role != "arn:aws:iam::account-id:role/myrole" {
 		t.Error("unexpected role, was:", role)
 	}
-
-	if externalID != "" {
-		t.Error("unexpected external ID, was:", externalID)
-	}
 }
 
 func TestReturnsEmpty(t *testing.T) {
-	resolver := DefaultResolver("")
-	role, externalID := resolver.Resolve("")
+	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
+	role := resolver.Resolve("")
 
 	if role != "" {
 		t.Error("unexpected role, was:", role)
-	}
-
-	if externalID != "" {
-		t.Error("unexpected external ID, was:", externalID)
 	}
 }
 
 func TestAddsPrefixWithRoleBeginningWithSlash(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	role, externalID := resolver.Resolve("/myrole")
+	role := resolver.Resolve("/myrole")
 
 	if role != "arn:aws:iam::account-id:role/myrole" {
 		t.Error("unexpected role, was:", role)
 	}
-	if externalID != "" {
-		t.Error("unexpected external ID, was:", externalID)
-	}
 }
 func TestAddsPrefixWithRoleBeginningWithPathWithoutSlash(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	role, externalID := resolver.Resolve("kiam/myrole")
+	role := resolver.Resolve("kiam/myrole")
 
 	if role != "arn:aws:iam::account-id:role/kiam/myrole" {
 		t.Error("unexpected role, was:", role)
-	}
-	if externalID != "" {
-		t.Error("unexpected external ID, was:", externalID)
 	}
 }
 func TestAddsPrefixWithRoleBeginningWithSlashPath(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	role, externalID := resolver.Resolve("/kiam/myrole")
+	role := resolver.Resolve("/kiam/myrole")
 
 	if role != "arn:aws:iam::account-id:role/kiam/myrole" {
 		t.Error("unexpected role, was:", role)
-	}
-	if externalID != "" {
-		t.Error("unexpected external ID, was:", externalID)
 	}
 }
 
 func TestUsesAbsoluteARN(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	role, externalID := resolver.Resolve("arn:aws:iam::some-other-account:role/another-role")
+	role := resolver.Resolve("arn:aws:iam::some-other-account:role/another-role")
 
 	if role != "arn:aws:iam::some-other-account:role/another-role" {
 		t.Error("unexpected role, was:", role)
-	}
-	if externalID != "" {
-		t.Error("unexpected external ID, was:", externalID)
 	}
 }
 
