@@ -1,9 +1,15 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   namespace: kube-system
   name: kiam-agent
 spec:
+  selector:
+    matchLabels:
+      app: kiam
+      role: agent
+  updateStrategy:
+    type: OnDelete
   template:
     metadata:
       annotations:

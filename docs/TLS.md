@@ -124,6 +124,3 @@ spec:
   ipAddresses:
   - "127.0.0.1"
 ```
-
-In order to use the `ipAddresses` option at the end you need at least `v0.7.0` of cert-manager.
-If you use an older version of cert manager, you can use `--server-address=localhost:443` to use the name `localhost` instead.

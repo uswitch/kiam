@@ -38,7 +38,11 @@ type regionalResolver struct {
 }
 
 func (r *regionalResolver) EndpointFor(svc, region string, opts ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
-	return r.endpoint, nil
+	if svc == "sts" {
+		return r.endpoint, nil
+	}
+
+	return endpoints.DefaultResolver().EndpointFor(svc, region, opts...)
 }
 
 func newRegionalResolver(region string) (endpoints.Resolver, error) {

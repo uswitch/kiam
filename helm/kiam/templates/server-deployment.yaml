@@ -79,6 +79,10 @@ spec:
       {{- if .Values.server.priorityClassName }}
       priorityClassName: {{ .Values.server.priorityClassName | quote }}
       {{- end }}
+      {{- if .Values.server.initContainers }}
+      initContainers:
+{{ toYaml .Values.server.initContainers | indent 8 }}
+      {{- end }}
       containers:
         - name: {{ template "kiam.name" . }}-{{ .Values.server.name }}
           image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
@@ -143,9 +147,11 @@ spec:
                 - --server-address-refresh=2s
                 - --timeout=5s
                 - --gateway-timeout-creation={{ .Values.server.gatewayTimeoutCreation }}
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 10
+            initialDelaySeconds: {{ .Values.server.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.server.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.server.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.server.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.server.livenessProbe.failureThreshold }}
           readinessProbe:
             exec:
               command:
@@ -158,9 +164,11 @@ spec:
                 - --server-address-refresh=2s
                 - --timeout=5s
                 - --gateway-timeout-creation={{ .Values.server.gatewayTimeoutCreation }}
-            initialDelaySeconds: 3
-            periodSeconds: 10
-            timeoutSeconds: 10
+            initialDelaySeconds: {{ .Values.server.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.server.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.server.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.server.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.server.readinessProbe.failureThreshold }}
         {{- if .Values.server.resources }}
           resources:
 {{ toYaml .Values.server.resources | indent 12 }}

@@ -1,5 +1,32 @@
 # Helm Chart Changelog
 
+## 5.7.0
+5 February 2020
+
+Notable changes:
+* [#367](https://github.com/uswitch/kiam/pull/367) Add possibility to configure agent/server initContainers from the `values.yaml`.
+
+Many thanks to the following contributor for this release:
+* [@caiohasouza](https://github.com/caiohasouza)
+
+## 5.6.1
+4 February 2020
+
+Notable changes:
+* [#372](https://github.com/uswitch/kiam/pull/372) Add missing sslCertHostPath as allowedHostPath in Helm Chart server PSP. Also fixes misplaced `extraHostPathMounts` range in the PSP.
+
+Many thanks to the following contributor for this release:
+* [@phyrog](https://github.com/phyrog)
+
+## 5.6.0
+24 January 2020
+
+Notable changes:
+* [#361](https://github.com/uswitch/kiam/pull/361) Add ability to configure the agent and server readiness/liveness probes from the `values.yaml`.
+
+Many thanks to the following contributor for this release:
+* [@caiohasouza](https://github.com/caiohasouza)
+
 ## 5.5.0
 13 January 2020
 

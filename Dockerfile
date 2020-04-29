@@ -1,4 +1,4 @@
-FROM golang:1.12.5 as build
+FROM golang:1.13.8 as build
 ENV GO111MODULE=on
 
 WORKDIR /workspace
@@ -16,7 +16,7 @@ COPY Makefile Makefile
 
 RUN make bin/kiam-linux-amd64
 
-FROM alpine:3.8
+FROM alpine:3.11
 RUN apk --no-cache add iptables
 COPY --from=build /workspace/bin/kiam-linux-amd64 /kiam
 CMD []

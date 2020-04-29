@@ -133,6 +133,11 @@ agent:
     #   hostPath: /usr/share/ca-certificates
     #   readOnly: true
 
+  ## Agent initContainers
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ##
+  initContainers: []
+
   ## Timeout when creating the kiam gateway
   ##
   gatewayTimeoutCreation: 1s
@@ -161,6 +166,16 @@ agent:
     certFileName: cert
     keyFileName: key
     caFileName: ca
+
+  ## Liveness probe values
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes
+  ##
+  livenessProbe:
+    initialDelaySeconds: 3
+    periodSeconds: 3
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 3
 
 server:
   ## If false, server will not be installed
@@ -271,6 +286,11 @@ server:
   ##
   extraHostPathMounts: []
 
+  ## Server initContainers
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ##
+  initContainers: []
+
   service:
     port: 443
     targetPort: 443
@@ -317,6 +337,22 @@ server:
     certFileName: cert
     keyFileName: key
     caFileName: ca
+
+  ## Liveness and readiness probe values
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+  ##
+  livenessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 3
+    periodSeconds: 10
+    timeoutSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
 
 rbac:
   # Specifies whether RBAC resources should be created
