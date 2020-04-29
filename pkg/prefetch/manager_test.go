@@ -36,7 +36,7 @@ func TestPrefetchRunningPods(t *testing.T) {
 
 	requestedRoles := make(chan string)
 	announcer := kt.NewStubAnnouncer()
-	cache := testutil.NewStubCredentialsCache(func(role string) (*sts.Credentials, error) {
+	cache := testutil.NewStubCredentialsCache(func(role string, externalID string) (*sts.Credentials, error) {
 		requestedRoles <- role
 		return &sts.Credentials{}, nil
 	})

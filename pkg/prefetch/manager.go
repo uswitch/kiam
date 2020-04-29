@@ -15,6 +15,7 @@ package prefetch
 
 import (
 	"context"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
@@ -38,7 +39,8 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	}
 
 	role := k8s.PodRole(pod)
-	issued, err := m.fetchCredentialsFromCache(ctx, role)
+	externalID := k8s.PodExternalID(pod)
+	issued, err := m.fetchCredentialsFromCache(ctx, role, externalID)
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())
 	} else {
@@ -46,8 +48,8 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	}
 }
 
-func (m *CredentialManager) fetchCredentialsFromCache(ctx context.Context, role string) (*sts.Credentials, error) {
-	return m.cache.CredentialsForRole(ctx, role)
+func (m *CredentialManager) fetchCredentialsFromCache(ctx context.Context, role string, externalID string) (*sts.Credentials, error) {
+	return m.cache.CredentialsForRole(ctx, role, externalID)
 }
 
 func (m *CredentialManager) Run(ctx context.Context, parallelRoutines int) {
@@ -84,7 +86,7 @@ func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts
 	}
 
 	logger.Infof("expiring credentials, fetching updated")
-	_, err = m.fetchCredentialsFromCache(ctx, credentials.Role)
+	_, err = m.fetchCredentialsFromCache(ctx, credentials.Role, credentials.ExternalID)
 	if err != nil {
 		logger.Errorf("error fetching updated credentials for expiring: %s", err.Error())
 	}

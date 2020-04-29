@@ -177,21 +177,7 @@ func (s *PodCache) Run(ctx context.Context) error {
 
 // PodRole returns the IAM role specified in the annotation for the Pod
 func PodRole(pod *v1.Pod) string {
-
-	role := pod.ObjectMeta.Annotations[AnnotationIAMRoleKey]
-
-	if role == "" {
-		return ""
-	}
-
-	externalID := PodExternalID(pod)
-
-	if externalID == "" {
-		return role
-	}
-
-	return role + "|" + externalID
-
+	return pod.ObjectMeta.Annotations[AnnotationIAMRoleKey]
 }
 
 // PodExternalID returns the IAM external ID specified in the annotation for the Pod

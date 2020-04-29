@@ -121,7 +121,7 @@ type stubCredentialsProvider struct {
 	accessKey string
 }
 
-func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
+func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, role string, externalID string) (*sts.Credentials, error) {
 	return &sts.Credentials{
 		AccessKeyId: c.accessKey,
 	}, nil

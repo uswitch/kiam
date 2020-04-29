@@ -116,7 +116,7 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 		return nil, ErrPolicyForbidden
 	}
 
-	creds, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role)
+	creds, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role, req.ExternalID)
 	if err != nil {
 		logger.Errorf("error retrieving credentials: %s", err.Error())
 		k.recordEvent(pod, v1.EventTypeWarning, "KiamCredentialError", fmt.Sprintf("failed retrieving credentials: %s", simplifyAWSErrorMessage(err)))
@@ -192,7 +192,7 @@ func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCred
 	logger := log.WithField("pod.iam.role", req.Role.Name)
 
 	logger.Infof("requesting credentials")
-	credentials, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role.Name)
+	credentials, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role.Name, req.Role.ExternalID)
 	if err != nil {
 		logger.Errorf("error requesting credentials: %s", err.Error())
 		return nil, err
@@ -222,7 +222,7 @@ func NewServer(config *Config) (_ *KiamServer, err error) {
 		return nil, err
 	}
 
-	roleARN, _ := arnResolver.Resolve(config.AssumeRoleArn)
+	roleARN := arnResolver.Resolve(config.AssumeRoleArn)
 	stsGateway, err := sts.DefaultGateway(roleARN, config.Region)
 	if err != nil {
 		return nil, err

@@ -36,7 +36,7 @@ type credentialsCache struct {
 
 type RoleCredentials struct {
 	Role        string
-	ExternalId  string
+	ExternalID  string
 	Credentials *Credentials
 }
 
@@ -100,7 +100,7 @@ func (c *credentialsCache) Expiring() chan *RoleCredentials {
 	return c.expiring
 }
 
-func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) (*Credentials, error) {
+func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string, externalID string) (*Credentials, error) {
 	logger := log.WithFields(log.Fields{"pod.iam.role": role})
 	item, found := c.cache.Get(role)
 
@@ -122,8 +122,13 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 	cacheMiss.Inc()
 
 	issue := func() (interface{}, error) {
-		arn, externalID := c.arnResolver.Resolve(role)
-		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, externalID, c.sessionDuration)
+		arn := c.arnResolver.Resolve(role)
+		credentials, err := c.gateway.Issue(ctx, &STSGatewayRequest{
+			roleARN:     arn,
+			externalID:  externalID,
+			sessionName: c.sessionName,
+			expiry:      c.sessionDuration})
+
 		if err != nil {
 			errorIssuing.Inc()
 			logger.Errorf("error requesting credentials: %s", err.Error())

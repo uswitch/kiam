@@ -29,8 +29,15 @@ import (
 	"github.com/uswitch/kiam/pkg/statsd"
 )
 
+type STSGatewayRequest struct {
+	roleARN     string
+	sessionName string
+	externalID  string
+	expiry      time.Duration
+}
+
 type STSGateway interface {
-	Issue(ctx context.Context, role, session, externalId string, expiry time.Duration) (*Credentials, error)
+	Issue(ctx context.Context, request *STSGatewayRequest) (*Credentials, error)
 }
 
 type regionalResolver struct {
@@ -102,7 +109,7 @@ func DefaultGateway(assumeRoleArn, region string) (*DefaultSTSGateway, error) {
 	return &DefaultSTSGateway{session: session}, nil
 }
 
-func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName, externalId string, expiry time.Duration) (*Credentials, error) {
+func (g *DefaultSTSGateway) Issue(ctx context.Context, request *STSGatewayRequest) (*Credentials, error) {
 	timer := prometheus.NewTimer(assumeRole)
 	defer timer.ObserveDuration()
 	if statsd.Enabled {
@@ -114,12 +121,12 @@ func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName, ext
 
 	svc := sts.New(g.session)
 	in := &sts.AssumeRoleInput{
-		DurationSeconds: aws.Int64(int64(expiry.Seconds())),
-		RoleArn:         aws.String(roleARN),
-		RoleSessionName: aws.String(sessionName),
+		DurationSeconds: aws.Int64(int64(request.expiry.Seconds())),
+		RoleArn:         aws.String(request.roleARN),
+		RoleSessionName: aws.String(request.sessionName),
 	}
-	if externalId != "" {
-		in.ExternalId = aws.String(externalId)
+	if request.externalID != "" {
+		in.ExternalId = aws.String(request.externalID)
 	}
 	resp, err := svc.AssumeRoleWithContext(ctx, in)
 	if err != nil {

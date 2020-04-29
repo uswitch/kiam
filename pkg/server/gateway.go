@@ -39,7 +39,7 @@ import (
 // Client is the Server's client interface
 type Client interface {
 	GetRole(ctx context.Context, ip string) (string, error)
-	GetCredentials(ctx context.Context, ip, role string) (*sts.Credentials, error)
+	GetCredentials(ctx context.Context, ip, role string, externalID string) (*sts.Credentials, error)
 	Health(ctx context.Context) (string, error)
 }
 
@@ -130,11 +130,14 @@ func (g *KiamGateway) GetRole(ctx context.Context, ip string) (string, error) {
 }
 
 // GetCredentials returns the credentials for the identified Pod
-func (g *KiamGateway) GetCredentials(ctx context.Context, ip, role string) (*sts.Credentials, error) {
+func (g *KiamGateway) GetCredentials(ctx context.Context, ip, role string, externalID string) (*sts.Credentials, error) {
 	if statsd.Enabled {
 		defer statsd.Client.NewTiming().Send("gateway.rpc.GetCredentials")
 	}
-	credentials, err := g.client.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: ip, Role: role})
+	credentials, err := g.client.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{
+		Ip:         ip,
+		Role:       role,
+		ExternalID: externalID})
 	if err != nil {
 		if grpcStatus, ok := status.FromError(err); ok {
 			switch grpcStatus.Message() {
