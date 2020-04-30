@@ -166,9 +166,10 @@ func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) 
 	}
 
 	role := k8s.PodRole(pod)
+	externalID := k8s.PodExternalID(pod)
 
 	logger.WithField("pod.iam.role", role).Infof("found role")
-	return &pb.Role{Name: role}, nil
+	return &pb.Role{Name: role, ExternalID: externalID}, nil
 }
 
 func translateCredentialsToProto(credentials *sts.Credentials) *pb.Credentials {
