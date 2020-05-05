@@ -15,7 +15,6 @@ service KiamService {
 message GetPodCredentialsRequest {
   string ip = 1;
   string role = 2;
-  string externalID = 3;
 }
 
 message GetPodRoleRequest {

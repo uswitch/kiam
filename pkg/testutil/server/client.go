@@ -31,7 +31,7 @@ func (c *StubClient) GetRole(ctx context.Context, ip string) (string, error) {
 
 	return currentVal.Role, currentVal.Error
 }
-func (c *StubClient) GetCredentials(ctx context.Context, ip, role string, externalID string) (*sts.Credentials, error) {
+func (c *StubClient) GetCredentials(ctx context.Context, ip, role string) (*sts.Credentials, error) {
 	if c.credentialsCallCount == len(c.credentials) {
 		v := c.credentials[len(c.credentials)-1]
 		return v.Credentials, v.Error

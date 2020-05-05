@@ -54,8 +54,7 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	requestedRole := mux.Vars(req)["role"]
-	externalID := mux.Vars(req)["externalID"]
-	credentials, err := c.fetchCredentials(ctx, ip, requestedRole, externalID)
+	credentials, err := c.fetchCredentials(ctx, ip, requestedRole)
 	if err != nil {
 		credentialFetchError.WithLabelValues("credentials").Inc()
 		return http.StatusInternalServerError, fmt.Errorf("error fetching credentials: %s", err)
@@ -72,11 +71,11 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 	return http.StatusOK, nil
 }
 
-func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requestedRole string, externalID string) (*sts.Credentials, error) {
+func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requestedRole string) (*sts.Credentials, error) {
 	var creds *sts.Credentials
 	op := func() error {
 		var err error
-		creds, err = c.client.GetCredentials(ctx, ip, requestedRole, externalID)
+		creds, err = c.client.GetCredentials(ctx, ip, requestedRole)
 		if err != nil {
 			if err == server.ErrPolicyForbidden {
 				return backoff.Permanent(err)

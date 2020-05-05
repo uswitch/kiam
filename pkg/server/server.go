@@ -116,7 +116,8 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 		return nil, ErrPolicyForbidden
 	}
 
-	creds, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role, req.ExternalID)
+	externalID := pod.ObjectMeta.Annotations["iam.amazonaws.com/external-id"]
+	creds, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role, externalID)
 	if err != nil {
 		logger.Errorf("error retrieving credentials: %s", err.Error())
 		k.recordEvent(pod, v1.EventTypeWarning, "KiamCredentialError", fmt.Sprintf("failed retrieving credentials: %s", simplifyAWSErrorMessage(err)))

@@ -13,7 +13,7 @@ require (
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gogo/protobuf v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20180513044358-24b0969c4cb7 // indirect
-	github.com/golang/protobuf v1.4.0
+	github.com/golang/protobuf v1.4.1
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
@@ -43,7 +43,7 @@ require (
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 // indirect
 	google.golang.org/grpc v1.27.0
 	google.golang.org/grpc/security/advancedtls v0.0.0-20200204204621-648cf9b00e25
-	google.golang.org/protobuf v1.21.0
+	google.golang.org/protobuf v1.22.0
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0
