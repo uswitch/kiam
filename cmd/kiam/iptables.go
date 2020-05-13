@@ -62,8 +62,8 @@ func (r *rules) ruleSpec() []string {
 }
 
 var (
-	retryInterval = time.Second * 1
-	maxAttempts   = 15
+	retryInterval = time.Millisecond * 500
+	maxAttempts   = 30
 )
 
 func (r *rules) Remove() error {
@@ -83,7 +83,7 @@ func (r *rules) Remove() error {
 			break
 		}
 		log.Warnf("failed to remove iptables rule, will retry: %s", err.Error())
-		time.Sleep(time.Second * 1)
+		time.Sleep(retryInterval)
 		attempt++
 	}
 	return nil
