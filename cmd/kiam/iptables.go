@@ -79,7 +79,7 @@ func (r *rules) Remove() error {
 			break
 		}
 		if err := ipt.Delete("nat", "PREROUTING", r.ruleSpec()...); err == nil {
-			log.Info("iptables rule was removed", err.Error())
+			log.Info("iptables rule was successfully removed")
 			break
 		}
 		log.Warnf("failed to remove iptables rule, will retry: %s", err.Error())
