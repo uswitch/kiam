@@ -16,8 +16,10 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-iptables/iptables"
+	log "github.com/sirupsen/logrus"
 )
 
 type rules struct {
@@ -59,13 +61,32 @@ func (r *rules) ruleSpec() []string {
 	return rules
 }
 
+var (
+	retryInterval = time.Millisecond * 500
+	maxAttempts   = 30
+)
+
 func (r *rules) Remove() error {
 	ipt, err := iptables.New()
 	if err != nil {
 		return err
 	}
 
-	return ipt.Delete("nat", "PREROUTING", r.ruleSpec()...)
+	var attempt int
+	for {
+		if attempt >= maxAttempts {
+			log.Errorf("failed to remove iptables rule, retries exhausted: %s", err.Error())
+			break
+		}
+		if err := ipt.Delete("nat", "PREROUTING", r.ruleSpec()...); err == nil {
+			log.Info("iptables rule was successfully removed")
+			break
+		}
+		log.Warnf("failed to remove iptables rule, will retry: %s", err.Error())
+		time.Sleep(retryInterval)
+		attempt++
+	}
+	return nil
 }
 
 func (r *rules) kiamAddress() string {
