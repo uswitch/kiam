@@ -105,12 +105,10 @@ func (s *Server) Serve() error {
 	return s.server.ListenAndServe()
 }
 
-func (s *Server) Stop(ctx context.Context) {
-	log.Infoln("starting server shutdown")
+func (s *Server) Stop(ctx context.Context) error {
 	c, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	s.server.Shutdown(c)
-	log.Infoln("gracefully shutdown server")
+	return s.server.Shutdown(c)
 }
 
 func ParseClientIP(addr string) (string, error) {
