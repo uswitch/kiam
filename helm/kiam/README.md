@@ -117,6 +117,10 @@ server:
     caFileName: ca
 ```
 
+## SELinux
+
+TODO
+
 ## Configuration
 
 The following table lists the configurable parameters of the kiam chart and their default values.
