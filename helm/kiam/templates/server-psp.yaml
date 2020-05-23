@@ -23,6 +23,7 @@ spec:
   hostPID: false
   runAsUser:
     rule: 'RunAsAny'
+  # TODO set seLinux here
   seLinux:
     rule: 'RunAsAny'
   supplementalGroups:
