@@ -117,9 +117,41 @@ server:
     caFileName: ca
 ```
 
-## SELinux
+## SELinux Options
 
-TODO
+For SELinux enabled systems, such as OpenShift on RHEL, you may need to
+apply special SELinux labels to the agent and/or server processes.
+
+In order for the agent to access `/run/xtable.lock`, access to the
+`iptables_var_run_t` type is required. This can be achieved by
+giving the process `spc_t` rather than `container_t`:
+
+```yaml
+
+agent:
+  seLinuxEnabled: true
+  seLinuxOptions:
+    user: system_u
+    role: system_r
+    type: spc_t
+    level: s0
+```
+
+Similarly, in order for the server to access the hosts CA certificates,
+such as `/etc/pki/ca-trust/extracted/pem`, it will need access to `cert_t`
+which can also be granted via `spc_t`:
+
+```yaml
+
+server:
+  sslCertHostPath: /etc/pki/ca-trust/extracted/pem
+  seLinuxEnabled: true
+  seLinuxOptions:
+    user: system_u
+    role: system_r
+    type: spc_t
+    level: s0
+```
 
 ## Configuration
 

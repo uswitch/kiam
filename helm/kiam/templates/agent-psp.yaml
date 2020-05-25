@@ -26,9 +26,14 @@ spec:
   hostPID: false
   runAsUser:
     rule: 'RunAsAny'
-  # TODO set seLinux here
   seLinux:
+    {{- if .Values.agent.seLinuxEnabled }}
+    rule: 'MustRunAs'
+    seLinuxOptions:
+{{ toYaml .Values.agent.seLinuxOptions | indent 6 }}
+    {{- else }}
     rule: 'RunAsAny'
+    {{- end }}
   supplementalGroups:
     rule: 'MustRunAs'
     ranges:
