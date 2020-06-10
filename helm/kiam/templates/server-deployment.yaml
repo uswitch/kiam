@@ -58,7 +58,7 @@ spec:
                       - {{ .Values.server.name }}
               topologyKey: "kubernetes.io/hostname"
       {{- if .Values.server.affinity }}
-{{ toYaml .Values.server.affinity | indent 10 }}
+{{ toYaml .Values.server.affinity | indent 8 }}
       {{- end }}
       volumes:
         - name: tls
