@@ -177,10 +177,6 @@ agent:
     successThreshold: 1
     failureThreshold: 3
 
-  ## Enables template of the container's seLinuxOptions, see below
-  ##
-  seLinuxEnabled: false
-
   ## SELinux labels for the container process
   ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#assign-selinux-labels-to-a-container
   ##
@@ -370,10 +366,6 @@ server:
     timeoutSeconds: 10
     successThreshold: 1
     failureThreshold: 3
-
-  ## Enables template of the container's seLinuxOptions, see below
-  ##
-  seLinuxEnabled: false
 
   ## SELinux labels for the container process
   ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#assign-selinux-labels-to-a-container
