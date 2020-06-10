@@ -75,6 +75,10 @@ spec:
           securityContext:
             capabilities:
               add: ["NET_ADMIN"]
+            {{- if .Values.agent.seLinuxOptions }}
+            seLinuxOptions:
+{{ toYaml .Values.agent.seLinuxOptions | indent 14 }}
+            {{- end }}
         {{- end }}
           image: "{{ .Values.agent.image.repository }}:{{ .Values.agent.image.tag }}"
           imagePullPolicy: {{ .Values.agent.image.pullPolicy }}
