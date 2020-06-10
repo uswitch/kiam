@@ -27,7 +27,7 @@ spec:
   runAsUser:
     rule: 'RunAsAny'
   seLinux:
-    {{- if .Values.agent.seLinuxEnabled }}
+    {{- if .Values.agent.seLinuxOptions }}
     rule: 'MustRunAs'
     seLinuxOptions:
 {{ toYaml .Values.agent.seLinuxOptions | indent 6 }}
