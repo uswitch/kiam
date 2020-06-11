@@ -61,10 +61,10 @@ kubectl create secret generic kiam-agent-tls -n kube-system \
 
 ## Cert manager
 
-You can use `cert-manager` to create a selfSigned issuer to create a CA and ca issuer for creating the required certs using that CA:
+You can use `cert-manager` to create a selfSigned issuer to create a CA and ca issuer for creating the required certs using that CA (note the following is only compatible with cert-manager version 0.11.0 or later):
 
-```
-apiVersion: certmanager.k8s.io/v1alpha1
+```yaml
+apiVersion: cert-manager.io/v1alpha2
 kind: Issuer
 metadata:
   name: selfsigning-issuer
@@ -72,7 +72,7 @@ spec:
   selfSigned: {}
 
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   name: example-ca
@@ -82,9 +82,11 @@ spec:
   isCA: true
   issuerRef:
     name: selfsigning-issuer
+  usages:
+  - "any"
 
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Issuer
 metadata:
   name: ca-issuer
@@ -93,7 +95,7 @@ spec:
     secretName: ca-tls
 
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   name: agent
@@ -102,9 +104,11 @@ spec:
   commonName: agent
   issuerRef:
     name: ca-issuer
+  usages:
+  - "any"
 
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   name: server
@@ -112,12 +116,11 @@ spec:
   secretName: server-tls
   issuerRef:
     name: ca-issuer
+  usages:
+  - "any"
   dnsNames:
   - "localhost"
   - "kiam-server"
   ipAddresses:
   - "127.0.0.1"
 ```
-
-In order to use the `ipAddresses` option at the end you need at least `v0.7.0` of cert-manager.
-If you use an older version of cert manager, you can use `--server-address=localhost:443` to use the name `localhost` instead.

@@ -71,16 +71,16 @@ func (c *credentialsHandler) Handle(ctx context.Context, w http.ResponseWriter, 
 }
 
 func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requestedRole string) (*sts.Credentials, error) {
-	credsCh := make(chan *sts.Credentials, 1)
+	var creds *sts.Credentials
 	op := func() error {
-		creds, err := c.client.GetCredentials(ctx, ip, requestedRole)
+		var err error
+		creds, err = c.client.GetCredentials(ctx, ip, requestedRole)
 		if err != nil {
 			if err == server.ErrPolicyForbidden {
 				return backoff.Permanent(err)
 			}
 			return err
 		}
-		credsCh <- creds
 		return nil
 	}
 
@@ -91,7 +91,7 @@ func (c *credentialsHandler) fetchCredentials(ctx context.Context, ip, requested
 	if err != nil {
 		return nil, err
 	}
-	return <-credsCh, nil
+	return creds, nil
 }
 
 func newCredentialsHandler(client server.Client, getClientIP clientIPFunc) *credentialsHandler {

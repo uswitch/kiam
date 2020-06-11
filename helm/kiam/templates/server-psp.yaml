@@ -10,21 +10,27 @@ spec:
   allowPrivilegeEscalation: false
   volumes:
     - 'secret'
-{{- if .Values.server.extraHostPathMounts }}
     - 'hostPath'
-  {{- range .Values.server.extraHostPathMounts }}
   allowedHostPaths:
+  - pathPrefix: {{ .Values.server.sslCertHostPath }}
+    readOnly: true
+  {{- range .Values.server.extraHostPathMounts }}
   - pathPrefix: {{ .hostPath }}
     readOnly: {{ .readOnly }}
   {{- end }}
-{{- end }}
   hostNetwork: {{ .Values.server.useHostNetwork }}
   hostIPC: false
   hostPID: false
   runAsUser:
     rule: 'RunAsAny'
   seLinux:
+    {{- if .Values.server.seLinuxOptions }}
+    rule: 'MustRunAs'
+    seLinuxOptions:
+{{ toYaml .Values.server.seLinuxOptions | indent 6 }}
+    {{- else }}
     rule: 'RunAsAny'
+  {{- end }}
   supplementalGroups:
     rule: 'MustRunAs'
     ranges:

@@ -58,7 +58,7 @@ spec:
                       - {{ .Values.server.name }}
               topologyKey: "kubernetes.io/hostname"
       {{- if .Values.server.affinity }}
-{{ toYaml .Values.server.affinity | indent 10 }}
+{{ toYaml .Values.server.affinity | indent 8 }}
       {{- end }}
       volumes:
         - name: tls
@@ -78,6 +78,10 @@ spec:
       {{- end }}
       {{- if .Values.server.priorityClassName }}
       priorityClassName: {{ .Values.server.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.server.initContainers }}
+      initContainers:
+{{ toYaml .Values.server.initContainers | indent 8 }}
       {{- end }}
       containers:
         - name: {{ template "kiam.name" . }}-{{ .Values.server.name }}
@@ -120,6 +124,11 @@ spec:
           {{- if .Values.server.extraEnv }}
 {{ toYaml .Values.server.extraEnv | indent 12 }}
         {{- end }}
+          {{- if .Values.server.seLinuxOptions }}
+          securityContext:
+            seLinuxOptions:
+{{ toYaml .Values.server.seLinuxOptions | indent 14 }}
+          {{- end }}
           volumeMounts:
             - mountPath: /etc/kiam/tls
               name: tls
@@ -143,9 +152,11 @@ spec:
                 - --server-address-refresh=2s
                 - --timeout=5s
                 - --gateway-timeout-creation={{ .Values.server.gatewayTimeoutCreation }}
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 10
+            initialDelaySeconds: {{ .Values.server.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.server.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.server.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.server.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.server.livenessProbe.failureThreshold }}
           readinessProbe:
             exec:
               command:
@@ -158,9 +169,11 @@ spec:
                 - --server-address-refresh=2s
                 - --timeout=5s
                 - --gateway-timeout-creation={{ .Values.server.gatewayTimeoutCreation }}
-            initialDelaySeconds: 3
-            periodSeconds: 10
-            timeoutSeconds: 10
+            initialDelaySeconds: {{ .Values.server.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.server.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.server.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.server.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.server.readinessProbe.failureThreshold }}
         {{- if .Values.server.resources }}
           resources:
 {{ toYaml .Values.server.resources | indent 12 }}

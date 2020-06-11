@@ -15,7 +15,7 @@ agent:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.4
+    tag: v3.5
     pullPolicy: IfNotPresent
 
   ## agent whitelist of proxy routes matching this reg-ex
@@ -133,9 +133,22 @@ agent:
     #   hostPath: /usr/share/ca-certificates
     #   readOnly: true
 
+  ## Agent initContainers
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ##
+  initContainers: []
+
   ## Timeout when creating the kiam gateway
   ##
   gatewayTimeoutCreation: 1s
+
+  ## gRPC keepalive variables
+  ##
+  keepaliveParams:
+    time:
+    timeout:
+    ## gRPC keepalive ping even with no RPC
+    # permitWithoutStream: true
 
   ## Base64-encoded PEM values for agent's CA certificate(s), certificate and private key
   ##
@@ -154,6 +167,29 @@ agent:
     keyFileName: key
     caFileName: ca
 
+  ## Liveness probe values
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes
+  ##
+  livenessProbe:
+    initialDelaySeconds: 3
+    periodSeconds: 3
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 3
+
+  ## SELinux labels for the container process
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#assign-selinux-labels-to-a-container
+  ##
+  seLinuxOptions: {}
+  #  user: system_u
+  #  role: system_r
+  #  ## Provides access to all files such as /etc/pki/ca-trust/extracted/pem
+  #  ## Ref: https://www.systutorials.com/docs/linux/man/8-spc_selinux/
+  #  ## Ref: https://danwalsh.livejournal.com/74754.html
+  #  ##
+  #  type: spc_t
+  #  level: s0
+
 server:
   ## If false, server will not be installed
   ##
@@ -165,7 +201,7 @@ server:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.4
+    tag: v3.5
     pullPolicy: IfNotPresent
 
   ## Run as Deployment instead of Daemonset
@@ -263,6 +299,11 @@ server:
   ##
   extraHostPathMounts: []
 
+  ## Server initContainers
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ##
+  initContainers: []
+
   service:
     port: 443
     targetPort: 443
@@ -309,6 +350,35 @@ server:
     certFileName: cert
     keyFileName: key
     caFileName: ca
+
+  ## Liveness and readiness probe values
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+  ##
+  livenessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 3
+    periodSeconds: 10
+    timeoutSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+
+  ## SELinux labels for the container process
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#assign-selinux-labels-to-a-container
+  ##
+  seLinuxOptions: {}
+  #  user: system_u
+  #  role: system_r
+  #  ## Provides access to all files such as /etc/pki/ca-trust/extracted/pem
+  #  ## Ref: https://www.systutorials.com/docs/linux/man/8-spc_selinux/
+  #  ## Ref: https://danwalsh.livejournal.com/74754.html
+  #  ##
+  #  type: spc_t
+  #  level: s0
 
 rbac:
   # Specifies whether RBAC resources should be created
