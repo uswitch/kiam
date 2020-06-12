@@ -108,7 +108,7 @@ spec:
           {{- if .Values.server.seLinuxOptions }}
           securityContext:
             seLinuxOptions:
-          {{ toYaml .Values.server.seLinuxOptions | indent 14 }}
+{{ toYaml .Values.server.seLinuxOptions | indent 14 }}
           {{- end }}
           volumeMounts:
             - mountPath: /etc/kiam/tls
