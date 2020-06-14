@@ -124,12 +124,13 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 }
 
 type NamespacePermittedRoleNamePolicy struct {
-	namespaces k8s.NamespaceFinder
-	pods       k8s.PodGetter
+	namespaces            k8s.NamespaceFinder
+	pods                  k8s.PodGetter
+	strictNamespaceRegexp bool
 }
 
-func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.PodGetter) *NamespacePermittedRoleNamePolicy {
-	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p}
+func NewNamespacePermittedRoleNamePolicy(strictNamespaceRegexp bool, n k8s.NamespaceFinder, p k8s.PodGetter) *NamespacePermittedRoleNamePolicy {
+	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p, strictNamespaceRegexp: strictNamespaceRegexp}
 }
 
 type namespacePolicyForbidden struct {
@@ -162,9 +163,17 @@ func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Conte
 		return &namespacePolicyForbidden{expression: "(empty)", role: role}, nil
 	}
 
-	re, err := regexp.Compile("^" + expression + "$")
-	if err != nil {
-		return nil, err
+	var re *regexp.Regexp
+	if p.strictNamespaceRegexp {
+		re, err = regexp.Compile("^" + expression + "$")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		re, err = regexp.Compile(expression)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if !re.MatchString(role) {

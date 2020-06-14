@@ -53,6 +53,7 @@ func (o *serverOptions) bind(parser parser) {
 	parser.Flag("sync", "Pod cache sync interval").Default("1m").DurationVar(&o.PodSyncInterval)
 	parser.Flag("role-base-arn", "Base ARN for roles. e.g. arn:aws:iam::123456789:role/").StringVar(&o.RoleBaseARN)
 	parser.Flag("role-base-arn-autodetect", "Use EC2 metadata service to detect ARN prefix.").BoolVar(&o.AutoDetectBaseARN)
+	parser.Flag("strict-namespace-regexp", "Enable strict namespace regexp when matching with requested roles.").BoolVar(&o.StrictNamespaceRegexp)
 	parser.Flag("session", "Session name used when creating STS Tokens.").Default("kiam").StringVar(&o.SessionName)
 	parser.Flag("session-duration", "Requested session duration for STS Tokens.").Default("15m").DurationVar(&o.SessionDuration)
 	parser.Flag("session-refresh", "How soon STS Tokens should be refreshed before their expiration.").Default("5m").DurationVar(&o.SessionRefresh)

@@ -51,6 +51,7 @@ type Config struct {
 	SessionRefresh           time.Duration
 	RoleBaseARN              string
 	AutoDetectBaseARN        bool
+	StrictNamespaceRegexp    bool
 	TLS                      TLSConfig
 	ParallelFetcherProcesses int
 	PrefetchBufferSize       int
@@ -285,7 +286,7 @@ func NewServer(config *Config) (_ *KiamServer, err error) {
 		credentialsProvider: credentialsCache,
 		assumePolicy: Policies(
 			NewRequestingAnnotatedRolePolicy(podCache, arnResolver),
-			NewNamespacePermittedRoleNamePolicy(namespaceCache, podCache),
+			NewNamespacePermittedRoleNamePolicy(config.StrictNamespaceRegexp, namespaceCache, podCache),
 		),
 		parallelFetchers: config.ParallelFetcherProcesses,
 	}
