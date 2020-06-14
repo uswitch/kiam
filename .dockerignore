@@ -3,3 +3,4 @@ bin
 docs
 ci
 deploy
+.env

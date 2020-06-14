@@ -1,5 +1,80 @@
 # Helm Chart Changelog
 
+## 5.7.0
+5 February 2020
+
+Notable changes:
+* [#367](https://github.com/uswitch/kiam/pull/367) Add possibility to configure agent/server initContainers from the `values.yaml`.
+
+Many thanks to the following contributor for this release:
+* [@caiohasouza](https://github.com/caiohasouza)
+
+## 5.6.1
+4 February 2020
+
+Notable changes:
+* [#372](https://github.com/uswitch/kiam/pull/372) Add missing sslCertHostPath as allowedHostPath in Helm Chart server PSP. Also fixes misplaced `extraHostPathMounts` range in the PSP.
+
+Many thanks to the following contributor for this release:
+* [@phyrog](https://github.com/phyrog)
+
+## 5.6.0
+24 January 2020
+
+Notable changes:
+* [#361](https://github.com/uswitch/kiam/pull/361) Add ability to configure the agent and server readiness/liveness probes from the `values.yaml`.
+
+Many thanks to the following contributor for this release:
+* [@caiohasouza](https://github.com/caiohasouza)
+
+## 5.5.0
+13 January 2020
+
+Notable changes:
+* [#353](https://github.com/uswitch/kiam/pull/353) Update kiam release from 3.4 to 3.5.
+* Optional gRPC keepalive [#337](https://github.com/uswitch/kiam/pull/337) configuration has been added to the chart for the agent under the `keepaliveParams:` field.
+
+Many thanks to the following contributor for this release:
+* [@johnmccabe](https://github.com/johnmccabe)
+
+## 5.4.0
+10 December 2019
+
+Notable changes:
+* [#336](https://github.com/uswitch/kiam/pull/336) Add optional service-account annotations for server and agent. Fix deployment to work with helm v3 by removing the erroneous `updateStrategy` field and add support for the custom SSL host path.
+
+Many thanks to the following contributor for this release:
+* [@tyrken](https://github.com/tyrken)
+
+## 5.3.0
+27 November 2019
+
+Notable changes:
+* [#332](https://github.com/uswitch/kiam/pull/332) The option of running the Kiam server component as a Deployment, rather than a Daemonset, has been added to the chart - this can be configured in the `values.yaml`.
+
+Many thanks to the following contributor for this release:
+* [@denniswebb](https://github.com/denniswebb)
+
+## 5.2.0
+27 November 2019
+
+Notable changes:
+* [#320](https://github.com/uswitch/kiam/pull/320) The default SSL host path set for the Kiam server has been updated to match the default in the repo's deployment manifests. This path can now be configured from its own `values.yaml` option.  
+Also, the Helm README has been updated to include documentation for key configuration elements.
+
+Many thanks to the following contributors for this release:
+* [@MVJosh](https://github.com/MVJosh)
+* [@Nuru](https://github.com/Nuru)
+
+## 5.1.0
+8 November 2019
+
+Notable changes:
+* [#319](https://github.com/uswitch/kiam/pull/319) Optional [deep liveness check](https://github.com/uswitch/kiam/pull/268) has been added to the helm chart.
+
+Many thanks to the following contributor for this release:
+* [@stanvit](https://github.com/stanvit)
+
 ## 5.0.0
 7 November 2019
 
@@ -9,7 +84,7 @@
 Please see the following links for related discussion: [Issue 202](https://github.com/uswitch/kiam/issues/202) and [PR #253](https://github.com/uswitch/kiam/pull/253).
 
 Many thanks to the following contributors for this release:
-* [@zytek](https://github.com/zytek)  
+* [@zytek](https://github.com/zytek)
 * [@Nuru](https://github.com/Nuru)
 
 ## 4.2.0

@@ -5,7 +5,7 @@ workspace:
 pipeline:
   test:
     secrets: [ codecov_token ]
-    image: golang:1.12
+    image: golang:1.13
     environment:
       GO111MODULE: "on"
     commands:
@@ -14,11 +14,23 @@ pipeline:
       - ./ci/codecov.sh
 
   benchmarks:
-    image: golang:1.12
+    image: golang:1.13
     environment:
       GO111MODULE: "on"
     commands:
       - make bench
+
+  helm-test-v2:
+    image:  alpine/helm:2.14.3
+    commands:
+      - helm lint helm/kiam
+      - helm template helm/kiam
+
+  helm-test-v3:
+    image:  alpine/helm:3.0.2
+    commands:
+      - helm lint helm/kiam
+      - helm template helm/kiam
 
   docker:
     when:
