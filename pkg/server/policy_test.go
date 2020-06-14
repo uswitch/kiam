@@ -126,7 +126,7 @@ func TestNamespacePolicy(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
 	pf := kt.NewStubFinder(p)
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy := NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, err := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -136,7 +136,7 @@ func TestNamespacePolicy(t *testing.T) {
 		t.Errorf("expected to be allowed- pod in correct namespace")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, err = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -163,7 +163,7 @@ func TestNamespacePolicyWithSlash(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	pf := kt.NewStubFinder(p)
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy := NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, err := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -173,7 +173,7 @@ func TestNamespacePolicyWithSlash(t *testing.T) {
 		t.Errorf("expected to be allowed- pod in correct namespace")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, err = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -200,14 +200,14 @@ func TestNotAllowedWithoutNamespaceAnnotation(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
 	pf := kt.NewStubFinder(p)
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy := NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
 
 	if decision.IsAllowed() {
 		t.Error("expected failure, empty namespace policy annotation")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
 
 	if decision.IsAllowed() {
@@ -221,7 +221,7 @@ func TestNotAllowedWithoutNamespaceAnnotationWithSlash(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	pf := kt.NewStubFinder(p)
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy := NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
 
 	if decision.IsAllowed() {
@@ -256,14 +256,14 @@ func TestNotAllowedWithBadNamespaceAnnotationRegex(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	pf := kt.NewStubFinder(p)
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, pf)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
 
 	if decision.IsAllowed() {
 		t.Error("expected to be forbidden- namespace regex doesn't match role")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, pf)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
 
 	if decision.IsAllowed() {
@@ -277,14 +277,14 @@ func TestNotAllowedWithoutWildcardNamespaceAnnotationRegex(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	pf := kt.NewStubFinder(p)
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy := NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
 
 	if decision.IsAllowed() {
 		t.Error("expected to be forbidden- namespace regex doesn't match role")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
 
 	if decision.IsAllowed() {
@@ -298,7 +298,7 @@ func TestAllowedWithWildcardNamespaceAnnotationRegex(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	pf := kt.NewStubFinder(p)
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy := NewNamespacePermittedRoleNamePolicy(false, nf, pf)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
 
 	if !decision.IsAllowed() {
