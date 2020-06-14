@@ -228,7 +228,21 @@ func TestNotAllowedWithoutNamespaceAnnotationWithSlash(t *testing.T) {
 		t.Error("expected failure, empty namespace policy annotation")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, pf)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
+
+	if decision.IsAllowed() {
+		t.Error("expected failure, empty namespace policy annotation")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, pf)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
+
+	if decision.IsAllowed() {
+		t.Error("expected failure, empty namespace policy annotation")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, pf)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
 
 	if decision.IsAllowed() {
@@ -291,7 +305,21 @@ func TestAllowedWithWildcardNamespaceAnnotationRegex(t *testing.T) {
 		t.Error("expected to be allowed- namespace regex matches role:", decision.Explanation())
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, pf)
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, pf)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace regex matches role:", decision.Explanation())
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, pf)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "red_role", "192.168.0.1")
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace regex matches role:", decision.Explanation())
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, pf)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", "192.168.0.1")
 
 	if !decision.IsAllowed() {
