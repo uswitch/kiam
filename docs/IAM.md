@@ -172,3 +172,40 @@ The cluster node EC2 instance role will need to have `sts:AssumeRole` permission
 for this role and for there to be an entry in the Server role's trust policy.
 Application roles will need to have a trust policy entry for this role, instead
 of the cluster node role as noted above.
+
+## Cross-Account IAM Roles
+
+Cross-account access to resources in AWS with Kiam can be configured in multiple ways, simple setup requires specifiyng full role ARN (including account ID) from another account in the `iam.amazonaws.com/role` pod annotation. Same rules are valid for this IAM role - it needs to have `sts:AssumeRole` permissions from the Kiam server role.
+
+If you need to provide cross-account access to multiple AWS accounts at once to single pod you will need to have additional IAM role in source AWS account with permissions to assume target IAM roles.
+
+Imagine next case scenario - service in the source account `AWS-source` requires access to S3 buckets in target accounts `AWS-target1` and `AWS-target2`. You are not allowed to assing multiple roles to single Pod with Kiam so you have to create service IAM role in the `AWS-source` account and assing it to the pod, this role must have permissions to assume roles in other accounts, for example with such inline policy:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sts:AssumeRole"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+Also roles in `AWS-target1` and `AWS-target2` that have permissions to access target buckets must allow to be assumed:
+
+```
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::[AWS-source account ID]:role/[service IAM role]"
+      },
+      "Action": "sts:AssumeRole"
+    }
+ ```
+ 
+> :warning: **All roles in the chain must have permissions to assume next role and to be assumable by previous**
