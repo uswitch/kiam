@@ -293,6 +293,7 @@ server:
   #   /etc/pki/ca-trust/extracted/pem
   ## else:
   #   /usr/share/ca-certificates
+  # Set to "" to disable host mounting, for example if you're using your own image 
   sslCertHostPath: /usr/share/ca-certificates
 
   ## Additional container hostPath mounts
