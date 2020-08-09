@@ -4,7 +4,7 @@
 REPLACEME 2020
 
 Notable changes:
-* [#406](https://github.com/uswitch/kiam/pull/REPLACEME) Update kiam release from 3.5 to 3.6.
+* [#417](https://github.com/uswitch/kiam/pull/417) Update kiam release from 3.5 to 3.6.
 
 Many thanks to the following contributor for this release:
 * [@leosunmo](https://github.com/leosunmo)
