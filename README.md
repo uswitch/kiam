@@ -1,3 +1,8 @@
+A fork of https://github.com/uswitch/kiam in order to build a docker image hosted in our docker repo 
+
+----
+
+
 # kiam
 
 [![Docker Repository on Quay](https://quay.io/repository/uswitch/kiam/status "Docker Repository on Quay")](https://quay.io/repository/uswitch/kiam)
