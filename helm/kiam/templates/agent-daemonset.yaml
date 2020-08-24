@@ -2,6 +2,10 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
+  {{- if .Values.agent.annotations }}
+  annotations:
+{{ toYaml .Values.agent.annotations | indent 4 }}
+  {{- end }}
   labels:
     app: {{ template "kiam.name" . }}
     chart: {{ template "kiam.chart" . }}
