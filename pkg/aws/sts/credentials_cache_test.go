@@ -42,13 +42,22 @@ func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
 	if creds.Code != "foo" {
 		t.Error("didnt return expected credentials code, was", creds.Code)
 	}
+	if stubGateway.requestedRole != "prefix:role" {
+		t.Error("unexpected role, was:", stubGateway.requestedRole)
+	}
+	if stubGateway.issueCount != 1 {
+		t.Error("expected to have issued")
+	}
 
+	// repeat the call, we shouldn't expect issueCount to increase
 	cache.CredentialsForRole(ctx, "role", "id")
 	if stubGateway.issueCount != 1 {
 		t.Error("expected creds to be cached")
 	}
 
-	if stubGateway.requestedRole != "prefix:role" {
-		t.Error("unexpected role, was:", stubGateway.requestedRole)
+	// request with different external ID, should request again
+	cache.CredentialsForRole(ctx, "role", "newID")
+	if stubGateway.issueCount != 2 {
+		t.Error("expected to call again with different external ID")
 	}
 }

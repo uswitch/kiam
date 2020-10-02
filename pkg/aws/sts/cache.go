@@ -100,9 +100,13 @@ func (c *credentialsCache) Expiring() chan *RoleCredentials {
 	return c.expiring
 }
 
+func cacheKey(role, externalID string) string {
+	return fmt.Sprintf("%s:%s", role, externalID)
+}
+
 func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string, externalID string) (*Credentials, error) {
 	logger := log.WithFields(log.Fields{"pod.iam.role": role})
-	item, found := c.cache.Get(role)
+	item, found := c.cache.Get(cacheKey(role, externalID))
 
 	if found {
 		future, _ := item.(*future.Future)
@@ -139,7 +143,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string, 
 		return credentials, err
 	}
 	f := future.New(issue)
-	c.cache.Set(role, f, c.cacheTTL)
+	c.cache.Set(cacheKey(role, externalID), f, c.cacheTTL)
 
 	val, err := f.Get(ctx)
 	if err != nil {
