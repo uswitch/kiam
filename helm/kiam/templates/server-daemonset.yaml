@@ -49,9 +49,11 @@ spec:
             {{else}}
             secretName: {{ template "kiam.fullname" . }}-server
             {{- end }}
+        {{- if .Values.server.sslCertHostPath }}
         - name: ssl-certs
           hostPath:
             path: {{ .Values.server.sslCertHostPath }}
+        {{- end }}
       {{- range .Values.server.extraHostPathMounts }}
         - name: {{ .name }}
           hostPath:
@@ -105,12 +107,19 @@ spec:
           {{- if .Values.server.extraEnv }}
 {{ toYaml .Values.server.extraEnv | indent 12 }}
         {{- end }}
+          {{- if .Values.server.seLinuxOptions }}
+          securityContext:
+            seLinuxOptions:
+{{ toYaml .Values.server.seLinuxOptions | indent 14 }}
+          {{- end }}
           volumeMounts:
             - mountPath: /etc/kiam/tls
               name: tls
+            {{- if .Values.server.sslCertHostPath }}
             - mountPath: /etc/ssl/certs
               name: ssl-certs
               readOnly: true
+            {{- end }}
           {{- range .Values.server.extraHostPathMounts }}
             - name: {{ .name }}
               mountPath: {{ .mountPath }}

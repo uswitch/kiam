@@ -24,7 +24,13 @@ spec:
   runAsUser:
     rule: 'RunAsAny'
   seLinux:
+    {{- if .Values.server.seLinuxOptions }}
+    rule: 'MustRunAs'
+    seLinuxOptions:
+{{ toYaml .Values.server.seLinuxOptions | indent 6 }}
+    {{- else }}
     rule: 'RunAsAny'
+  {{- end }}
   supplementalGroups:
     rule: 'MustRunAs'
     ranges:

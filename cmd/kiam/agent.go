@@ -55,7 +55,8 @@ func (cmd *agentCommand) Bind(parser parser) {
 	parser.Flag("host-interface", "Network interface for pods to configure IPTables.").Default("docker0").StringVar(&cmd.hostInterface)
 }
 
-func (opts *agentCommand) Run() {
+// run is the actual run implementation.
+func (opts *agentCommand) run() error {
 	opts.configureLogger()
 
 	if opts.iptables {
@@ -63,10 +64,14 @@ func (opts *agentCommand) Run() {
 		rules := newIPTablesRules(opts.hostIP, opts.ListenPort, opts.hostInterface)
 		err := rules.Add()
 		if err != nil {
-			log.Fatal("error configuring iptables:", err.Error())
+			log.Errorf("error configuring iptables: %s", err.Error())
+			return err
 		}
 		if opts.iptablesRemove {
-			defer rules.Remove()
+			defer func() {
+				log.Infof("undoing iptables changes")
+				rules.Remove()
+			}()
 		}
 	}
 
@@ -75,27 +80,50 @@ func (opts *agentCommand) Run() {
 
 	go opts.telemetryOptions.start(ctx, "agent")
 
-	stopChan := make(chan os.Signal)
-	signal.Notify(stopChan, os.Interrupt)
-	signal.Notify(stopChan, syscall.SIGTERM)
+	stopChan := make(chan os.Signal, 8)
+	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM)
 
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
 
 	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.caPath, opts.certificatePath, opts.keyPath, opts.keepaliveParams)
 	if err != nil {
-		log.Fatalf("error creating server gateway: %s", err.Error())
+		log.Errorf("error creating server gateway: %s", err.Error())
+		return err
 	}
 	defer gateway.Close()
 
 	server, err := http.NewWebServer(opts.ServerOptions, gateway)
 	if err != nil {
-		log.Fatalf("error creating agent http server: %s", err.Error())
+		log.Errorf("error creating agent http server: %s", err.Error())
+		return err
 	}
 
-	go server.Serve()
-	defer server.Stop(ctx)
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- server.Serve()
+	}()
 
-	<-stopChan
+	select {
+	case err := <-errCh:
+		if err != nil {
+			log.Errorf("error running server: %s", err.Error())
+			return err
+		}
+	case sig := <-stopChan:
+		log.Infof("received signal (%s): starting server shutdown", sig.String())
+		if err := server.Stop(ctx); err != nil {
+			log.Errorf("error shutting down server: %s", err.Error())
+			return err
+		}
+		log.Infoln("gracefully shutdown server")
+	}
 	log.Infoln("stopped")
+	return nil
+}
+
+func (opts *agentCommand) Run() {
+	if err := opts.run(); err != nil {
+		log.Fatalf("fatal error: %s", err.Error())
+	}
 }

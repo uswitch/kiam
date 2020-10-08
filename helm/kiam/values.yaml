@@ -15,7 +15,7 @@ agent:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.5
+    tag: v3.6
     pullPolicy: IfNotPresent
 
   ## agent whitelist of proxy routes matching this reg-ex
@@ -177,6 +177,19 @@ agent:
     successThreshold: 1
     failureThreshold: 3
 
+  ## SELinux labels for the container process
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#assign-selinux-labels-to-a-container
+  ##
+  seLinuxOptions: {}
+  #  user: system_u
+  #  role: system_r
+  #  ## Provides access to all files such as /etc/pki/ca-trust/extracted/pem
+  #  ## Ref: https://www.systutorials.com/docs/linux/man/8-spc_selinux/
+  #  ## Ref: https://danwalsh.livejournal.com/74754.html
+  #  ##
+  #  type: spc_t
+  #  level: s0
+
 server:
   ## If false, server will not be installed
   ##
@@ -188,7 +201,7 @@ server:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.5
+    tag: v3.6
     pullPolicy: IfNotPresent
 
   ## Run as Deployment instead of Daemonset
@@ -280,6 +293,7 @@ server:
   #   /etc/pki/ca-trust/extracted/pem
   ## else:
   #   /usr/share/ca-certificates
+  # Set to "" to disable host mounting, for example if you're using your own image 
   sslCertHostPath: /usr/share/ca-certificates
 
   ## Additional container hostPath mounts
@@ -353,6 +367,19 @@ server:
     timeoutSeconds: 10
     successThreshold: 1
     failureThreshold: 3
+
+  ## SELinux labels for the container process
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#assign-selinux-labels-to-a-container
+  ##
+  seLinuxOptions: {}
+  #  user: system_u
+  #  role: system_r
+  #  ## Provides access to all files such as /etc/pki/ca-trust/extracted/pem
+  #  ## Ref: https://www.systutorials.com/docs/linux/man/8-spc_selinux/
+  #  ## Ref: https://danwalsh.livejournal.com/74754.html
+  #  ##
+  #  type: spc_t
+  #  level: s0
 
 rbac:
   # Specifies whether RBAC resources should be created

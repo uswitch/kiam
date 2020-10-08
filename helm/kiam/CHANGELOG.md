@@ -1,5 +1,42 @@
 # Helm Chart Changelog
 
+## 5.9.0
+17 August 2020
+
+Notable changes:
+* [#417](https://github.com/uswitch/kiam/pull/417) Update kiam release from 3.5 to 3.6.
+
+Many thanks to the following contributor for this release:
+* [@leosunmo](https://github.com/leosunmo)
+
+## 5.8.1
+12 June 2020
+
+Notable changes:
+* [#406](https://github.com/uswitch/kiam/pull/406) Fix indentation on seLinuxOptions in server daemonset in Helm chart.
+
+Many thanks to the following contributor for this release:
+* [@mbarrien](https://github.com/mbarrien)
+
+
+## 5.8.0
+11 June 2020
+
+Notable changes:
+* [#404](https://github.com/uswitch/kiam/pull/404) Allow for configurable SELinux labels. Adds seLinuxOptions values to the Helm chart for both the agent and server.
+
+Many thanks to the following contributor for this release:
+* [@hfuss](https://github.com/hfuss)
+
+## 5.7.1
+11 June 2020
+
+Notable changes:
+* [#405](https://github.com/uswitch/kiam/pull/405) Fix incorrect indentation in server's pod affinity.
+
+Many thanks to the following contributor for this release:
+* [@msvechla](https://github.com/msvechla)
+
 ## 5.7.0
 5 February 2020
 
