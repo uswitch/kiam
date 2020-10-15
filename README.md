@@ -24,7 +24,7 @@ We have a [#kiam Slack channel](https://kubernetes.slack.com/messages/CBQLKVABH/
 
 * No client SDK modifications are needed: Kiam intercepts Metadata API requests.
 * Separated Agent and Server processes. Allows user workloads to run on nodes without `sts:AssumeRole` permissions to enhance cluster security.
-* Denies access to all other AWS Metadata API paths by default (but can be whitelisted via flag)
+* Denies access to all other AWS Metadata API paths by default (but can be configured via flag)
 * AWS credentials are prefetched to allow fast responses (and avoid problems with races between Pods requesting credentials and the Kubernetes client caches being aware of the Pod)
 * Multi-account IAM support. Pods can assume roles from any AWS account assuming trust relationships permit it
 * [Prometheus and StatsD metrics](docs/METRICS.md)

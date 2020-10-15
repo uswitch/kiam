@@ -27,6 +27,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const kRequestBlockedAllowFilter = "request blocked by allow-route-regexp"
+
 func performRequest(allowed, path string, method string, returnCode int) (int, *httptest.ResponseRecorder) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -48,7 +50,7 @@ func performRequest(allowed, path string, method string, returnCode int) (int, *
 	return hits, rr
 }
 
-func TestProxyDefaultBlacklistingRoot(t *testing.T) {
+func TestProxyDefaultBlocksRoot(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	hits, rr := performRequest("", "/", "GET", http.StatusOK)
@@ -59,7 +61,7 @@ func TestProxyDefaultBlacklistingRoot(t *testing.T) {
 	if rr.Code != http.StatusNotFound {
 		t.Error("unexpected status", rr.Code)
 	}
-	if !strings.HasPrefix(rr.Body.String(), "request blocked by whitelist-route-regexp") {
+	if !strings.HasPrefix(rr.Body.String(), kRequestBlockedAllowFilter) {
 		t.Error("unexpected body:", rr.Body.String())
 	}
 }
@@ -92,7 +94,7 @@ func TestProxyFiltering(t *testing.T) {
 	if rr.Code != http.StatusNotFound {
 		t.Error("unexpected status", rr.Code)
 	}
-	if !strings.HasPrefix(rr.Body.String(), "request blocked by whitelist-route-regexp") {
+	if !strings.HasPrefix(rr.Body.String(), kRequestBlockedAllowFilter) {
 		t.Error("unexpected body:", rr.Body.String())
 	}
 
@@ -130,12 +132,13 @@ func TestProxyFilteringSubpath(t *testing.T) {
 	if rr.Code != http.StatusNotFound {
 		t.Error("unexpected status", rr.Code)
 	}
-	if !strings.HasPrefix(rr.Body.String(), "request blocked by whitelist-route-regexp") {
+
+	if !strings.HasPrefix(rr.Body.String(), kRequestBlockedAllowFilter) {
 		t.Error("unexpected body:", rr.Body.String())
 	}
 }
 
-func TestProxyWhitelisting(t *testing.T) {
+func TestProxyAllowRouteFiltering(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	hits, rr := performRequest("foo.*", "/foo", "GET", http.StatusOK)
