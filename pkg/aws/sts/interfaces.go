@@ -18,12 +18,12 @@ import (
 )
 
 type CredentialsProvider interface {
-	CredentialsForRole(ctx context.Context, role string) (*Credentials, error)
+	CredentialsForRole(ctx context.Context, identity *CredentialsIdentity) (*Credentials, error)
 }
 
 type CredentialsCache interface {
-	CredentialsForRole(ctx context.Context, role string) (*Credentials, error)
-	Expiring() chan *RoleCredentials
+	CredentialsForRole(ctx context.Context, identity *CredentialsIdentity) (*Credentials, error)
+	Expiring() chan *CachedCredentials
 }
 
 // ARNResolver encapsulates resolution of roles into ARNs.

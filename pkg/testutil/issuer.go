@@ -15,21 +15,22 @@ package testutil
 
 import (
 	"context"
+
 	"github.com/uswitch/kiam/pkg/aws/sts"
 )
 
 type stubCache struct {
-	issue func(role string) (*sts.Credentials, error)
+	issue func(identity *sts.CredentialsIdentity) (*sts.Credentials, error)
 }
 
-func (i *stubCache) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
-	return i.issue(role)
+func (i *stubCache) CredentialsForRole(ctx context.Context, identity *sts.CredentialsIdentity) (*sts.Credentials, error) {
+	return i.issue(identity)
 }
 
-func (i *stubCache) Expiring() chan *sts.RoleCredentials {
-	return make(chan *sts.RoleCredentials)
+func (i *stubCache) Expiring() chan *sts.CachedCredentials {
+	return make(chan *sts.CachedCredentials)
 }
 
-func NewStubCredentialsCache(f func(role string) (*sts.Credentials, error)) sts.CredentialsCache {
+func NewStubCredentialsCache(f func(identity *sts.CredentialsIdentity) (*sts.Credentials, error)) sts.CredentialsCache {
 	return &stubCache{f}
 }

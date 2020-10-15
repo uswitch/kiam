@@ -28,15 +28,19 @@ type credentialsCache struct {
 	arnResolver     ARNResolver
 	baseARN         string
 	cache           *cache.Cache
-	expiring        chan *RoleCredentials
+	expiring        chan *CachedCredentials
 	sessionName     string
 	sessionDuration time.Duration
 	cacheTTL        time.Duration
 	gateway         STSGateway
 }
 
-type RoleCredentials struct {
-	Role        string
+type CredentialsIdentity struct {
+	Role string
+}
+
+type CachedCredentials struct {
+	Identity    *CredentialsIdentity
 	Credentials *Credentials
 }
 
@@ -53,7 +57,7 @@ func DefaultCache(
 ) *credentialsCache {
 	c := &credentialsCache{
 		arnResolver:     resolver,
-		expiring:        make(chan *RoleCredentials, 1),
+		expiring:        make(chan *CachedCredentials, 1),
 		sessionName:     fmt.Sprintf("kiam-%s", sessionName),
 		sessionDuration: sessionDuration,
 		cacheTTL:        sessionDuration - sessionRefresh,
@@ -77,32 +81,32 @@ func DefaultCache(
 	return c
 }
 
-func (c *credentialsCache) evicted(role string, item interface{}) {
+func (c *credentialsCache) evicted(key string, item interface{}) {
 	f := item.(*future.Future)
 	obj, err := f.Get(context.Background())
 
 	if err != nil {
-		log.WithField("pod.iam.role", role).Debugf("evicted credentials future had error: %s", err.Error())
+		log.WithField("cache.key", key).Debugf("evicted credentials future had error: %s", err.Error())
 		return
 	}
 
-	creds := obj.(*Credentials)
+	cachedCreds := obj.(*CachedCredentials)
 	select {
-	case c.expiring <- &RoleCredentials{Role: role, Credentials: creds}:
-		log.WithFields(CredentialsFields(creds, role)).Infof("notified credentials expire soon")
+	case c.expiring <- cachedCreds:
+		log.WithFields(CredentialsFields(cachedCreds.Identity, cachedCreds.Credentials)).Infof("notified credentials expire soon")
 		return
 	default:
 		return
 	}
 }
 
-func (c *credentialsCache) Expiring() chan *RoleCredentials {
+func (c *credentialsCache) Expiring() chan *CachedCredentials {
 	return c.expiring
 }
 
-func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) (*Credentials, error) {
-	logger := log.WithFields(log.Fields{"pod.iam.role": role})
-	item, found := c.cache.Get(role)
+func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *CredentialsIdentity) (*Credentials, error) {
+	logger := log.WithFields(log.Fields{"pod.iam.role": identity.Role})
+	item, found := c.cache.Get(identity.String())
 
 	if found {
 		future, _ := item.(*future.Future)
@@ -110,19 +114,20 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 
 		if err != nil {
 			logger.Errorf("error retrieving credentials in cache from future: %s. will delete", err.Error())
-			c.cache.Delete(role)
+			c.cache.Delete(identity.Role)
 			return nil, err
 		}
 
 		cacheHit.Inc()
 
-		return val.(*Credentials), nil
+		cachedCreds := val.(*CachedCredentials)
+		return cachedCreds.Credentials, nil
 	}
 
 	cacheMiss.Inc()
 
 	issue := func() (interface{}, error) {
-		arn := c.arnResolver.Resolve(role)
+		arn := c.arnResolver.Resolve(identity.Role)
 		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, c.sessionDuration)
 		if err != nil {
 			errorIssuing.Inc()
@@ -130,17 +135,27 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, role string) 
 			return nil, err
 		}
 
-		log.WithFields(CredentialsFields(credentials, role)).Infof("requested new credentials")
-		return credentials, err
+		cachedCreds := &CachedCredentials{
+			Identity:    identity,
+			Credentials: credentials,
+		}
+
+		log.WithFields(CredentialsFields(identity, credentials)).Infof("requested new credentials")
+		return cachedCreds, err
 	}
 	f := future.New(issue)
-	c.cache.Set(role, f, c.cacheTTL)
+	c.cache.Set(identity.String(), f, c.cacheTTL)
 
 	val, err := f.Get(ctx)
 	if err != nil {
-		c.cache.Delete(role)
+		c.cache.Delete(identity.Role)
 		return nil, err
 	}
 
-	return val.(*Credentials), nil
+	cachedCreds := val.(*CachedCredentials)
+	return cachedCreds.Credentials, nil
+}
+
+func (i *CredentialsIdentity) String() string {
+	return i.Role
 }

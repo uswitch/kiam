@@ -17,10 +17,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func CredentialsFields(creds *Credentials, role string) log.Fields {
+func CredentialsFields(identity *CredentialsIdentity, creds *Credentials) log.Fields {
 	return log.Fields{
 		"credentials.access.key": creds.AccessKeyId,
 		"credentials.expiration": creds.Expiration,
-		"credentials.role":       role,
+		"credentials.role":       identity.Role,
 	}
 }
