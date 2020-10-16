@@ -17,16 +17,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/fortytw2/leaktest"
-	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 	kt "k8s.io/client-go/tools/cache/testing"
 	"testing"
 	"time"
 )
-
-func init() {
-	statsd.New("", "", time.Millisecond)
-}
 
 const bufferSize = 10
 

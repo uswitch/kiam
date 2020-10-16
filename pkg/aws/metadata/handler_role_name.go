@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/server"
-	"github.com/uswitch/kiam/pkg/statsd"
 	"net/http"
 	"net/url"
 	"time"
@@ -53,9 +52,6 @@ func (h *roleHandler) Install(router *mux.Router) {
 func (h *roleHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("roleName"))
 	defer timer.ObserveDuration()
-	if statsd.Enabled {
-		defer statsd.Client.NewTiming().Send("handler.role_name")
-	}
 
 	err := req.ParseForm()
 	if err != nil {

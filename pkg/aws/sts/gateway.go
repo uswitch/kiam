@@ -26,7 +26,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/uswitch/kiam/pkg/statsd"
 )
 
 type STSGateway interface {
@@ -106,9 +105,6 @@ func DefaultGateway(assumeRoleArn, region string) (*DefaultSTSGateway, error) {
 func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
 	timer := prometheus.NewTimer(assumeRole)
 	defer timer.ObserveDuration()
-	if statsd.Enabled {
-		defer statsd.Client.NewTiming().Send("aws.assume_role")
-	}
 
 	assumeRoleExecuting.Inc()
 	defer assumeRoleExecuting.Dec()
