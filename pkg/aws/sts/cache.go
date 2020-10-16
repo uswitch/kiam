@@ -16,6 +16,7 @@ package sts
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -35,8 +36,9 @@ type credentialsCache struct {
 }
 
 type RoleIdentity struct {
-	Role string
-	ARN  string // Amazon Resource Name for the Role
+	Role        ResolvedRole
+	SessionName string
+	ExternalID  string
 }
 
 type CachedCredentials struct {
@@ -56,7 +58,7 @@ func DefaultCache(
 ) *credentialsCache {
 	c := &credentialsCache{
 		expiring:        make(chan *CachedCredentials, 1),
-		sessionName:     fmt.Sprintf("kiam-%s", sessionName),
+		sessionName:     sessionName,
 		sessionDuration: sessionDuration,
 		cacheTTL:        sessionDuration - sessionRefresh,
 		gateway:         gateway,
@@ -95,7 +97,7 @@ func (c *credentialsCache) Expiring() chan *CachedCredentials {
 // CredentialsForRole looks for cached credentials or requests them from the STSGateway. Requested credentials
 // must have their ARN set.
 func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *RoleIdentity) (*Credentials, error) {
-	logger := log.WithFields(log.Fields{"pod.iam.role": identity.Role, "pod.iam.roleArn": identity.ARN})
+	logger := log.WithFields(identity.LogFields())
 	item, found := c.cache.Get(identity.String())
 
 	if found {
@@ -117,7 +119,16 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Rol
 	cacheMiss.Inc()
 
 	issue := func() (interface{}, error) {
-		credentials, err := c.gateway.Issue(ctx, identity.ARN, c.sessionName, c.sessionDuration)
+		sessionName := c.getSessionName(identity)
+
+		stsIssueRequest := &STSIssueRequest{
+			RoleARN:         identity.Role.ARN,
+			SessionName:     sessionName,
+			ExternalID:      identity.ExternalID,
+			SessionDuration: c.sessionDuration,
+		}
+
+		credentials, err := c.gateway.Issue(ctx, stsIssueRequest)
 		if err != nil {
 			errorIssuing.Inc()
 			logger.Errorf("error requesting credentials: %s", err.Error())
@@ -147,9 +158,36 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Rol
 }
 
 func (i *RoleIdentity) String() string {
-	return i.ARN
+	return fmt.Sprintf("%s|%s|%s", i.Role.ARN, i.SessionName, i.ExternalID)
 }
 
-func (i *RoleIdentity) Equals(other *RoleIdentity) bool {
-	return *i == *other
+func (i *RoleIdentity) LogFields() log.Fields {
+	return log.Fields{
+		"pod.iam.role":    i.Role,
+		"pod.iam.roleArn": i.Role.ARN,
+	}
+}
+
+func (c *credentialsCache) getSessionName(identity *RoleIdentity) string {
+	sessionName := c.sessionName
+
+	if identity.SessionName != "" {
+		sessionName = identity.SessionName
+	}
+
+	sessionName = fmt.Sprintf("kiam-%s", sessionName)
+	return sanitizeSessionName(sessionName)
+}
+
+// Ensure the session name meets length requirements and
+// also coercce any character that doens't meet the pattern
+// requirements to a hyhen so that we ensure a valid session name.
+func sanitizeSessionName(sessionName string) string {
+	sanitize := regexp.MustCompile(`([^\w+=,.@-])`)
+
+	if len(sessionName) > 64 {
+		sessionName = sessionName[0:63]
+	}
+
+	return sanitize.ReplaceAllString(sessionName, "-")
 }

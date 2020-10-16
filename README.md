@@ -48,6 +48,31 @@ metadata:
     iam.amazonaws.com/role: reportingdb-reader
 ```
 
+You can control the session name used when assuming the role via an annotation added to the `Pod`, which may be used to further identify the session. For example:
+
+```yaml
+kind: Pod
+metadata:
+  name: foo
+  namespace: session-name-example
+  annotations:
+    iam.amazonaws.com/role: reportingdb-reader
+    iam.amazonaws.com/session-name: my-session-name
+```
+
+You can also control the external id used when assuming the role via an annotation added to the `Pod`, which
+maybe used to avoid [confused deputy scenarios in cross-organisation role assumption](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html). For example:
+
+```yaml
+kind: Pod
+metadata:
+  name: foo
+  namespace: external-id-example
+  annotations:
+    iam.amazonaws.com/role: reportingdb-reader
+    iam.amazonaws.com/external-id: dac7ad46-acab-4ec3-a78e-f3962ecf45d7
+```
+
 Further, all namespaces must also have an annotation with a regular expression expressing which roles are permitted to be assumed within that namespace. **Without the namespace annotation the pod will be unable to assume any roles.**
 
 ```yaml

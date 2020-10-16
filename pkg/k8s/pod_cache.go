@@ -19,7 +19,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -180,8 +180,24 @@ func PodRole(pod *v1.Pod) string {
 	return pod.ObjectMeta.Annotations[AnnotationIAMRoleKey]
 }
 
+// PodSessionName returns the IAM role session-name specified in the annotation for the Pod
+func PodSessionName(pod *v1.Pod) string {
+	return pod.ObjectMeta.Annotations[AnnotationIAMSessionNameKey]
+}
+
+// PodExternalID returns the IAM role external-id specified in the annotation for the Pod
+func PodExternalID(pod *v1.Pod) string {
+	return pod.ObjectMeta.Annotations[AnnotationIAMExternalIDKey]
+}
+
 // AnnotationIAMRoleKey is the key for the annotation specifying the IAM Role
 const AnnotationIAMRoleKey = "iam.amazonaws.com/role"
+
+// AnnotationIAMSessionNameKey is the key for the annotation specifying the session-name
+const AnnotationIAMSessionNameKey = "iam.amazonaws.com/session-name"
+
+// AnnotationIAMExternalIDKey is the key for the annotation specifying the external-id
+const AnnotationIAMExternalIDKey = "iam.amazonaws.com/external-id"
 
 type podHandler struct {
 	pods chan<- *v1.Pod

@@ -3,9 +3,10 @@ package server
 import (
 	"context"
 	"fmt"
-	v1 "k8s.io/api/core/v1"
 	"testing"
 	"time"
+
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/fortytw2/leaktest"
@@ -143,11 +144,72 @@ func TestReturnsCredentials(t *testing.T) {
 	}
 }
 
+func TestGetPodCredentialsWithSessionName(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	const roleName = "role"
+	const sessionName = "session"
+
+	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
+	source.Add(testutil.NewPodWithSessionName("ns", "name", "192.168.0.1", "Running", roleName, sessionName))
+
+	credentialsProvider := stubCredentialsProvider{accessKey: "A1234"}
+	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache.Run(ctx)
+	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &credentialsProvider, arnResolver: sts.DefaultResolver("prefix")}
+
+	_, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1", Role: roleName})
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
+
+	identity := credentialsProvider.requestedIdentity
+	if identity.SessionName != sessionName {
+		t.Error("unexpected session-name", identity.SessionName)
+	}
+}
+
+func TestGetPodCredentialsWithExternalID(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	const roleName = "role"
+	const externalID = "external-id"
+
+	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
+	source.Add(testutil.NewPodWithExternalID("ns", "name", "192.168.0.1", "Running", roleName, externalID))
+
+	credentialsProvider := stubCredentialsProvider{accessKey: "A1234"}
+	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache.Run(ctx)
+	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &credentialsProvider, arnResolver: sts.DefaultResolver("prefix")}
+
+	_, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1", Role: roleName})
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
+
+	identity := credentialsProvider.requestedIdentity
+	if identity.ExternalID != externalID {
+		t.Error("unexpected external-id", identity.ExternalID)
+	}
+}
+
 type stubCredentialsProvider struct {
-	accessKey string
+	accessKey         string
+	requestedIdentity *sts.RoleIdentity
 }
 
 func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, identity *sts.RoleIdentity) (*sts.Credentials, error) {
+	c.requestedIdentity = identity
+
 	return &sts.Credentials{
 		AccessKeyId: c.accessKey,
 	}, nil

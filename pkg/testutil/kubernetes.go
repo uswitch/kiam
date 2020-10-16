@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -57,5 +57,17 @@ func NewPod(namespace, name, ip, phase string) *v1.Pod {
 func NewPodWithRole(namespace, name, ip, phase, role string) *v1.Pod {
 	pod := NewPod(namespace, name, ip, phase)
 	pod.ObjectMeta.Annotations = map[string]string{"iam.amazonaws.com/role": role}
+	return pod
+}
+
+func NewPodWithSessionName(namespace, name, ip, phase, role, sessionName string) *v1.Pod {
+	pod := NewPodWithRole(namespace, name, ip, phase, role)
+	pod.ObjectMeta.Annotations["iam.amazonaws.com/session-name"] = sessionName
+	return pod
+}
+
+func NewPodWithExternalID(namespace, name, ip, phase, role, externalID string) *v1.Pod {
+	pod := NewPodWithRole(namespace, name, ip, phase, role)
+	pod.ObjectMeta.Annotations["iam.amazonaws.com/external-id"] = externalID
 	return pod
 }

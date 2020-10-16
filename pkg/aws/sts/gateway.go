@@ -23,8 +23,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type STSIssueRequest struct {
+	RoleARN         string
+	SessionName     string
+	ExternalID      string
+	SessionDuration time.Duration
+}
+
 type STSGateway interface {
-	Issue(ctx context.Context, role, session string, expiry time.Duration) (*Credentials, error)
+	Issue(ctx context.Context, request *STSIssueRequest) (*Credentials, error)
 }
 
 type DefaultSTSGateway struct {
@@ -35,7 +42,7 @@ func DefaultGateway(config *aws.Config) (*DefaultSTSGateway, error) {
 	return &DefaultSTSGateway{session: session.Must(session.NewSession(config))}, nil
 }
 
-func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
+func (g *DefaultSTSGateway) Issue(ctx context.Context, request *STSIssueRequest) (*Credentials, error) {
 	timer := prometheus.NewTimer(assumeRole)
 	defer timer.ObserveDuration()
 
@@ -44,10 +51,15 @@ func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName stri
 
 	svc := sts.New(g.session)
 	in := &sts.AssumeRoleInput{
-		DurationSeconds: aws.Int64(int64(expiry.Seconds())),
-		RoleArn:         aws.String(roleARN),
-		RoleSessionName: aws.String(sessionName),
+		DurationSeconds: aws.Int64(int64(request.SessionDuration.Seconds())),
+		RoleArn:         aws.String(request.RoleARN),
+		RoleSessionName: aws.String(request.SessionName),
 	}
+
+	if request.ExternalID != "" {
+		in.ExternalId = aws.String(request.ExternalID)
+	}
+
 	resp, err := svc.AssumeRoleWithContext(ctx, in)
 	if err != nil {
 		return nil, err

@@ -17,8 +17,9 @@ package server
 import (
 	"context"
 	"fmt"
-	v1 "k8s.io/api/core/v1"
 	"regexp"
+
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
@@ -81,7 +82,7 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 		return &allowed{}, nil
 	}
 
-	return &forbidden{requested: role, annotated: annotatedIdentiy.Role}, nil
+	return &forbidden{requested: role, annotated: annotatedIdentiy.Name}, nil
 }
 
 type NamespacePermittedRoleNamePolicy struct {
