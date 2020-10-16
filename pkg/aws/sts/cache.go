@@ -114,7 +114,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Cre
 
 		if err != nil {
 			logger.Errorf("error retrieving credentials in cache from future: %s. will delete", err.Error())
-			c.cache.Delete(identity.Role)
+			c.cache.Delete(identity.String())
 			return nil, err
 		}
 
@@ -148,7 +148,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Cre
 
 	val, err := f.Get(ctx)
 	if err != nil {
-		c.cache.Delete(identity.Role)
+		c.cache.Delete(identity.String())
 		return nil, err
 	}
 
