@@ -3,6 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -11,8 +14,6 @@ import (
 	"github.com/uswitch/kiam/pkg/testutil"
 	pb "github.com/uswitch/kiam/proto"
 	kt "k8s.io/client-go/tools/cache/testing"
-	"testing"
-	"time"
 )
 
 const (
@@ -106,7 +107,7 @@ type stubCredentialsProvider struct {
 	accessKey string
 }
 
-func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, role string) (*sts.Credentials, error) {
+func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, identity *sts.CredentialsIdentity) (*sts.Credentials, error) {
 	return &sts.Credentials{
 		AccessKeyId: c.accessKey,
 	}, nil

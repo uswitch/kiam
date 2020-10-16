@@ -116,7 +116,7 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 		return nil, ErrPolicyForbidden
 	}
 
-	creds, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role)
+	creds, err := k.credentialsProvider.CredentialsForRole(ctx, &sts.CredentialsIdentity{Role: req.Role})
 	if err != nil {
 		logger.Errorf("error retrieving credentials: %s", err.Error())
 		k.recordEvent(pod, v1.EventTypeWarning, "KiamCredentialError", fmt.Sprintf("failed retrieving credentials: %s", simplifyAWSErrorMessage(err)))

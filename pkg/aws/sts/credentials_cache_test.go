@@ -36,12 +36,12 @@ func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
 	cache := DefaultCache(stubGateway, "session", 15*time.Minute, 5*time.Minute, DefaultResolver("prefix:"))
 	ctx := context.Background()
 
-	creds, _ := cache.CredentialsForRole(ctx, "role")
+	creds, _ := cache.CredentialsForRole(ctx, &CredentialsIdentity{Role: "role"})
 	if creds.Code != "foo" {
 		t.Error("didnt return expected credentials code, was", creds.Code)
 	}
 
-	cache.CredentialsForRole(ctx, "role")
+	cache.CredentialsForRole(ctx, &CredentialsIdentity{Role: "role"})
 	if stubGateway.issueCount != 1 {
 		t.Error("expected creds to be cached")
 	}
