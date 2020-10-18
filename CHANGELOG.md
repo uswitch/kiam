@@ -1,4 +1,24 @@
 # Changelog
+## v3.6
+9 July 2020
+
+Notable Changes:
+* [#381](https://github.com/uswitch/kiam/pull/381) Support for AWS IMDS v2
+* [#366](https://github.com/uswitch/kiam/pull/366) Support for dynamic reloading of TLS certificates
+* [#364](https://github.com/uswitch/kiam/pull/364) Metrics for TLS certificate expiration
+* [#402](https://github.com/uswitch/kiam/pull/402) Retries for removing the iptables rule added by the kiam agent when the pod is terminated
+* [#387](https://github.com/uswitch/kiam/pull/387) Upgrade container image to Alpine linux 3.11
+* [#382](https://github.com/uswitch/kiam/pull/382) Kiam is now built with Go 1.13
+
+Fixes:
+* [#346](https://github.com/uswitch/kiam/pull/346) Constrain the regional endpoint resolver so that it only resolves endpoints for the STS service. This will resolve issues retrieving credentials when using the `--region` flag with the kiam server
+
+Thanks to these contributors for this release:
+* [@rbvigilante](https://github.com/rbvigilante)
+* [@abursavich](https://github.com/abursavich)
+* [@eytan-avisror](https://github.com/eytan-avisror)
+* [@cjbradfield](https://github.com/cjbradfield)
+
 ## v3.5
 17 December 2019
 

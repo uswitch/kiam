@@ -21,20 +21,7 @@ import (
 
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
-	pb "github.com/uswitch/kiam/proto"
 )
-
-type adaptedDecision struct {
-	d *pb.Decision
-}
-
-func (a *adaptedDecision) IsAllowed() bool {
-	return a.d.IsAllowed
-}
-
-func (a *adaptedDecision) Explanation() string {
-	return a.d.Explanation
-}
 
 // Decision reports (with message) as to whether the assume role is permitted.
 type Decision interface {

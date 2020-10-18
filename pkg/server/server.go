@@ -117,7 +117,7 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 		return nil, ErrPolicyForbidden
 	}
 
-	creds, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role)
+	creds, err := k.credentialsProvider.CredentialsForRole(ctx, &sts.CredentialsIdentity{Role: req.Role})
 	if err != nil {
 		logger.Errorf("error retrieving credentials: %s", err.Error())
 		k.recordEvent(pod, v1.EventTypeWarning, "KiamCredentialError", fmt.Sprintf("failed retrieving credentials: %s", simplifyAWSErrorMessage(err)))
@@ -125,25 +125,6 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 	}
 
 	return translateCredentialsToProto(creds), nil
-}
-
-// IsAllowedAssumeRole checks policy to ensure the role can be assumed. Deprecated and will
-// be removed in a future release.
-func (k *KiamServer) IsAllowedAssumeRole(ctx context.Context, req *pb.IsAllowedAssumeRoleRequest) (*pb.IsAllowedAssumeRoleResponse, error) {
-	if statsd.Enabled {
-		defer statsd.Client.NewTiming().Send("server.rpc.IsAllowedAssumeRole")
-	}
-	decision, err := k.assumePolicy.IsAllowedAssumeRole(ctx, req.Role.Name, req.Ip)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.IsAllowedAssumeRoleResponse{
-		Decision: &pb.Decision{
-			IsAllowed:   decision.IsAllowed(),
-			Explanation: decision.Explanation(),
-		},
-	}, nil
 }
 
 // GetHealth returns ok to allow a command to ensure the sever is operating well
@@ -182,24 +163,6 @@ func translateCredentialsToProto(credentials *sts.Credentials) *pb.Credentials {
 		Expiration:      credentials.Expiration,
 		LastUpdated:     credentials.LastUpdated,
 	}
-}
-
-// GetRoleCredentials returns the credentials for the role. Deprecated and will be
-// removed in a future release.
-func (k *KiamServer) GetRoleCredentials(ctx context.Context, req *pb.GetRoleCredentialsRequest) (*pb.Credentials, error) {
-	if statsd.Enabled {
-		defer statsd.Client.NewTiming().Send("server.rpc.GetRoleCredentials")
-	}
-	logger := log.WithField("pod.iam.role", req.Role.Name)
-
-	logger.Infof("requesting credentials")
-	credentials, err := k.credentialsProvider.CredentialsForRole(ctx, req.Role.Name)
-	if err != nil {
-		logger.Errorf("error requesting credentials: %s", err.Error())
-		return nil, err
-	}
-
-	return translateCredentialsToProto(credentials), nil
 }
 
 func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {

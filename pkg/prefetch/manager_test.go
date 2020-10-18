@@ -15,13 +15,14 @@ package prefetch
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	kt "github.com/uswitch/kiam/pkg/k8s/testing"
 	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
-	"testing"
-	"time"
 )
 
 func init() {
@@ -36,8 +37,8 @@ func TestPrefetchRunningPods(t *testing.T) {
 
 	requestedRoles := make(chan string)
 	announcer := kt.NewStubAnnouncer()
-	cache := testutil.NewStubCredentialsCache(func(role string) (*sts.Credentials, error) {
-		requestedRoles <- role
+	cache := testutil.NewStubCredentialsCache(func(identity *sts.CredentialsIdentity) (*sts.Credentials, error) {
+		requestedRoles <- identity.Role
 		return &sts.Credentials{}, nil
 	})
 	manager := NewManager(cache, announcer)
