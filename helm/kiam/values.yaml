@@ -15,12 +15,12 @@ agent:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.5
+    tag: v3.6
     pullPolicy: IfNotPresent
 
-  ## agent whitelist of proxy routes matching this reg-ex
+  ## agent permits only request paths matching this reg-ex
   ##
-  # whiteListRouteRegexp:
+  # allowRouteRegexp:
 
 
   ## Logging settings
@@ -201,7 +201,7 @@ server:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.5
+    tag: v3.6
     pullPolicy: IfNotPresent
 
   ## Run as Deployment instead of Daemonset
@@ -293,6 +293,7 @@ server:
   #   /etc/pki/ca-trust/extracted/pem
   ## else:
   #   /usr/share/ca-certificates
+  # Set to "" to disable host mounting, for example if you're using your own image 
   sslCertHostPath: /usr/share/ca-certificates
 
   ## Additional container hostPath mounts

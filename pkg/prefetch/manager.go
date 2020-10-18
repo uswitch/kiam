@@ -15,10 +15,11 @@ package prefetch
 
 import (
 	"context"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 type CredentialManager struct {
@@ -38,16 +39,17 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	}
 
 	role := k8s.PodRole(pod)
-	issued, err := m.fetchCredentialsFromCache(ctx, role)
+	identity := &sts.CredentialsIdentity{Role: role}
+	issued, err := m.fetchCredentialsFromCache(ctx, identity)
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())
 	} else {
-		logger.WithFields(sts.CredentialsFields(issued, role)).Infof("fetched credentials")
+		logger.WithFields(sts.CredentialsFields(identity, issued)).Infof("fetched credentials")
 	}
 }
 
-func (m *CredentialManager) fetchCredentialsFromCache(ctx context.Context, role string) (*sts.Credentials, error) {
-	return m.cache.CredentialsForRole(ctx, role)
+func (m *CredentialManager) fetchCredentialsFromCache(ctx context.Context, identity *sts.CredentialsIdentity) (*sts.Credentials, error) {
+	return m.cache.CredentialsForRole(ctx, identity)
 }
 
 func (m *CredentialManager) Run(ctx context.Context, parallelRoutines int) {
@@ -69,10 +71,10 @@ func (m *CredentialManager) Run(ctx context.Context, parallelRoutines int) {
 	}
 }
 
-func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts.RoleCredentials) {
-	logger := log.WithFields(sts.CredentialsFields(credentials.Credentials, credentials.Role))
+func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts.CachedCredentials) {
+	logger := log.WithFields(sts.CredentialsFields(credentials.Identity, credentials.Credentials))
 
-	active, err := m.IsRoleActive(credentials.Role)
+	active, err := m.IsRoleActive(credentials.Identity.Role)
 	if err != nil {
 		logger.Errorf("error checking whether role active: %s", err.Error())
 		return
@@ -84,7 +86,7 @@ func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts
 	}
 
 	logger.Infof("expiring credentials, fetching updated")
-	_, err = m.fetchCredentialsFromCache(ctx, credentials.Role)
+	_, err = m.fetchCredentialsFromCache(ctx, credentials.Identity)
 	if err != nil {
 		logger.Errorf("error fetching updated credentials for expiring: %s", err.Error())
 	}

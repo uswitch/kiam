@@ -34,18 +34,18 @@ type Server struct {
 }
 
 type ServerOptions struct {
-	ListenPort           int
-	MetadataEndpoint     string
-	AllowIPQuery         bool
-	WhitelistRouteRegexp *regexp.Regexp
+	ListenPort       int
+	MetadataEndpoint string
+	AllowIPQuery     bool
+	AllowRouteRegexp *regexp.Regexp
 }
 
 func DefaultOptions() *ServerOptions {
 	return &ServerOptions{
-		MetadataEndpoint:     "http://169.254.169.254",
-		ListenPort:           3100,
-		AllowIPQuery:         false,
-		WhitelistRouteRegexp: regexp.MustCompile("^$"),
+		MetadataEndpoint: "http://169.254.169.254",
+		ListenPort:       3100,
+		AllowIPQuery:     false,
+		AllowRouteRegexp: regexp.MustCompile("^$"),
 	}
 }
 
@@ -75,7 +75,7 @@ func buildHTTPServer(config *ServerOptions, client server.Client) (*http.Server,
 		return nil, err
 	}
 
-	p := newProxyHandler(httputil.NewSingleHostReverseProxy(metadataURL), config.WhitelistRouteRegexp)
+	p := newProxyHandler(httputil.NewSingleHostReverseProxy(metadataURL), config.AllowRouteRegexp)
 	p.Install(router)
 
 	listen := fmt.Sprintf(":%d", config.ListenPort)

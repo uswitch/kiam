@@ -6,10 +6,6 @@ service KiamService {
   rpc GetPodRole(GetPodRoleRequest) returns (Role) {}
   rpc GetPodCredentials(GetPodCredentialsRequest) returns (Credentials) {}
   rpc GetHealth(GetHealthRequest) returns (HealthStatus) {}
-
-  // DEPRECATE BELOW
-  rpc GetRoleCredentials(GetRoleCredentialsRequest) returns (Credentials) {}
-  rpc IsAllowedAssumeRole(IsAllowedAssumeRoleRequest) returns (IsAllowedAssumeRoleResponse) {}
 }
 
 message GetPodCredentialsRequest {
@@ -23,10 +19,6 @@ message GetPodRoleRequest {
 
 message Role {
   string name = 1;
-}
-
-message GetRoleCredentialsRequest {
-  Role role = 1;
 }
 
 message Credentials {
@@ -45,18 +37,4 @@ message GetHealthRequest {
 
 message HealthStatus {
   string message = 1;
-}
-
-message IsAllowedAssumeRoleRequest {
-  string ip = 1;
-  Role role = 2;
-}
-
-message IsAllowedAssumeRoleResponse {
-  Decision decision = 1;
-}
-
-message Decision {
-  bool is_allowed = 1;
-  string explanation = 2;
 }

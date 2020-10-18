@@ -23,8 +23,8 @@ import (
 )
 
 type proxyHandler struct {
-	backingService       http.Handler
-	whitelistRouteRegexp *regexp.Regexp
+	backingService   http.Handler
+	allowRouteRegexp *regexp.Regexp
 }
 
 var tokenRouteRegexp = regexp.MustCompile("^/?[^/]+/api/token$")
@@ -44,7 +44,7 @@ func (w *teeWriter) WriteHeader(statusCode int) {
 }
 
 func (p *proxyHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) (int, error) {
-	if p.whitelistRouteRegexp.MatchString(r.URL.Path) ||
+	if p.allowRouteRegexp.MatchString(r.URL.Path) ||
 		// Always proxy through requests to pick up a session token
 		(r.Method == http.MethodPut && tokenRouteRegexp.MatchString(r.URL.Path)) {
 		writer := &teeWriter{w, http.StatusOK}
@@ -60,15 +60,15 @@ func (p *proxyHandler) Handle(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	proxyDenies.Inc()
-	return http.StatusNotFound, fmt.Errorf("request blocked by whitelist-route-regexp %q: %s", p.whitelistRouteRegexp, r.URL.Path)
+	return http.StatusNotFound, fmt.Errorf("request blocked by allow-route-regexp %q: %s", p.allowRouteRegexp, r.URL.Path)
 }
 
-func newProxyHandler(backingService http.Handler, whitelistRouteRegexp *regexp.Regexp) *proxyHandler {
-	if whitelistRouteRegexp.String() == "" {
-		whitelistRouteRegexp = regexp.MustCompile("^$")
+func newProxyHandler(backingService http.Handler, allowRouteRegexp *regexp.Regexp) *proxyHandler {
+	if allowRouteRegexp.String() == "" {
+		allowRouteRegexp = regexp.MustCompile("^$")
 	}
 	return &proxyHandler{
-		backingService:       backingService,
-		whitelistRouteRegexp: whitelistRouteRegexp,
+		backingService:   backingService,
+		allowRouteRegexp: allowRouteRegexp,
 	}
 }
