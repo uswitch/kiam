@@ -29,7 +29,6 @@ import (
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"github.com/uswitch/kiam/pkg/prefetch"
-	"github.com/uswitch/kiam/pkg/statsd"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/security/advancedtls"
@@ -91,9 +90,6 @@ func simplifyAWSErrorMessage(err error) string {
 // GetPodCredentials returns credentials for the Pod, according to the role it's
 // annotated with. It will additionally check policy before returning credentials.
 func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCredentialsRequest) (*pb.Credentials, error) {
-	if statsd.Enabled {
-		defer statsd.Client.NewTiming().Send("server.rpc.GetRoleCredentials")
-	}
 	pod, err := k.pods.GetPodByIP(req.Ip)
 	if err != nil {
 		if err == k8s.ErrPodNotFound {
@@ -128,17 +124,11 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 
 // GetHealth returns ok to allow a command to ensure the sever is operating well
 func (k *KiamServer) GetHealth(ctx context.Context, _ *pb.GetHealthRequest) (*pb.HealthStatus, error) {
-	if statsd.Enabled {
-		defer statsd.Client.NewTiming().Send("server.rpc.GetHealth")
-	}
 	return &pb.HealthStatus{Message: "ok"}, nil
 }
 
 // GetPodRole determines which role a Pod is annotated with
 func (k *KiamServer) GetPodRole(ctx context.Context, req *pb.GetPodRoleRequest) (*pb.Role, error) {
-	if statsd.Enabled {
-		defer statsd.Client.NewTiming().Send("server.rpc.GetPodRole")
-	}
 	logger := log.WithField("pod.ip", req.Ip)
 	pod, err := k.pods.GetPodByIP(req.Ip)
 	if err != nil {

@@ -21,13 +21,8 @@ import (
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	kt "github.com/uswitch/kiam/pkg/k8s/testing"
-	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 )
-
-func init() {
-	statsd.New("", "", time.Millisecond)
-}
 
 func TestPrefetchRunningPods(t *testing.T) {
 	defer leaktest.Check(t)()

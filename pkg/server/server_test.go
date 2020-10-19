@@ -10,7 +10,6 @@ import (
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
-	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 	pb "github.com/uswitch/kiam/proto"
 	kt "k8s.io/client-go/tools/cache/testing"
@@ -19,10 +18,6 @@ import (
 const (
 	defaultBuffer = 10
 )
-
-func init() {
-	statsd.New("", "", time.Millisecond)
-}
 
 func TestErrorSimplification(t *testing.T) {
 	e := awserr.NewRequestFailure(awserr.New("code", "message", fmt.Errorf("foo")), 403, "abcdef")

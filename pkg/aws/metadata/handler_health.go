@@ -20,7 +20,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/uswitch/kiam/pkg/server"
-	"github.com/uswitch/kiam/pkg/statsd"
 	"io/ioutil"
 	"net/http"
 )
@@ -37,9 +36,6 @@ func (h *healthHandler) Install(router *mux.Router) {
 func (h *healthHandler) Handle(ctx context.Context, w http.ResponseWriter, req *http.Request) (int, error) {
 	timer := prometheus.NewTimer(handlerTimer.WithLabelValues("health"))
 	defer timer.ObserveDuration()
-	if statsd.Enabled {
-		defer statsd.Client.NewTiming().Send("handler.health")
-	}
 
 	deep := req.URL.Query().Get("deep")
 	if deep != "" {
