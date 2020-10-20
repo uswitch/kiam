@@ -60,28 +60,28 @@ func (o *serverOptions) bind(parser parser) {
 	parser.Flag("region", "AWS Region to use for regional STS calls (e.g. us-west-2). Defaults to the global endpoint.").Default("").StringVar(&o.Region)
 }
 
-func (opts *serverCommand) Run() {
-	opts.configureLogger()
+func (cmd *serverCommand) Run() {
+	cmd.configureLogger()
 
-	if !opts.AutoDetectBaseARN && opts.RoleBaseARN == "" {
+	if !cmd.AutoDetectBaseARN && cmd.RoleBaseARN == "" {
 		log.Fatal("role-base-arn not specified and not auto-detected. please specify or use --role-base-arn-autodetect")
 	}
 
-	if opts.SessionDuration < sts.AWSMinSessionDuration {
+	if cmd.SessionDuration < sts.AWSMinSessionDuration {
 		log.Fatal("session-duration should be at least 15 minutes")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	opts.telemetryOptions.start(ctx, "server")
+	cmd.telemetryOptions.start(ctx, "server")
 
 	log.Infof("starting server")
 	stopChan := make(chan os.Signal)
 	signal.Notify(stopChan, os.Interrupt)
 	signal.Notify(stopChan, syscall.SIGTERM)
 
-	opts.Config.TLS = serv.TLSConfig{ServerCert: opts.certificatePath, ServerKey: opts.keyPath, CA: opts.caPath}
-	server, err := serv.NewServer(&opts.Config)
+	cmd.Config.TLS = serv.TLSConfig{ServerCert: cmd.certificatePath, ServerKey: cmd.keyPath, CA: cmd.caPath}
+	server, err := serv.NewServer(&cmd.Config)
 	if err != nil {
 		log.Fatal("error creating listener: ", err.Error())
 	}
@@ -93,7 +93,7 @@ func (opts *serverCommand) Run() {
 		cancel()
 	}()
 
-	log.Infof("will serve on %s", opts.BindAddress)
+	log.Infof("will serve on %s", cmd.BindAddress)
 
 	server.Serve(ctx)
 
