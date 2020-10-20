@@ -37,9 +37,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-// InstanceProfileArn uses the EC2 metadata API to find the role for
+// instanceProfileARN uses the EC2 metadata API to find the role for
 // the instance.
-func InstanceProfileArn() (string, error) {
+func instanceProfileARN() (string, error) {
 	sess := session.Must(session.NewSession())
 	svc := ec2metadata.New(sess)
 	if !svc.Available() {
@@ -69,7 +69,7 @@ func BaseArn(instanceProfileArn string) (string, error) {
 // DetectARNPrefix uses the EC2 metadata API to determine the
 // current prefix.
 func DetectARNPrefix() (string, error) {
-	instanceArn, err := InstanceProfileArn()
+	instanceArn, err := instanceProfileARN()
 	if err != nil {
 		return "", err
 	}
