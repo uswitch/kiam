@@ -32,8 +32,7 @@ type DefaultSTSGateway struct {
 }
 
 func DefaultGateway(config *aws.Config) (*DefaultSTSGateway, error) {
-	session := session.Must(session.NewSession(config))
-	return &DefaultSTSGateway{session: session}, nil
+	return &DefaultSTSGateway{session: session.Must(session.NewSession(config))}, nil
 }
 
 func (g *DefaultSTSGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
