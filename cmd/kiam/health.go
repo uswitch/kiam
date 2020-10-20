@@ -37,19 +37,19 @@ func (cmd *healthCommand) Bind(parser parser) {
 	parser.Flag("timeout", "Timeout for health check").Default("1s").DurationVar(&cmd.timeout)
 }
 
-func (opts *healthCommand) Run() {
-	opts.configureLogger()
+func (cmd *healthCommand) Run() {
+	cmd.configureLogger()
 
-	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
+	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), cmd.timeoutKiamGateway)
 	defer cancelCtxGateway()
 
-	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.caPath, opts.certificatePath, opts.keyPath, opts.keepaliveParams)
+	gateway, err := kiamserver.NewGateway(ctxGateway, cmd.serverAddress, cmd.caPath, cmd.certificatePath, cmd.keyPath, cmd.keepaliveParams)
 	if err != nil {
 		log.Fatalf("error creating server gateway: %s", err.Error())
 	}
 	defer gateway.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), opts.timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.timeout)
 	defer cancel()
 
 	op := func() error {
