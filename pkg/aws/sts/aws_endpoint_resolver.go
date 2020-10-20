@@ -36,6 +36,10 @@ func regionalHostname(region string) (string, error) {
 		hostname = fmt.Sprintf("%s.cn", hostname)
 	}
 
+	if strings.HasPrefix(region, "us-iso") {
+		hostname = fmt.Sprintf("sts.%s.c2s.ic.gov", region)
+	}
+
 	if _, err := net.LookupHost(hostname); err != nil {
 		return "", fmt.Errorf("Regional STS endpoint does not exist: %s", hostname)
 	}
@@ -43,7 +47,7 @@ func regionalHostname(region string) (string, error) {
 	return hostname, nil
 }
 
-func NewRegionalEndpointResolver(region string) (endpoints.Resolver, error) {
+func newRegionalEndpointResolver(region string) (endpoints.Resolver, error) {
 	if region == "" || strings.Contains(region,"fips") {
 		return endpoints.DefaultResolver(), nil
 	}

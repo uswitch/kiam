@@ -18,8 +18,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/prometheus/client_golang/prometheus"
@@ -31,25 +29,9 @@ type STSGateway interface {
 
 type DefaultSTSGateway struct {
 	session  *session.Session
-	resolver endpoints.Resolver
 }
 
-func DefaultGateway(assumeRoleArn, region string) (*DefaultSTSGateway, error) {
-	config := aws.NewConfig().WithCredentialsChainVerboseErrors(true)
-
-	if assumeRoleArn != "" {
-		config.WithCredentials(stscreds.NewCredentials(session.Must(session.NewSession()), assumeRoleArn))
-	}
-
-	if region != "" {
-		resolver, err := NewRegionalEndpointResolver(region)
-		if err != nil {
-			return nil, err
-		}
-
-		config.WithRegion(region).WithEndpointResolver(resolver)
-	}
-
+func DefaultGateway(config *aws.Config) (*DefaultSTSGateway, error) {
 	session := session.Must(session.NewSession(config))
 	return &DefaultSTSGateway{session: session}, nil
 }

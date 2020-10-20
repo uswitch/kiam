@@ -19,7 +19,7 @@ import (
 )
 
 func TestUsesDefaultForOtherServices(t *testing.T) {
-	r, _ := NewRegionalEndpointResolver("eu-west-1")
+	r, _ := newRegionalEndpointResolver("eu-west-1")
 	rd, err := r.EndpointFor(endpoints.S3ServiceID, endpoints.EuWest1RegionID)
 	if err != nil {
 		t.Error(err)
@@ -30,7 +30,7 @@ func TestUsesDefaultForOtherServices(t *testing.T) {
 }
 
 func TestResolvesDefaultRegion(t *testing.T) {
-	resolver, _ := NewRegionalEndpointResolver("")
+	resolver, _ := newRegionalEndpointResolver("")
 
 	resolved, err := resolver.EndpointFor(endpoints.StsServiceID, "")
 	if err != nil {
@@ -43,7 +43,7 @@ func TestResolvesDefaultRegion(t *testing.T) {
 }
 
 func TestResolvesUsingSpecifiedRegion(t *testing.T) {
-	resolver, _ := NewRegionalEndpointResolver("us-west-2")
+	resolver, _ := newRegionalEndpointResolver("us-west-2")
 	resolved, err := resolver.EndpointFor(endpoints.StsServiceID, "")
 	if err != nil {
 		t.Error(err)
@@ -55,7 +55,7 @@ func TestResolvesUsingSpecifiedRegion(t *testing.T) {
 }
 
 func TestResolvesEURegion(t *testing.T) {
-	resolver, _ := NewRegionalEndpointResolver("eu-west-1")
+	resolver, _ := newRegionalEndpointResolver("eu-west-1")
 	resolved, err := resolver.EndpointFor(endpoints.StsServiceID, "")
 	if err != nil {
 		t.Error(err)
@@ -67,7 +67,7 @@ func TestResolvesEURegion(t *testing.T) {
 }
 
 func TestAddsChinaPrefixForChineseRegions(t *testing.T) {
-	resolver, err := NewRegionalEndpointResolver("cn-north-1")
+	resolver, err := newRegionalEndpointResolver("cn-north-1")
 	if err != nil {
 		t.Error(err)
 	}
@@ -83,7 +83,7 @@ func TestAddsChinaPrefixForChineseRegions(t *testing.T) {
 }
 
 func TestUseDefaultForFIPS(t *testing.T) {
-	r, e := NewRegionalEndpointResolver("us-east-1-fips")
+	r, e := newRegionalEndpointResolver("us-east-1-fips")
 	if e != nil {
 		t.Error(e)
 	}
@@ -99,7 +99,7 @@ func TestUseDefaultForFIPS(t *testing.T) {
 }
 
 func TestGovGateway(t *testing.T) {
-	r, e := NewRegionalEndpointResolver("us-gov-east-1")
+	r, e := newRegionalEndpointResolver("us-gov-east-1")
 	if e != nil {
 		t.Error(e)
 	}
@@ -110,6 +110,23 @@ func TestGovGateway(t *testing.T) {
 	}
 
 	if rd.URL != "https://sts.us-gov-east-1.amazonaws.com" {
+		t.Error("unexpected", rd.URL)
+	}
+}
+
+// https://github.com/uswitch/kiam/issues/410
+func TestAirgappedRegion(t *testing.T) {
+	r, e := newRegionalEndpointResolver("us-iso-east-1")
+	if e != nil {
+		t.Error(e)
+	}
+
+	rd, e := r.EndpointFor(endpoints.StsServiceID, "us-iso-east-1")
+	if e != nil {
+		t.Error(e)
+	}
+
+	if rd.URL != "https://sts.us-iso-east-1.c2s.ic.gov" {
 		t.Error("unexpected", rd.URL)
 	}
 }

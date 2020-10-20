@@ -168,16 +168,32 @@ func newRoleARNResolver(config *Config) (sts.ARNResolver, error) {
 	return sts.DefaultResolver(config.RoleBaseARN), nil
 }
 
+func newSTSGateway(config *Config) (sts.STSGateway, error) {
+	cfg, err := sts.NewServerConfigBuilder().WithRegion(config.Region)
+	if err != nil {
+		return nil, err
+	}
+	cfg.WithCredentialsFromAssumedRole(sts.NewSTSCredentialsProvider(), config.AssumeRoleArn)
+	stsGateway, err := sts.DefaultGateway(cfg.Config())
+	if err != nil {
+		return nil, err
+	}
+
+	return stsGateway, nil
+}
+
 // NewServer constructs a new server.
 func NewServer(config *Config) (_ *KiamServer, err error) {
 	arnResolver, err := newRoleARNResolver(config)
 	if err != nil {
 		return nil, err
 	}
-	stsGateway, err := sts.DefaultGateway(arnResolver.Resolve(config.AssumeRoleArn), config.Region)
+
+	stsGateway, err := newSTSGateway(config)
 	if err != nil {
 		return nil, err
 	}
+
 	credentialsCache := sts.DefaultCache(
 		stsGateway,
 		config.SessionName,

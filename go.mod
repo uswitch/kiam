@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
-	github.com/aws/aws-sdk-go v1.25.34
+	github.com/aws/aws-sdk-go v1.35.10
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/cenkalti/backoff v2.0.0+incompatible
 	github.com/coreos/go-iptables v0.3.0
@@ -38,7 +38,7 @@ require (
 	github.com/stretchr/testify v1.4.0 // indirect
 	github.com/uswitch/k8sc v0.0.0-20170525133932-475c8175b340
 	github.com/vmg/backoff v1.0.0
-	golang.org/x/net v0.0.0-20190311183353-d8887717615a
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/sys v0.0.0-20200117145432-59e60aa80a0c // indirect
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 // indirect
 	google.golang.org/grpc v1.27.0
