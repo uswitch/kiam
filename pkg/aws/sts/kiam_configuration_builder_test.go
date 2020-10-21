@@ -46,6 +46,14 @@ func TestConfigWithRegion(t *testing.T) {
 	}
 }
 
+func TestConfigDoesntUseRegionalResolverWithEmptyRegion(t *testing.T) {
+	b, _ := NewServerConfigBuilder().WithRegion("")
+
+	if b.Config().Region != nil {
+		t.Error("expected no region, was", *b.Config().Region)
+	}
+}
+
 func TestWithCredentials(t *testing.T) {
 	const accessKeyID = "id"
 	creds := credentials.NewStaticCredentials(accessKeyID, "secret", "token")

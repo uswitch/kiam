@@ -44,7 +44,13 @@ func NewServerConfigBuilder() *configBuilder {
 	return &configBuilder{config: aws.NewConfig().WithCredentialsChainVerboseErrors(true)}
 }
 
+// WithRegion configures the *aws.Config with a region and a custom endpoint resolver. With an empty string
+// it will not configure.
 func (c *configBuilder) WithRegion(region string) (*configBuilder, error) {
+	if region == "" {
+		return c, nil
+	}
+
 	resolver, err := newRegionalEndpointResolver(region)
 	if err != nil {
 		return nil, err
