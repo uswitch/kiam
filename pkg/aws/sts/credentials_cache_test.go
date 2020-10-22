@@ -17,6 +17,7 @@ import (
 	"context"
 	"testing"
 	"time"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
 type stubGateway struct {
@@ -39,6 +40,9 @@ func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
 	creds, _ := cache.CredentialsForRole(ctx, &CredentialsIdentity{Role: "role"})
 	if creds.Code != "foo" {
 		t.Error("didnt return expected credentials code, was", creds.Code)
+	}
+	if testutil.ToFloat64(cacheSize) != 1 {
+		t.Error("expected to cache credential, was", testutil.ToFloat64(cacheSize))
 	}
 
 	cache.CredentialsForRole(ctx, &CredentialsIdentity{Role: "role"})

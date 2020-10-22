@@ -16,23 +16,11 @@ package server
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"fmt"
-	"net"
-	"time"
-
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/balancer/roundrobin"
-	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/security/advancedtls"
-
 	status "google.golang.org/grpc/status"
+	"time"
 )
 
 // Client is the Server's client interface
@@ -47,67 +35,7 @@ type KiamGateway struct {
 	conn      *grpc.ClientConn
 	client    pb.KiamServiceClient
 	tlsConfig *dynamicTLSConfig
-}
-
-const (
-	RetryInterval = 10 * time.Millisecond
-)
-
-// NewGateway constructs a gRPC client to talk to the server
-func NewGateway(ctx context.Context, address string, caFile, certificateFile, keyFile string, keepaliveParams keepalive.ClientParameters) (_ *KiamGateway, err error) {
-	host, _, err := net.SplitHostPort(address)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing hostname: %v", err)
-	}
-
-	notifyFn := clientTLSMetrics.notifyFunc(x509.ExtKeyUsageClientAuth)
-	tlsConfig, err := newDynamicTLSConfig(certificateFile, keyFile, caFile, notifyFn)
-	if err != nil {
-		return nil, fmt.Errorf("error reading tls certificates: %v", err)
-	}
-	defer func() {
-		if err != nil {
-			tlsConfig.Close()
-		}
-	}()
-	creds, err := advancedtls.NewClientCreds(&advancedtls.ClientOptions{
-		GetClientCertificate: func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
-			return tlsConfig.LoadCert(), nil
-		},
-		RootCertificateOptions: advancedtls.RootCertificateOptions{
-			GetRootCAs: func(_ *advancedtls.GetRootCAsParams) (*advancedtls.GetRootCAsResults, error) {
-				return &advancedtls.GetRootCAsResults{TrustCerts: tlsConfig.LoadCACerts()}, nil
-			},
-		},
-		ServerNameOverride: host,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error creating grpc credentials: %v", err)
-	}
-
-	conn, err := grpc.DialContext(ctx, "dns:///"+address,
-		grpc.WithKeepaliveParams(keepaliveParams),
-		grpc.WithTransportCredentials(creds),
-		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-			retry.UnaryClientInterceptor(
-				retry.WithBackoff(retry.BackoffLinear(RetryInterval)),
-			),
-			grpc_prometheus.UnaryClientInterceptor,
-		)),
-		grpc.WithBalancerName(roundrobin.Name),
-		grpc.WithDisableServiceConfig(),
-		grpc.WithBlock(),
-		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error dialing grpc server: %v", err)
-	}
-	gw := &KiamGateway{
-		conn:      conn,
-		client:    pb.NewKiamServiceClient(conn),
-		tlsConfig: tlsConfig,
-	}
-	return gw, nil
+	retryInterval time.Time
 }
 
 // Close disconnects the connection

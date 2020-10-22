@@ -30,12 +30,18 @@ type regionalEndpointResolver struct {
 // regionalHostname generates a regional hostname for STS. It uses DNS to verify whether
 // the calculated name is correct, and returns an error if not.
 func regionalHostname(region string) (string, error) {
+	// more endpoints:
+	// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
+	// most regional variations follow this pattern
 	hostname := fmt.Sprintf("sts.%s.amazonaws.com", region)
 
+	// chinese regions use .com.cn
 	if strings.HasPrefix(region, "cn-") {
 		hostname = fmt.Sprintf("%s.cn", hostname)
 	}
 
+	// iso regions are airgapped, https://github.com/uswitch/kiam/issues/410 has more context
+	// but just follows a different pattern
 	if strings.HasPrefix(region, "us-iso") {
 		hostname = fmt.Sprintf("sts.%s.c2s.ic.gov", region)
 	}
@@ -48,6 +54,7 @@ func regionalHostname(region string) (string, error) {
 }
 
 func newRegionalEndpointResolver(region string) (endpoints.Resolver, error) {
+	// Unspecified and FIPs regions follow default resolver pattern
 	if region == "" || strings.Contains(region,"fips") {
 		return endpoints.DefaultResolver(), nil
 	}

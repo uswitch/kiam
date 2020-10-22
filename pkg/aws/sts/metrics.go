@@ -3,6 +3,14 @@ package sts
 import "github.com/prometheus/client_golang/prometheus"
 
 var (
+	cacheSize = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "kiam",
+			Subsystem: "sts",
+			Name:      "cacheSize",
+			Help:      "Current size of the metadata cache",
+		})
+
 	cacheHit = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: "kiam",
@@ -55,6 +63,7 @@ var (
 func init() {
 	prometheus.MustRegister(cacheHit)
 	prometheus.MustRegister(cacheMiss)
+	prometheus.MustRegister(cacheSize)
 	prometheus.MustRegister(errorIssuing)
 	prometheus.MustRegister(assumeRole)
 	prometheus.MustRegister(assumeRoleExecuting)

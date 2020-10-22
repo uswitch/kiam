@@ -81,7 +81,22 @@ func (cmd *serverCommand) Run() {
 	signal.Notify(stopChan, syscall.SIGTERM)
 
 	cmd.Config.TLS = serv.TLSConfig{ServerCert: cmd.certificatePath, ServerKey: cmd.keyPath, CA: cmd.caPath}
-	server, err := serv.NewServer(&cmd.Config)
+
+	serverBuilder := serv.NewKiamServerBuilder(&cmd.Config)
+	_, err := serverBuilder.WithAWSSTSGateway()
+	if err != nil {
+		log.Fatal("error using AWS STS Gateway: ", err.Error())
+	}
+	_, err = serverBuilder.WithKubernetesClient()
+	if err != nil {
+		log.Fatal("error configuring Kubernetes client: ", err.Error())
+	}
+	_, err = serverBuilder.WithTLS()
+	if err != nil {
+		log.Fatal("error configuring TLS: ", err.Error())
+	}
+
+	server, err := serverBuilder.Build()
 	if err != nil {
 		log.Fatal("error creating listener: ", err.Error())
 	}
