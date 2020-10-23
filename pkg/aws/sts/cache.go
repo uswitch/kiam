@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/future"
 )
@@ -66,22 +65,12 @@ func DefaultCache(
 	c.cache = cache.New(c.cacheTTL, DefaultPurgeInterval)
 	c.cache.OnEvicted(c.evicted)
 
-	// TODO: Not do this inline
-	cacheSize := prometheus.NewCounterFunc(
-		prometheus.CounterOpts{
-			Namespace: "kiam",
-			Subsystem: "sts",
-			Name:      "cacheSize",
-			Help:      "Current size of the metadata cache",
-		},
-		func() float64 { return float64(c.cache.ItemCount()) },
-	)
-	prometheus.MustRegister(cacheSize)
-
 	return c
 }
 
 func (c *credentialsCache) evicted(key string, item interface{}) {
+	cacheSize.Dec()
+
 	f := item.(*future.Future)
 	obj, err := f.Get(context.Background())
 
@@ -145,6 +134,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Cre
 	}
 	f := future.New(issue)
 	c.cache.Set(identity.String(), f, c.cacheTTL)
+	cacheSize.Inc()
 
 	val, err := f.Get(ctx)
 	if err != nil {
