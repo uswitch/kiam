@@ -110,18 +110,17 @@ func TestProvidesConfigurationToCredentialsProvider(t *testing.T) {
 	}
 }
 
-
 func newStubCredentialsProvider(creds *credentials.Credentials) *stubCredentialsProvider {
 	return &stubCredentialsProvider{
-		credentials: creds,
+		credentials:     creds,
 		requestedConfig: nil,
 	}
 }
 
 type stubCredentialsProvider struct {
-	credentials *credentials.Credentials
+	credentials     *credentials.Credentials
 	requestedConfig *aws.Config
-	calls int
+	calls           int
 }
 
 func (s *stubCredentialsProvider) NewCredentials(cfg *aws.Config, assumeRoleARN string) *credentials.Credentials {

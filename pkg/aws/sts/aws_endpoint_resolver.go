@@ -55,7 +55,7 @@ func regionalHostname(region string) (string, error) {
 
 func newRegionalEndpointResolver(region string) (endpoints.Resolver, error) {
 	// Unspecified and FIPs regions follow default resolver pattern
-	if region == "" || strings.Contains(region,"fips") {
+	if region == "" || strings.Contains(region, "fips") {
 		return endpoints.DefaultResolver(), nil
 	}
 
