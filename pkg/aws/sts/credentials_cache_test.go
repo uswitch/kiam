@@ -34,10 +34,11 @@ func (s *stubGateway) Issue(ctx context.Context, roleARN, sessionName string, ex
 
 func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
 	stubGateway := &stubGateway{c: &Credentials{Code: "foo"}}
-	cache := DefaultCache(stubGateway, "session", 15*time.Minute, 5*time.Minute, DefaultResolver("prefix:"))
+	cache := DefaultCache(stubGateway, "session", 15*time.Minute, 5*time.Minute)
 	ctx := context.Background()
 
-	creds, _ := cache.CredentialsForRole(ctx, &CredentialsIdentity{Role: "role"})
+	credentialsIdentity := &RoleIdentity{Role: "role", ARN: "arn:account:role"}
+	creds, _ := cache.CredentialsForRole(ctx, credentialsIdentity)
 	if creds.Code != "foo" {
 		t.Error("didnt return expected credentials code, was", creds.Code)
 	}
@@ -45,12 +46,12 @@ func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
 		t.Error("expected to cache credential, was", testutil.ToFloat64(cacheSize))
 	}
 
-	cache.CredentialsForRole(ctx, &CredentialsIdentity{Role: "role"})
+	cache.CredentialsForRole(ctx, credentialsIdentity)
 	if stubGateway.issueCount != 1 {
 		t.Error("expected creds to be cached")
 	}
 
-	if stubGateway.requestedRole != "prefix:role" {
+	if stubGateway.requestedRole != "arn:account:role" {
 		t.Error("unexpected role, was:", stubGateway.requestedRole)
 	}
 }

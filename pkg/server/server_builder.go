@@ -185,7 +185,6 @@ func (b *KiamServerBuilder) Build() (*KiamServer, error) {
 		b.config.SessionName,
 		b.config.SessionDuration,
 		b.config.SessionRefresh,
-		arnResolver,
 	)
 
 	listener, err := net.Listen("tcp", b.config.BindAddress)
@@ -200,11 +199,11 @@ func (b *KiamServerBuilder) Build() (*KiamServer, error) {
 		pods:                b.podCache,
 		namespaces:          b.namespaceCache,
 		eventRecorder:       b.eventRecorder,
-		manager:             prefetch.NewManager(credentialsCache, b.podCache),
+		manager:             prefetch.NewManager(credentialsCache, b.podCache, arnResolver),
 		credentialsProvider: credentialsCache,
 		assumePolicy: Policies(
 			NewRequestingAnnotatedRolePolicy(b.podCache, arnResolver),
-			NewNamespacePermittedRoleNamePolicy(b.namespaceCache, b.podCache),
+			NewNamespacePermittedRoleNamePolicy(b.namespaceCache),
 		),
 		parallelFetchers: b.config.ParallelFetcherProcesses,
 	}

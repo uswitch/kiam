@@ -17,6 +17,7 @@ package server
 import (
 	"context"
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"regexp"
 
 	"github.com/uswitch/kiam/pkg/aws/sts"
@@ -42,7 +43,7 @@ func (a *allowed) Explanation() string {
 // AssumeRolePolicy allows for policy to check whether pods can assume the role being
 // requested
 type AssumeRolePolicy interface {
-	IsAllowedAssumeRole(ctx context.Context, roleName, podIP string) (Decision, error)
+	IsAllowedAssumeRole(ctx context.Context, roleName string, pod *v1.Pod) (Decision, error)
 }
 
 // CompositeAssumeRolePolicy allows multiple policies to be checked
@@ -50,9 +51,9 @@ type CompositeAssumeRolePolicy struct {
 	policies []AssumeRolePolicy
 }
 
-func (p *CompositeAssumeRolePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
+func (p *CompositeAssumeRolePolicy) IsAllowedAssumeRole(ctx context.Context, role string, pod *v1.Pod) (Decision, error) {
 	for _, policy := range p.policies {
-		decision, err := policy.IsAllowedAssumeRole(ctx, role, podIP)
+		decision, err := policy.IsAllowedAssumeRole(ctx, role, pod)
 		if err != nil {
 			return nil, err
 		}
@@ -94,12 +95,7 @@ func (f *forbidden) Explanation() string {
 	return fmt.Sprintf("requested '%s' but annotated with '%s', forbidden", f.requested, f.annotated)
 }
 
-func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-	pod, err := p.pods.GetPodByIP(podIP)
-	if err != nil {
-		return nil, err
-	}
-
+func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context, role string, pod *v1.Pod) (Decision, error) {
 	annotatedRole := p.resolver.Resolve(k8s.PodRole(pod))
 	role = p.resolver.Resolve(role)
 
@@ -112,11 +108,10 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 
 type NamespacePermittedRoleNamePolicy struct {
 	namespaces k8s.NamespaceFinder
-	pods       k8s.PodGetter
 }
 
-func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.PodGetter) *NamespacePermittedRoleNamePolicy {
-	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p}
+func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder) *NamespacePermittedRoleNamePolicy {
+	return &NamespacePermittedRoleNamePolicy{namespaces: n}
 }
 
 type namespacePolicyForbidden struct {
@@ -132,13 +127,7 @@ func (f *namespacePolicyForbidden) Explanation() string {
 	return fmt.Sprintf("namespace policy expression '%s' forbids role '%s'", f.expression, f.role)
 }
 
-func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-
-	pod, err := p.pods.GetPodByIP(podIP)
-	if err != nil {
-		return nil, err
-	}
-
+func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role string, pod *v1.Pod) (Decision, error) {
 	ns, err := p.namespaces.FindNamespace(ctx, pod.GetObjectMeta().GetNamespace())
 	if err != nil {
 		return nil, err

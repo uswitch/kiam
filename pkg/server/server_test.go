@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"testing"
 	"time"
 
@@ -61,7 +62,7 @@ func TestReturnsPolicyErrorWhenForbidden(t *testing.T) {
 
 	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
-	server := &KiamServer{pods: podCache, assumePolicy: &forbidPolicy{}}
+	server := &KiamServer{pods: podCache, assumePolicy: &forbidPolicy{}, arnResolver: sts.DefaultResolver("prefix")}
 
 	_, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1"})
 
@@ -124,7 +125,7 @@ func TestReturnsCredentials(t *testing.T) {
 
 	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
-	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}}
+	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}, arnResolver: sts.DefaultResolver("prefix")}
 
 	creds, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1"})
 	if err != nil {
@@ -144,7 +145,7 @@ type stubCredentialsProvider struct {
 	accessKey string
 }
 
-func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, identity *sts.CredentialsIdentity) (*sts.Credentials, error) {
+func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, identity *sts.RoleIdentity) (*sts.Credentials, error) {
 	return &sts.Credentials{
 		AccessKeyId: c.accessKey,
 	}, nil
@@ -153,14 +154,14 @@ func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, identi
 type forbidPolicy struct {
 }
 
-func (f *forbidPolicy) IsAllowedAssumeRole(ctx context.Context, roleName, podIP string) (Decision, error) {
+func (f *forbidPolicy) IsAllowedAssumeRole(ctx context.Context, roleName string, pod *v1.Pod) (Decision, error) {
 	return &decision{allowed: false, explanation: "uh uh uh"}, nil
 }
 
 type allowPolicy struct {
 }
 
-func (a *allowPolicy) IsAllowedAssumeRole(ctx context.Context, roleName, podIP string) (Decision, error) {
+func (a *allowPolicy) IsAllowedAssumeRole(ctx context.Context, roleName string, pod *v1.Pod) (Decision, error) {
 	return &decision{allowed: true, explanation: "always"}, nil
 }
 

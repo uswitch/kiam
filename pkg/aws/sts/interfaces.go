@@ -18,11 +18,11 @@ import (
 )
 
 type CredentialsProvider interface {
-	CredentialsForRole(ctx context.Context, identity *CredentialsIdentity) (*Credentials, error)
+	CredentialsForRole(ctx context.Context, identity *RoleIdentity) (*Credentials, error)
 }
 
 type CredentialsCache interface {
-	CredentialsForRole(ctx context.Context, identity *CredentialsIdentity) (*Credentials, error)
+	CredentialsForRole(ctx context.Context, identity *RoleIdentity) (*Credentials, error)
 	Expiring() chan *CachedCredentials
 }
 
