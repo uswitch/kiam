@@ -32,9 +32,9 @@ type Client interface {
 
 // KiamGateway is the client to interact with KiamServer
 type KiamGateway struct {
-	conn      *grpc.ClientConn
-	client    pb.KiamServiceClient
-	tlsConfig *dynamicTLSConfig
+	conn          *grpc.ClientConn
+	client        pb.KiamServiceClient
+	tlsConfig     *dynamicTLSConfig
 	retryInterval time.Time
 }
 

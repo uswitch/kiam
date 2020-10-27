@@ -28,7 +28,7 @@ type STSGateway interface {
 }
 
 type DefaultSTSGateway struct {
-	session  *session.Session
+	session *session.Session
 }
 
 func DefaultGateway(config *aws.Config) (*DefaultSTSGateway, error) {

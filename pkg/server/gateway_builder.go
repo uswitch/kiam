@@ -20,8 +20,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
@@ -34,7 +34,7 @@ import (
 
 const (
 	kDefaultRetryInterval = 10 * time.Millisecond
-	kMaxRetries = 0
+	kMaxRetries           = 0
 )
 
 // KiamGatewayBuilder helps to construct the KiamGateway for interacting with the KiamServer

@@ -51,7 +51,6 @@ func TestHealthReturnsOk(t *testing.T) {
 	}
 }
 
-
 func TestRetriesUntilServerAvailable(t *testing.T) {
 	defer leaktest.Check(t)
 
@@ -68,7 +67,7 @@ func TestRetriesUntilServerAvailable(t *testing.T) {
 	go func(ctx context.Context) {
 		m, err := gateway.Health(ctx)
 		if err == nil {
-			ok<-m
+			ok <- m
 		}
 	}(ctx)
 
@@ -81,7 +80,7 @@ func TestRetriesUntilServerAvailable(t *testing.T) {
 	select {
 	case _ = <-ok:
 		// all good!
-	case <-time.After(time.Second*30):
+	case <-time.After(time.Second * 30):
 		t.Error("didn't complete in 5 seconds")
 	}
 }
@@ -134,4 +133,3 @@ func newTestServer(ctx context.Context) (*KiamServer, *kt.FakeControllerSource, 
 
 	return server, source, err
 }
-

@@ -15,9 +15,9 @@ package sts
 
 import (
 	"context"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"testing"
 	"time"
-	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
 type stubGateway struct {
