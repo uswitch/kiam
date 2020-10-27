@@ -119,15 +119,17 @@ func TestReturnsCredentials(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	const roleName = "running_role"
+
 	source := kt.NewFakeControllerSource()
 	defer source.Shutdown()
-	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
+	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", roleName))
 
 	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}, arnResolver: sts.DefaultResolver("prefix")}
 
-	creds, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1"})
+	creds, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1", Role: roleName})
 	if err != nil {
 		t.Error("unexpected error", err)
 	}

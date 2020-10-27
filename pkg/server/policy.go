@@ -68,14 +68,20 @@ func NewRequestingAnnotatedRolePolicy(p k8s.PodGetter, resolver sts.ARNResolver)
 }
 
 func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context, role string, pod *v1.Pod) (Decision, error) {
-	annotatedRole := p.resolver.Resolve(k8s.PodRole(pod))
-	role = p.resolver.Resolve(role)
-
-	if annotatedRole != role {
-		return &forbidden{requested: role, annotated: annotatedRole}, nil
+	annotatedIdentiy, err := p.resolver.Resolve(k8s.PodRole(pod))
+	if err != nil {
+		return nil, err
+	}
+	requestedIdentity, err := p.resolver.Resolve(role)
+	if err != nil {
+		return nil, err
 	}
 
-	return &allowed{}, nil
+	if annotatedIdentiy.Equals(requestedIdentity) {
+		return &allowed{}, nil
+	}
+
+	return &forbidden{requested: role, annotated: annotatedIdentiy.Role}, nil
 }
 
 type NamespacePermittedRoleNamePolicy struct {
@@ -88,7 +94,10 @@ func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, resolver sts.ARN
 }
 
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role string, pod *v1.Pod) (Decision, error) {
-	role = p.resolver.Resolve(role)
+	requestedIdentity, err := p.resolver.Resolve(role)
+	if err != nil {
+		return nil, err
+	}
 
 	ns, err := p.namespaces.FindNamespace(ctx, pod.GetObjectMeta().GetNamespace())
 	if err != nil {
@@ -105,8 +114,8 @@ func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Conte
 		return nil, err
 	}
 
-	if !re.MatchString(role) {
-		return &namespacePolicyForbidden{expression: expression, role: role}, nil
+	if !re.MatchString(requestedIdentity.ARN) {
+		return &namespacePolicyForbidden{expression: expression, role: requestedIdentity.ARN}, nil
 	}
 
 	return &allowed{}, nil

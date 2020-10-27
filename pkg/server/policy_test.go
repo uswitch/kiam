@@ -62,7 +62,7 @@ func TestRequestedRolePolicy(t *testing.T) {
 		t.Error("role is different, should be denied", decision.Explanation())
 	}
 
-	if decision.Explanation() != "requested 'arn:aws:iam::123456789012:role/wrongrole' but annotated with 'arn:aws:iam::123456789012:role/myrole', forbidden" {
+	if decision.Explanation() != "requested 'wrongrole' but annotated with 'myrole', forbidden" {
 		t.Error("unexpected explanation, was", decision.Explanation())
 	}
 

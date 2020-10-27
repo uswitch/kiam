@@ -149,3 +149,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Rol
 func (i *RoleIdentity) String() string {
 	return i.ARN
 }
+
+func (i *RoleIdentity) Equals(other *RoleIdentity) bool {
+	return *i == *other
+}

@@ -43,7 +43,10 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	}
 
 	role := k8s.PodRole(pod)
-	identity := &sts.RoleIdentity{Role: role, ARN: m.arnResolver.Resolve(role)}
+	identity, err := m.arnResolver.Resolve(role)
+	if err != nil {
+		return
+	}
 	issued, err := m.fetchCredentialsFromCache(ctx, identity)
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())
