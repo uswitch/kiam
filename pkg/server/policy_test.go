@@ -15,12 +15,22 @@ package server
 
 import (
 	"context"
+	"k8s.io/api/core/v1"
 	"testing"
 
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	kt "github.com/uswitch/kiam/pkg/k8s/testing"
 	"github.com/uswitch/kiam/pkg/testutil"
 )
+
+type fakePolicy struct {
+	decision Decision
+	err      error
+}
+
+func (f fakePolicy) IsAllowedAssumeRole(ctx context.Context, roleName string, pod *v1.Pod) (Decision, error) {
+	return f.decision, nil
+}
 
 func TestRequestedRolePolicy(t *testing.T) {
 	p := testutil.NewPodWithRole("namespace", "name", "192.168.0.1", testutil.PhaseRunning, "myrole")
@@ -50,6 +60,10 @@ func TestRequestedRolePolicy(t *testing.T) {
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "wrongrole", p)
 	if decision.IsAllowed() {
 		t.Error("role is different, should be denied", decision.Explanation())
+	}
+
+	if decision.Explanation() != "requested 'arn:aws:iam::123456789012:role/wrongrole' but annotated with 'arn:aws:iam::123456789012:role/myrole', forbidden" {
+		t.Error("unexpected explanation, was", decision.Explanation())
 	}
 
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/wrongrole", p)
@@ -123,6 +137,10 @@ func TestNamespacePolicy(t *testing.T) {
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "orange_role", p)
 	if decision.IsAllowed() {
 		t.Errorf("expected to be forbidden- requesting role that fails regexp")
+	}
+
+	if decision.Explanation() != "namespace policy expression '^red.*$|^.red.*$' forbids role 'orange_role'" {
+		t.Error("unexpected explanation, was", decision.Explanation())
 	}
 
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/orange_role", p)
