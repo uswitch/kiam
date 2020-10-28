@@ -53,3 +53,32 @@ func TestPrefetchRunningPods(t *testing.T) {
 		return
 	}
 }
+
+func TestRenewsCredentialsForRunningPod(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	requested := make(chan *sts.RoleIdentity, 2)
+	credentials := &sts.Credentials{}
+	cache := testutil.NewStubCredentialsCache(func(identity *sts.RoleIdentity) (*sts.Credentials, error) {
+		requested <- identity
+		return credentials, nil
+	})
+	announcer := kt.NewStubAnnouncer()
+	manager := NewManager(cache, announcer, sts.DefaultResolver("prefix"))
+	go manager.Run(ctx, 1)
+
+	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))
+	identity := <-requested
+	// we'll expire them, triggering them being re-requested
+	cache.Expire(&sts.CachedCredentials{Identity: identity, Credentials: credentials})
+
+	select {
+	case _ = <-requested:
+		// success, re-requested
+	case <-time.After(time.Second):
+		t.Error("fail, didn't re-request expiring credentials in time")
+	}
+}
