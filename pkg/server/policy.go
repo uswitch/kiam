@@ -17,32 +17,17 @@ package server
 import (
 	"context"
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"regexp"
 
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 )
 
-// Decision reports (with message) as to whether the assume role is permitted.
-type Decision interface {
-	IsAllowed() bool
-	Explanation() string
-}
-
-type allowed struct {
-}
-
-func (a *allowed) IsAllowed() bool {
-	return true
-}
-func (a *allowed) Explanation() string {
-	return ""
-}
-
 // AssumeRolePolicy allows for policy to check whether pods can assume the role being
 // requested
 type AssumeRolePolicy interface {
-	IsAllowedAssumeRole(ctx context.Context, roleName, podIP string) (Decision, error)
+	IsAllowedAssumeRole(ctx context.Context, roleName string, pod *v1.Pod) (Decision, error)
 }
 
 // CompositeAssumeRolePolicy allows multiple policies to be checked
@@ -50,9 +35,9 @@ type CompositeAssumeRolePolicy struct {
 	policies []AssumeRolePolicy
 }
 
-func (p *CompositeAssumeRolePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
+func (p *CompositeAssumeRolePolicy) IsAllowedAssumeRole(ctx context.Context, role string, pod *v1.Pod) (Decision, error) {
 	for _, policy := range p.policies {
-		decision, err := policy.IsAllowedAssumeRole(ctx, role, podIP)
+		decision, err := policy.IsAllowedAssumeRole(ctx, role, pod)
 		if err != nil {
 			return nil, err
 		}
@@ -82,59 +67,34 @@ func NewRequestingAnnotatedRolePolicy(p k8s.PodGetter, resolver sts.ARNResolver)
 	return &RequestingAnnotatedRolePolicy{pods: p, resolver: resolver}
 }
 
-type forbidden struct {
-	requested string
-	annotated string
-}
-
-func (f *forbidden) IsAllowed() bool {
-	return false
-}
-func (f *forbidden) Explanation() string {
-	return fmt.Sprintf("requested '%s' but annotated with '%s', forbidden", f.requested, f.annotated)
-}
-
-func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-	pod, err := p.pods.GetPodByIP(podIP)
+func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context, role string, pod *v1.Pod) (Decision, error) {
+	annotatedIdentiy, err := p.resolver.Resolve(k8s.PodRole(pod))
+	if err != nil {
+		return nil, err
+	}
+	requestedIdentity, err := p.resolver.Resolve(role)
 	if err != nil {
 		return nil, err
 	}
 
-	annotatedRole := p.resolver.Resolve(k8s.PodRole(pod))
-	role = p.resolver.Resolve(role)
-
-	if annotatedRole != role {
-		return &forbidden{requested: role, annotated: annotatedRole}, nil
+	if annotatedIdentiy.Equals(requestedIdentity) {
+		return &allowed{}, nil
 	}
 
-	return &allowed{}, nil
+	return &forbidden{requested: role, annotated: annotatedIdentiy.Role}, nil
 }
 
 type NamespacePermittedRoleNamePolicy struct {
 	namespaces k8s.NamespaceFinder
-	pods       k8s.PodGetter
+	resolver   sts.ARNResolver
 }
 
-func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, p k8s.PodGetter) *NamespacePermittedRoleNamePolicy {
-	return &NamespacePermittedRoleNamePolicy{namespaces: n, pods: p}
+func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, resolver sts.ARNResolver) *NamespacePermittedRoleNamePolicy {
+	return &NamespacePermittedRoleNamePolicy{namespaces: n, resolver: resolver}
 }
 
-type namespacePolicyForbidden struct {
-	expression string
-	role       string
-}
-
-func (f *namespacePolicyForbidden) IsAllowed() bool {
-	return false
-}
-
-func (f *namespacePolicyForbidden) Explanation() string {
-	return fmt.Sprintf("namespace policy expression '%s' forbids role '%s'", f.expression, f.role)
-}
-
-func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role, podIP string) (Decision, error) {
-
-	pod, err := p.pods.GetPodByIP(podIP)
+func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role string, pod *v1.Pod) (Decision, error) {
+	requestedIdentity, err := p.resolver.Resolve(role)
 	if err != nil {
 		return nil, err
 	}
@@ -154,9 +114,51 @@ func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Conte
 		return nil, err
 	}
 
-	if !re.MatchString(role) {
-		return &namespacePolicyForbidden{expression: expression, role: role}, nil
+	if !re.MatchString(requestedIdentity.ARN) {
+		return &namespacePolicyForbidden{expression: expression, role: requestedIdentity.ARN}, nil
 	}
 
 	return &allowed{}, nil
+}
+
+// Decision reports (with message) as to whether the assume role is permitted.
+type Decision interface {
+	IsAllowed() bool
+	Explanation() string
+}
+
+type allowed struct {
+}
+
+func (a *allowed) IsAllowed() bool {
+	return true
+}
+
+func (a *allowed) Explanation() string {
+	return ""
+}
+
+type forbidden struct {
+	requested string
+	annotated string
+}
+
+func (f *forbidden) IsAllowed() bool {
+	return false
+}
+func (f *forbidden) Explanation() string {
+	return fmt.Sprintf("requested '%s' but annotated with '%s', forbidden", f.requested, f.annotated)
+}
+
+type namespacePolicyForbidden struct {
+	expression string
+	role       string
+}
+
+func (f *namespacePolicyForbidden) IsAllowed() bool {
+	return false
+}
+
+func (f *namespacePolicyForbidden) Explanation() string {
+	return fmt.Sprintf("namespace policy expression '%s' forbids role '%s'", f.expression, f.role)
 }

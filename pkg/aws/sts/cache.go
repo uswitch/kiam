@@ -34,12 +34,13 @@ type credentialsCache struct {
 	gateway         STSGateway
 }
 
-type CredentialsIdentity struct {
+type RoleIdentity struct {
 	Role string
+	ARN  string // Amazon Resource Name for the Role
 }
 
 type CachedCredentials struct {
-	Identity    *CredentialsIdentity
+	Identity    *RoleIdentity
 	Credentials *Credentials
 }
 
@@ -52,10 +53,8 @@ func DefaultCache(
 	sessionName string,
 	sessionDuration time.Duration,
 	sessionRefresh time.Duration,
-	resolver ARNResolver,
 ) *credentialsCache {
 	c := &credentialsCache{
-		arnResolver:     resolver,
 		expiring:        make(chan *CachedCredentials, 1),
 		sessionName:     fmt.Sprintf("kiam-%s", sessionName),
 		sessionDuration: sessionDuration,
@@ -93,8 +92,10 @@ func (c *credentialsCache) Expiring() chan *CachedCredentials {
 	return c.expiring
 }
 
-func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *CredentialsIdentity) (*Credentials, error) {
-	logger := log.WithFields(log.Fields{"pod.iam.role": identity.Role})
+// CredentialsForRole looks for cached credentials or requests them from the STSGateway. Requested credentials
+// must have their ARN set.
+func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *RoleIdentity) (*Credentials, error) {
+	logger := log.WithFields(log.Fields{"pod.iam.role": identity.Role, "pod.iam.roleArn": identity.ARN})
 	item, found := c.cache.Get(identity.String())
 
 	if found {
@@ -116,8 +117,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Cre
 	cacheMiss.Inc()
 
 	issue := func() (interface{}, error) {
-		arn := c.arnResolver.Resolve(identity.Role)
-		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, c.sessionDuration)
+		credentials, err := c.gateway.Issue(ctx, identity.ARN, c.sessionName, c.sessionDuration)
 		if err != nil {
 			errorIssuing.Inc()
 			logger.Errorf("error requesting credentials: %s", err.Error())
@@ -146,6 +146,10 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Cre
 	return cachedCreds.Credentials, nil
 }
 
-func (i *CredentialsIdentity) String() string {
-	return i.Role
+func (i *RoleIdentity) String() string {
+	return i.ARN
+}
+
+func (i *RoleIdentity) Equals(other *RoleIdentity) bool {
+	return *i == *other
 }

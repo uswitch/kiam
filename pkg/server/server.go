@@ -68,6 +68,7 @@ type KiamServer struct {
 	credentialsProvider sts.CredentialsProvider
 	assumePolicy        AssumeRolePolicy
 	parallelFetchers    int
+	arnResolver         sts.ARNResolver
 }
 
 func simplifyAWSErrorMessage(err error) string {
@@ -92,7 +93,7 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 	}
 	logger := log.WithFields(k8s.PodFields(pod)).WithField("pod.iam.requestedRole", req.Role)
 
-	decision, err := k.assumePolicy.IsAllowedAssumeRole(ctx, req.Role, req.Ip)
+	decision, err := k.assumePolicy.IsAllowedAssumeRole(ctx, req.Role, pod)
 	if err != nil {
 		logger.Errorf("error checking policy: %s", err.Error())
 		return nil, err
@@ -104,7 +105,11 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 		return nil, ErrPolicyForbidden
 	}
 
-	creds, err := k.credentialsProvider.CredentialsForRole(ctx, &sts.CredentialsIdentity{Role: req.Role})
+	identity, err := k.arnResolver.Resolve(req.Role)
+	if err != nil {
+		return nil, err
+	}
+	creds, err := k.credentialsProvider.CredentialsForRole(ctx, identity)
 	if err != nil {
 		logger.Errorf("error retrieving credentials: %s", err.Error())
 		k.recordEvent(pod, v1.EventTypeWarning, "KiamCredentialError", fmt.Sprintf("failed retrieving credentials: %s", simplifyAWSErrorMessage(err)))
