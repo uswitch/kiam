@@ -41,7 +41,7 @@ func TestReturnsErrorWhenPodNotFound(t *testing.T) {
 	source := kt.NewFakeControllerSource()
 	defer source.Shutdown()
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	server := &KiamServer{pods: podCache}
 
 	_, err := server.GetPodCredentials(context.Background(), &pb.GetPodCredentialsRequest{})
@@ -61,7 +61,7 @@ func TestReturnsPolicyErrorWhenForbidden(t *testing.T) {
 	defer source.Shutdown()
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 	server := &KiamServer{pods: podCache, assumePolicy: &forbidPolicy{}, arnResolver: sts.DefaultResolver("prefix")}
 
@@ -81,7 +81,7 @@ func TestReturnsAnnotatedPodRole(t *testing.T) {
 	defer source.Shutdown()
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 
 	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}}
@@ -102,7 +102,7 @@ func TestReturnsErrorFromGetPodRoleWhenPodNotFound(t *testing.T) {
 	defer source.Shutdown()
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 
 	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}}
@@ -126,7 +126,7 @@ func TestReturnsCredentials(t *testing.T) {
 	defer source.Shutdown()
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", roleName))
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}, arnResolver: sts.DefaultResolver("prefix")}
 
@@ -158,7 +158,7 @@ func TestGetPodCredentialsWithSessionName(t *testing.T) {
 	source.Add(testutil.NewPodWithSessionName("ns", "name", "192.168.0.1", "Running", roleName, sessionName))
 
 	credentialsProvider := stubCredentialsProvider{accessKey: "A1234"}
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &credentialsProvider, arnResolver: sts.DefaultResolver("prefix")}
 
@@ -187,7 +187,7 @@ func TestGetPodCredentialsWithExternalID(t *testing.T) {
 	source.Add(testutil.NewPodWithExternalID("ns", "name", "192.168.0.1", "Running", roleName, externalID))
 
 	credentialsProvider := stubCredentialsProvider{accessKey: "A1234"}
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &credentialsProvider, arnResolver: sts.DefaultResolver("prefix")}
 

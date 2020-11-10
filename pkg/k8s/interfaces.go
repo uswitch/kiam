@@ -15,7 +15,9 @@ package k8s
 
 import (
 	"context"
-	"k8s.io/api/core/v1"
+
+	"github.com/uswitch/kiam/pkg/aws/sts"
+	v1 "k8s.io/api/core/v1"
 )
 
 type PodGetter interface {
@@ -26,7 +28,7 @@ type PodAnnouncer interface {
 	// Will receive a Pod whenever there's a change/addition for a Pod with a role.
 	Pods() <-chan *v1.Pod
 	// Return whether there are still uncompleted pods in the specified role
-	IsActivePodsForRole(role string) (bool, error)
+	IsActivePodsForRole(identity *sts.RoleIdentity) (bool, error)
 }
 
 type NamespaceFinder interface {

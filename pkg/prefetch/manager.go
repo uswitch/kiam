@@ -86,7 +86,7 @@ func (m *CredentialManager) Run(ctx context.Context, parallelRoutines int) {
 func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts.CachedCredentials) {
 	logger := log.WithFields(sts.CredentialsFields(credentials.Identity, credentials.Credentials))
 
-	active, err := m.IsRoleActive(credentials.Identity.Role.Name)
+	active, err := m.IsRoleActive(credentials.Identity)
 	if err != nil {
 		logger.Errorf("error checking whether role active: %s", err.Error())
 		return
@@ -104,6 +104,6 @@ func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts
 	}
 }
 
-func (m *CredentialManager) IsRoleActive(role string) (bool, error) {
-	return m.announcer.IsActivePodsForRole(role)
+func (m *CredentialManager) IsRoleActive(identity *sts.RoleIdentity) (bool, error) {
+	return m.announcer.IsActivePodsForRole(identity)
 }

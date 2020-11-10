@@ -16,12 +16,14 @@ package server
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/fortytw2/leaktest"
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"google.golang.org/grpc"
 	kt "k8s.io/client-go/tools/cache/testing"
-	"testing"
-	"time"
 )
 
 const (
@@ -120,7 +122,7 @@ func newTestServer(ctx context.Context) (*KiamServer, *kt.FakeControllerSource, 
 	source := kt.NewFakeControllerSource()
 	defer source.Shutdown()
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
 	namespaceCache := k8s.NewNamespaceCache(source, time.Second)
 	namespaceCache.Run(ctx)

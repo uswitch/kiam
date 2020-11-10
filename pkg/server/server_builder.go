@@ -18,6 +18,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
+	"time"
+
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/k8sc/official"
@@ -33,8 +36,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
-	"net"
-	"time"
 )
 
 // KiamServerBuilder helps construct the KiamServer
@@ -109,7 +110,12 @@ func (b *KiamServerBuilder) WithKubernetesClient() (*KiamServerBuilder, error) {
 		return nil, err
 	}
 
-	podCache := k8s.NewPodCache(k8s.NewListWatch(client, k8s.ResourcePods), b.config.PodSyncInterval, b.config.PrefetchBufferSize)
+	arnResolver, err := newRoleARNResolver(b.config)
+	if err != nil {
+		return nil, err
+	}
+
+	podCache := k8s.NewPodCache(arnResolver, k8s.NewListWatch(client, k8s.ResourcePods), b.config.PodSyncInterval, b.config.PrefetchBufferSize)
 	nsCache := k8s.NewNamespaceCache(k8s.NewListWatch(client, k8s.ResourceNamespaces), time.Minute)
 
 	b.WithCaches(podCache, nsCache)

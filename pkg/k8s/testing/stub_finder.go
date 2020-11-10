@@ -15,8 +15,10 @@ package testing
 
 import (
 	"context"
+
+	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 func NewStubFinder(pod *v1.Pod) *StubFinder {
@@ -51,7 +53,7 @@ func (f *stubAnnouncer) Pods() <-chan *v1.Pod {
 	return f.pods
 }
 
-func (f *stubAnnouncer) IsActivePodsForRole(role string) (bool, error) {
+func (f *stubAnnouncer) IsActivePodsForRole(identity *sts.RoleIdentity) (bool, error) {
 	return true, nil
 }
 
