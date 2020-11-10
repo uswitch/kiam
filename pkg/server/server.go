@@ -105,15 +105,12 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 		return nil, ErrPolicyForbidden
 	}
 
-	resolvedRole, err := k.arnResolver.Resolve(req.Role)
+	sessionName := k8s.PodSessionName(pod)
+	externalID := k8s.PodExternalID(pod)
+
+	identity, err := sts.NewRoleIdentity(k.arnResolver, req.Role, sessionName, externalID)
 	if err != nil {
 		return nil, err
-	}
-
-	identity := &sts.RoleIdentity{
-		Role:        *resolvedRole,
-		SessionName: k8s.PodSessionName(pod),
-		ExternalID:  k8s.PodExternalID(pod),
 	}
 
 	creds, err := k.credentialsProvider.CredentialsForRole(ctx, identity)

@@ -35,12 +35,6 @@ type credentialsCache struct {
 	gateway         STSGateway
 }
 
-type RoleIdentity struct {
-	Role        ResolvedRole
-	SessionName string
-	ExternalID  string
-}
-
 type CachedCredentials struct {
 	Identity    *RoleIdentity
 	Credentials *Credentials
@@ -155,17 +149,6 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Rol
 
 	cachedCreds := val.(*CachedCredentials)
 	return cachedCreds.Credentials, nil
-}
-
-func (i *RoleIdentity) String() string {
-	return fmt.Sprintf("%s|%s|%s", i.Role.ARN, i.SessionName, i.ExternalID)
-}
-
-func (i *RoleIdentity) LogFields() log.Fields {
-	return log.Fields{
-		"pod.iam.role":    i.Role,
-		"pod.iam.roleArn": i.Role.ARN,
-	}
 }
 
 func (c *credentialsCache) getSessionName(identity *RoleIdentity) string {
