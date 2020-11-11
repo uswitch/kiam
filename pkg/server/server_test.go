@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
-	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 	pb "github.com/uswitch/kiam/proto"
 	kt "k8s.io/client-go/tools/cache/testing"
@@ -19,10 +20,6 @@ import (
 const (
 	defaultBuffer = 10
 )
-
-func init() {
-	statsd.New("", "", time.Millisecond)
-}
 
 func TestErrorSimplification(t *testing.T) {
 	e := awserr.NewRequestFailure(awserr.New("code", "message", fmt.Errorf("foo")), 403, "abcdef")
@@ -44,7 +41,7 @@ func TestReturnsErrorWhenPodNotFound(t *testing.T) {
 	source := kt.NewFakeControllerSource()
 	defer source.Shutdown()
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	server := &KiamServer{pods: podCache}
 
 	_, err := server.GetPodCredentials(context.Background(), &pb.GetPodCredentialsRequest{})
@@ -64,14 +61,56 @@ func TestReturnsPolicyErrorWhenForbidden(t *testing.T) {
 	defer source.Shutdown()
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
-	server := &KiamServer{pods: podCache, assumePolicy: &forbidPolicy{}}
+	server := &KiamServer{pods: podCache, assumePolicy: &forbidPolicy{}, arnResolver: sts.DefaultResolver("prefix")}
 
 	_, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1"})
 
 	if err != ErrPolicyForbidden {
 		t.Error("unexpected error:", err)
+	}
+}
+
+func TestReturnsAnnotatedPodRole(t *testing.T) {
+	defer leaktest.Check(t)()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
+	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
+
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
+	podCache.Run(ctx)
+
+	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}}
+
+	r, _ := server.GetPodRole(ctx, &pb.GetPodRoleRequest{Ip: "192.168.0.1"})
+
+	if r.GetName() != "running_role" {
+		t.Error("expected running_role, was", r.GetName())
+	}
+}
+
+func TestReturnsErrorFromGetPodRoleWhenPodNotFound(t *testing.T) {
+	defer leaktest.Check(t)()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
+	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
+
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
+	podCache.Run(ctx)
+
+	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}}
+
+	_, e := server.GetPodRole(ctx, &pb.GetPodRoleRequest{Ip: "foo"})
+
+	if e != k8s.ErrPodNotFound {
+		t.Error("unexpected error, was", e)
 	}
 }
 
@@ -81,15 +120,17 @@ func TestReturnsCredentials(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	const roleName = "running_role"
+
 	source := kt.NewFakeControllerSource()
 	defer source.Shutdown()
-	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
+	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", roleName))
 
-	podCache := k8s.NewPodCache(source, time.Second, defaultBuffer)
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
 	podCache.Run(ctx)
-	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}}
+	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &stubCredentialsProvider{accessKey: "A1234"}, arnResolver: sts.DefaultResolver("prefix")}
 
-	creds, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1"})
+	creds, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1", Role: roleName})
 	if err != nil {
 		t.Error("unexpected error", err)
 	}
@@ -103,11 +144,72 @@ func TestReturnsCredentials(t *testing.T) {
 	}
 }
 
-type stubCredentialsProvider struct {
-	accessKey string
+func TestGetPodCredentialsWithSessionName(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	const roleName = "role"
+	const sessionName = "session"
+
+	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
+	source.Add(testutil.NewPodWithSessionName("ns", "name", "192.168.0.1", "Running", roleName, sessionName))
+
+	credentialsProvider := stubCredentialsProvider{accessKey: "A1234"}
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
+	podCache.Run(ctx)
+	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &credentialsProvider, arnResolver: sts.DefaultResolver("prefix")}
+
+	_, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1", Role: roleName})
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
+
+	identity := credentialsProvider.requestedIdentity
+	if identity.SessionName != sessionName {
+		t.Error("unexpected session-name", identity.SessionName)
+	}
 }
 
-func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, identity *sts.CredentialsIdentity) (*sts.Credentials, error) {
+func TestGetPodCredentialsWithExternalID(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	const roleName = "role"
+	const externalID = "external-id"
+
+	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
+	source.Add(testutil.NewPodWithExternalID("ns", "name", "192.168.0.1", "Running", roleName, externalID))
+
+	credentialsProvider := stubCredentialsProvider{accessKey: "A1234"}
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
+	podCache.Run(ctx)
+	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &credentialsProvider, arnResolver: sts.DefaultResolver("prefix")}
+
+	_, err := server.GetPodCredentials(ctx, &pb.GetPodCredentialsRequest{Ip: "192.168.0.1", Role: roleName})
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
+
+	identity := credentialsProvider.requestedIdentity
+	if identity.ExternalID != externalID {
+		t.Error("unexpected external-id", identity.ExternalID)
+	}
+}
+
+type stubCredentialsProvider struct {
+	accessKey         string
+	requestedIdentity *sts.RoleIdentity
+}
+
+func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, identity *sts.RoleIdentity) (*sts.Credentials, error) {
+	c.requestedIdentity = identity
+
 	return &sts.Credentials{
 		AccessKeyId: c.accessKey,
 	}, nil
@@ -116,14 +218,14 @@ func (c *stubCredentialsProvider) CredentialsForRole(ctx context.Context, identi
 type forbidPolicy struct {
 }
 
-func (f *forbidPolicy) IsAllowedAssumeRole(ctx context.Context, roleName, podIP string) (Decision, error) {
+func (f *forbidPolicy) IsAllowedAssumeRole(ctx context.Context, roleName string, pod *v1.Pod) (Decision, error) {
 	return &decision{allowed: false, explanation: "uh uh uh"}, nil
 }
 
 type allowPolicy struct {
 }
 
-func (a *allowPolicy) IsAllowedAssumeRole(ctx context.Context, roleName, podIP string) (Decision, error) {
+func (a *allowPolicy) IsAllowedAssumeRole(ctx context.Context, roleName string, pod *v1.Pod) (Decision, error) {
 	return &decision{allowed: true, explanation: "always"}, nil
 }
 

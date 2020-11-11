@@ -15,12 +15,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/keepalive"
 	"github.com/uswitch/kiam/pkg/pprof"
 	"github.com/uswitch/kiam/pkg/prometheus"
-	"github.com/uswitch/kiam/pkg/statsd"
+	"google.golang.org/grpc/keepalive"
 	"time"
 )
 
@@ -52,19 +50,12 @@ func (o *logOptions) configureLogger() {
 }
 
 type telemetryOptions struct {
-	statsD           string
-	statsDInterval   time.Duration
-	statsDPrefix     string
 	prometheusListen string
 	prometheusSync   time.Duration
 	pprofListen      string
 }
 
 func (o *telemetryOptions) bind(parser parser) {
-	parser.Flag("statsd", "UDP address to publish StatsD metrics. e.g. 127.0.0.1:8125").Default("").StringVar(&o.statsD)
-	parser.Flag("statsd-prefix", "statsd namespace to use").Default("kiam").StringVar(&o.statsDPrefix)
-	parser.Flag("statsd-interval", "Interval to publish to StatsD").Default("100ms").DurationVar(&o.statsDInterval)
-
 	parser.Flag("prometheus-listen-addr", "Prometheus HTTP listen address. e.g. localhost:9620").StringVar(&o.prometheusListen)
 	parser.Flag("prometheus-sync-interval", "How frequently to update Prometheus metrics").Default("5s").DurationVar(&o.prometheusSync)
 
@@ -72,16 +63,6 @@ func (o *telemetryOptions) bind(parser parser) {
 }
 
 func (o telemetryOptions) start(ctx context.Context, identifier string) {
-	err := statsd.New(
-		o.statsD,
-		fmt.Sprintf("%s.%s", o.statsDPrefix, identifier),
-		o.statsDInterval,
-	)
-
-	if err != nil {
-		log.Fatalf("Error initing statsd: %v", err)
-	}
-
 	if o.prometheusListen != "" {
 		metrics := prometheus.NewServer(identifier, o.prometheusListen, o.prometheusSync)
 		metrics.Listen(ctx)

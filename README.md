@@ -27,7 +27,7 @@ We have a [#kiam Slack channel](https://kubernetes.slack.com/messages/CBQLKVABH/
 * Denies access to all other AWS Metadata API paths by default (but can be configured via flag)
 * AWS credentials are prefetched to allow fast responses (and avoid problems with races between Pods requesting credentials and the Kubernetes client caches being aware of the Pod)
 * Multi-account IAM support. Pods can assume roles from any AWS account assuming trust relationships permit it
-* [Prometheus and StatsD metrics](docs/METRICS.md)
+* [Prometheus metrics](docs/METRICS.md)
 * Uses the Kubernetes Events API to record IAM errors against the Pod so that cluster users can more readily diagnose IAM problems (via `kubectl describe pod ...`)
 * Text and JSON log formats
 * Optional regional STS endpoint support
@@ -46,6 +46,31 @@ metadata:
   namespace: iam-example
   annotations:
     iam.amazonaws.com/role: reportingdb-reader
+```
+
+You can control the session name used when assuming the role via an annotation added to the `Pod`, which may be used to further identify the session. For example:
+
+```yaml
+kind: Pod
+metadata:
+  name: foo
+  namespace: session-name-example
+  annotations:
+    iam.amazonaws.com/role: reportingdb-reader
+    iam.amazonaws.com/session-name: my-session-name
+```
+
+You can also control the external id used when assuming the role via an annotation added to the `Pod`, which
+maybe used to avoid [confused deputy scenarios in cross-organisation role assumption](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html). For example:
+
+```yaml
+kind: Pod
+metadata:
+  name: foo
+  namespace: external-id-example
+  annotations:
+    iam.amazonaws.com/role: reportingdb-reader
+    iam.amazonaws.com/external-id: dac7ad46-acab-4ec3-a78e-f3962ecf45d7
 ```
 
 Further, all namespaces must also have an annotation with a regular expression expressing which roles are permitted to be assumed within that namespace. **Without the namespace annotation the pod will be unable to assume any roles.**

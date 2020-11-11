@@ -21,13 +21,8 @@ import (
 	"github.com/fortytw2/leaktest"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	kt "github.com/uswitch/kiam/pkg/k8s/testing"
-	"github.com/uswitch/kiam/pkg/statsd"
 	"github.com/uswitch/kiam/pkg/testutil"
 )
-
-func init() {
-	statsd.New("", "", time.Millisecond)
-}
 
 func TestPrefetchRunningPods(t *testing.T) {
 	defer leaktest.Check(t)()
@@ -37,11 +32,11 @@ func TestPrefetchRunningPods(t *testing.T) {
 
 	requestedRoles := make(chan string)
 	announcer := kt.NewStubAnnouncer()
-	cache := testutil.NewStubCredentialsCache(func(identity *sts.CredentialsIdentity) (*sts.Credentials, error) {
-		requestedRoles <- identity.Role
+	cache := testutil.NewStubCredentialsCache(func(identity *sts.RoleIdentity) (*sts.Credentials, error) {
+		requestedRoles <- identity.Role.Name
 		return &sts.Credentials{}, nil
 	})
-	manager := NewManager(cache, announcer)
+	manager := NewManager(cache, announcer, sts.DefaultResolver("prefix"))
 	go manager.Run(ctx, 1)
 
 	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))
@@ -56,5 +51,80 @@ func TestPrefetchRunningPods(t *testing.T) {
 		t.Error("didn't expect to request role, but was requested", role)
 	case <-time.After(time.Second):
 		return
+	}
+}
+
+func TestRenewsCredentialsForRunningPod(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	requested := make(chan *sts.RoleIdentity, 2)
+	credentials := &sts.Credentials{}
+	cache := testutil.NewStubCredentialsCache(func(identity *sts.RoleIdentity) (*sts.Credentials, error) {
+		requested <- identity
+		return credentials, nil
+	})
+	announcer := kt.NewStubAnnouncer()
+	manager := NewManager(cache, announcer, sts.DefaultResolver("prefix"))
+	go manager.Run(ctx, 1)
+
+	announcer.Announce(testutil.NewPodWithRole("ns", "name", "ip", "Running", "role"))
+	identity := <-requested
+	// we'll expire them, triggering them being re-requested
+	cache.Expire(&sts.CachedCredentials{Identity: identity, Credentials: credentials})
+
+	select {
+	case _ = <-requested:
+		// success, re-requested
+	case <-time.After(time.Second):
+		t.Error("fail, didn't re-request expiring credentials in time")
+	}
+}
+
+func TestPodSessionName(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	requested := make(chan *sts.RoleIdentity)
+	announcer := kt.NewStubAnnouncer()
+	cache := testutil.NewStubCredentialsCache(func(identity *sts.RoleIdentity) (*sts.Credentials, error) {
+		requested <- identity
+		return &sts.Credentials{}, nil
+	})
+
+	manager := NewManager(cache, announcer, sts.DefaultResolver("prefix"))
+	go manager.Run(ctx, 1)
+
+	announcer.Announce(testutil.NewPodWithSessionName("ns", "name", "ip", "Running", "role", "session-name"))
+	identity := <-requested
+	if identity.SessionName != "session-name" {
+		t.Error("should have requested session-name")
+	}
+}
+
+func TestPodExternalID(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	requested := make(chan *sts.RoleIdentity)
+	announcer := kt.NewStubAnnouncer()
+	cache := testutil.NewStubCredentialsCache(func(identity *sts.RoleIdentity) (*sts.Credentials, error) {
+		requested <- identity
+		return &sts.Credentials{}, nil
+	})
+
+	manager := NewManager(cache, announcer, sts.DefaultResolver("prefix"))
+	go manager.Run(ctx, 1)
+
+	announcer.Announce(testutil.NewPodWithExternalID("ns", "name", "ip", "Running", "role", "external-id"))
+	identity := <-requested
+	if identity.ExternalID != "external-id" {
+		t.Error("should have requested external-id")
 	}
 }

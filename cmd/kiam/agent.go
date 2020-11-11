@@ -86,7 +86,14 @@ func (opts *agentCommand) run() error {
 	ctxGateway, cancelCtxGateway := context.WithTimeout(context.Background(), opts.timeoutKiamGateway)
 	defer cancelCtxGateway()
 
-	gateway, err := kiamserver.NewGateway(ctxGateway, opts.serverAddress, opts.caPath, opts.certificatePath, opts.keyPath, opts.keepaliveParams)
+	b := kiamserver.NewKiamGatewayBuilder().WithAddress(opts.serverAddress).WithKeepAlive(opts.keepaliveParams)
+	_, err := b.WithTLS(opts.certificatePath, opts.keyPath, opts.caPath)
+	if err != nil {
+		log.Errorf("error configuring TLS: ", err.Error())
+		return err
+	}
+
+	gateway, err := b.Build(ctxGateway)
 	if err != nil {
 		log.Errorf("error creating server gateway: %s", err.Error())
 		return err

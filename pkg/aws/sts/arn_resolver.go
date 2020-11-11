@@ -22,6 +22,11 @@ type Resolver struct {
 	prefix string
 }
 
+type ResolvedRole struct {
+	Name string
+	ARN  string
+}
+
 // DefaultResolver will add the prefix to any roles which
 // don't start with arn:
 func DefaultResolver(prefix string) *Resolver {
@@ -29,18 +34,28 @@ func DefaultResolver(prefix string) *Resolver {
 }
 
 // Resolve converts from a role string into the absolute role arn.
-func (r *Resolver) Resolve(role string) string {
+func (r *Resolver) Resolve(role string) (*ResolvedRole, error) {
 	if role == "" {
-		return ""
+		return nil, fmt.Errorf("role can't be empty")
+	}
+
+	if strings.HasPrefix(role, "arn:") {
+		return &ResolvedRole{ARN: role, Name: roleFromArn(role)}, nil
 	}
 
 	if strings.HasPrefix(role, "/") {
 		role = strings.TrimPrefix(role, "/")
 	}
 
-	if strings.HasPrefix(role, "arn:") {
-		return role
-	}
+	return &ResolvedRole{ARN: fmt.Sprintf("%s%s", r.prefix, role), Name: role}, nil
+}
 
-	return fmt.Sprintf("%s%s", r.prefix, role)
+// arn:aws:iam::account-id:role/role-name-with-path
+func roleFromArn(arn string) string {
+	splits := strings.SplitAfterN(arn, ":", 6)
+	return strings.TrimPrefix(splits[5], "role/")
+}
+
+func (i *ResolvedRole) Equals(other *ResolvedRole) bool {
+	return *i == *other
 }

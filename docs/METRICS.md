@@ -1,9 +1,8 @@
 # Metrics
 
-Kiam can exports both Prometheus and StatsD metrics to determine the health of the
+Kiam can exports both Prometheus metrics to determine the health of the
 system, check the timing of each RPC call, and monitor the size of the
 credentials cache. By default, Prometheus metrics are exported on `localhost:9620`.
-StatsD metrics is disabled by default, read below on how to enable them.
 
 ## Dashboard
 
@@ -16,15 +15,6 @@ daemonset status from kube-state-metrics & container metrics from cAdvisor if av
 
 ## Metrics configuration
 
-- The `statsd` flag controls the address to which to send StatsD metrics.
-  This is by default `""`. To enable statsD provide a server adress,
-  for example `127.0.0.1:8125`
-- The `statsd-prefix` flag controls the initial prefix that will be appended to
-  Kiam's StatsD metrics. This is by default `kiam`.
-- The `statsd-interval` flag controls how frequently the in-memory metrics
-  buffer will be flushed to the specified StatsD endpoint. Metrics are
-  not aggregated in this buffer and the raw counts will be flushed to the
-  underlying StatsD sink. This is by default `100ms`.
 - The `prometheus-listen-addr` controls which address Kiam should create a
   Prometheus endpoint on. This is by default `localhost:9620`. The metrics
   themselves can be accessed at `<prometheus-listen-addr>/metrics`.
@@ -71,17 +61,3 @@ daemonset status from kube-state-metrics & container metrics from cAdvisor if av
 - `grpc_client_msg_received_total` -  Total number of RPC stream messages received by the client.
 - `grpc_client_msg_sent_total` -  Total number of gRPC stream messages sent by the client.
 - `grpc_client_started_total` -  Total number of RPCs started on the client.
-
-### StatsD Timing metrics
-
-- `gateway.rpc.GetRole` - Observed client side latency of GetRole RPC
-- `gateway.rpc.GetCredentials` - Observed client side latency of GetCredentials RPC
-- `server.rpc.GetRoleCredentials` - Observed server side latency of GetRoleCredentials RPC
-- `server.rpc.IsAllowedAssumeRole` - Observed server side latency of IsAllowedAssumeRole RPC
-- `server.rpc.GetHealth` - Observed server side latency of GetHealth RPC
-- `server.rpc.GetPodRole` - Observed server side latency of GetPodRole RPC
-- `server.rpc.GetRoleCredentials` - Observed server side latency of GetRoleCredentials RPC
-- `handler.role_name` - Observed latency of role_name handler
-- `handler.health` - Observed latency of health handler
-- `handler.credentials` - Observed latency of credentials handler
-- `aws.assume_role` - Observed latency of aws assume role request

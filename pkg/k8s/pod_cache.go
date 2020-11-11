@@ -19,7 +19,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	"github.com/uswitch/kiam/pkg/aws/sts"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -34,10 +35,10 @@ type PodCache struct {
 // IP address so that Kiam can identify which role a Pod should assume. It periodically syncs the list of
 // pods and can announce Pods. When announcing Pods via the channel it will drop events if the buffer
 // is full- bufferSize determines how many.
-func NewPodCache(source cache.ListerWatcher, syncInterval time.Duration, bufferSize int) *PodCache {
+func NewPodCache(arnResolver sts.ARNResolver, source cache.ListerWatcher, syncInterval time.Duration, bufferSize int) *PodCache {
 	indexers := cache.Indexers{
-		indexPodIP:   podIPIndex,
-		indexPodRole: podRoleIndex,
+		indexPodIP:           podIPIndex,
+		indexPodRoleIdentity: podRoleIdentityIndex(arnResolver),
 	}
 	pods := make(chan *v1.Pod, bufferSize)
 	podHandler := &podHandler{pods}
@@ -70,8 +71,8 @@ func (s *PodCache) Pods() <-chan *v1.Pod {
 // using the provided role. This is used to identify whether the
 // role credentials should be maintained. Part of the PodAnnouncer
 // interface
-func (s *PodCache) IsActivePodsForRole(role string) (bool, error) {
-	items, err := s.indexer.ByIndex(indexPodRole, role)
+func (s *PodCache) IsActivePodsForRole(identity *sts.RoleIdentity) (bool, error) {
+	items, err := s.indexer.ByIndex(indexPodRoleIdentity, identity.String())
 	if err != nil {
 		return false, err
 	}
@@ -138,8 +139,8 @@ func (s *PodCache) GetPodByIP(ip string) (*v1.Pod, error) {
 }
 
 const (
-	indexPodIP   = "byIP"
-	indexPodRole = "byRole"
+	indexPodIP           = "byIP"
+	indexPodRoleIdentity = "byRoleIdentity"
 )
 
 func podIPIndex(obj interface{}) ([]string, error) {
@@ -152,14 +153,23 @@ func podIPIndex(obj interface{}) ([]string, error) {
 	return []string{pod.Status.PodIP}, nil
 }
 
-func podRoleIndex(obj interface{}) ([]string, error) {
-	pod := obj.(*v1.Pod)
-	role := PodRole(pod)
-	if role == "" {
-		return []string{}, nil
-	}
+func podRoleIdentityIndex(arnResolver sts.ARNResolver) func(obj interface{}) ([]string, error) {
+	return func(obj interface{}) ([]string, error) {
+		pod := obj.(*v1.Pod)
+		role := PodRole(pod)
+		if role == "" {
+			return []string{}, nil
+		}
 
-	return []string{role}, nil
+		sessionName := PodSessionName(pod)
+		externalID := PodExternalID(pod)
+		identity, err := sts.NewRoleIdentity(arnResolver, role, sessionName, externalID)
+		if err != nil {
+			return nil, err
+		}
+
+		return []string{identity.String()}, nil
+	}
 }
 
 // Run starts the controller processing updates. Blocks until the cache has synced
@@ -180,8 +190,24 @@ func PodRole(pod *v1.Pod) string {
 	return pod.ObjectMeta.Annotations[AnnotationIAMRoleKey]
 }
 
+// PodSessionName returns the IAM role session-name specified in the annotation for the Pod
+func PodSessionName(pod *v1.Pod) string {
+	return pod.ObjectMeta.Annotations[AnnotationIAMSessionNameKey]
+}
+
+// PodExternalID returns the IAM role external-id specified in the annotation for the Pod
+func PodExternalID(pod *v1.Pod) string {
+	return pod.ObjectMeta.Annotations[AnnotationIAMExternalIDKey]
+}
+
 // AnnotationIAMRoleKey is the key for the annotation specifying the IAM Role
 const AnnotationIAMRoleKey = "iam.amazonaws.com/role"
+
+// AnnotationIAMSessionNameKey is the key for the annotation specifying the session-name
+const AnnotationIAMSessionNameKey = "iam.amazonaws.com/session-name"
+
+// AnnotationIAMExternalIDKey is the key for the annotation specifying the external-id
+const AnnotationIAMExternalIDKey = "iam.amazonaws.com/external-id"
 
 type podHandler struct {
 	pods chan<- *v1.Pod

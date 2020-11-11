@@ -16,10 +16,10 @@ package sts
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/patrickmn/go-cache"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/uswitch/kiam/pkg/future"
 )
@@ -35,12 +35,8 @@ type credentialsCache struct {
 	gateway         STSGateway
 }
 
-type CredentialsIdentity struct {
-	Role string
-}
-
 type CachedCredentials struct {
-	Identity    *CredentialsIdentity
+	Identity    *RoleIdentity
 	Credentials *Credentials
 }
 
@@ -53,12 +49,10 @@ func DefaultCache(
 	sessionName string,
 	sessionDuration time.Duration,
 	sessionRefresh time.Duration,
-	resolver ARNResolver,
 ) *credentialsCache {
 	c := &credentialsCache{
-		arnResolver:     resolver,
 		expiring:        make(chan *CachedCredentials, 1),
-		sessionName:     fmt.Sprintf("kiam-%s", sessionName),
+		sessionName:     sessionName,
 		sessionDuration: sessionDuration,
 		cacheTTL:        sessionDuration - sessionRefresh,
 		gateway:         gateway,
@@ -66,22 +60,12 @@ func DefaultCache(
 	c.cache = cache.New(c.cacheTTL, DefaultPurgeInterval)
 	c.cache.OnEvicted(c.evicted)
 
-	// TODO: Not do this inline
-	cacheSize := prometheus.NewCounterFunc(
-		prometheus.CounterOpts{
-			Namespace: "kiam",
-			Subsystem: "sts",
-			Name:      "cacheSize",
-			Help:      "Current size of the metadata cache",
-		},
-		func() float64 { return float64(c.cache.ItemCount()) },
-	)
-	prometheus.MustRegister(cacheSize)
-
 	return c
 }
 
 func (c *credentialsCache) evicted(key string, item interface{}) {
+	cacheSize.Dec()
+
 	f := item.(*future.Future)
 	obj, err := f.Get(context.Background())
 
@@ -104,8 +88,10 @@ func (c *credentialsCache) Expiring() chan *CachedCredentials {
 	return c.expiring
 }
 
-func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *CredentialsIdentity) (*Credentials, error) {
-	logger := log.WithFields(log.Fields{"pod.iam.role": identity.Role})
+// CredentialsForRole looks for cached credentials or requests them from the STSGateway. Requested credentials
+// must have their ARN set.
+func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *RoleIdentity) (*Credentials, error) {
+	logger := log.WithFields(identity.LogFields())
 	item, found := c.cache.Get(identity.String())
 
 	if found {
@@ -127,8 +113,16 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Cre
 	cacheMiss.Inc()
 
 	issue := func() (interface{}, error) {
-		arn := c.arnResolver.Resolve(identity.Role)
-		credentials, err := c.gateway.Issue(ctx, arn, c.sessionName, c.sessionDuration)
+		sessionName := c.getSessionName(identity)
+
+		stsIssueRequest := &STSIssueRequest{
+			RoleARN:         identity.Role.ARN,
+			SessionName:     sessionName,
+			ExternalID:      identity.ExternalID,
+			SessionDuration: c.sessionDuration,
+		}
+
+		credentials, err := c.gateway.Issue(ctx, stsIssueRequest)
 		if err != nil {
 			errorIssuing.Inc()
 			logger.Errorf("error requesting credentials: %s", err.Error())
@@ -145,6 +139,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Cre
 	}
 	f := future.New(issue)
 	c.cache.Set(identity.String(), f, c.cacheTTL)
+	cacheSize.Inc()
 
 	val, err := f.Get(ctx)
 	if err != nil {
@@ -156,6 +151,26 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Cre
 	return cachedCreds.Credentials, nil
 }
 
-func (i *CredentialsIdentity) String() string {
-	return i.Role
+func (c *credentialsCache) getSessionName(identity *RoleIdentity) string {
+	sessionName := c.sessionName
+
+	if identity.SessionName != "" {
+		sessionName = identity.SessionName
+	}
+
+	sessionName = fmt.Sprintf("kiam-%s", sessionName)
+	return sanitizeSessionName(sessionName)
+}
+
+// Ensure the session name meets length requirements and
+// also coercce any character that doens't meet the pattern
+// requirements to a hyhen so that we ensure a valid session name.
+func sanitizeSessionName(sessionName string) string {
+	sanitize := regexp.MustCompile(`([^\w+=,.@-])`)
+
+	if len(sessionName) > 64 {
+		sessionName = sessionName[0:63]
+	}
+
+	return sanitize.ReplaceAllString(sessionName, "-")
 }

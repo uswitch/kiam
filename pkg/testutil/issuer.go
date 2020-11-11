@@ -20,17 +20,22 @@ import (
 )
 
 type stubCache struct {
-	issue func(identity *sts.CredentialsIdentity) (*sts.Credentials, error)
+	expiring chan *sts.CachedCredentials
+	issue    func(identity *sts.RoleIdentity) (*sts.Credentials, error)
 }
 
-func (i *stubCache) CredentialsForRole(ctx context.Context, identity *sts.CredentialsIdentity) (*sts.Credentials, error) {
+func (i *stubCache) CredentialsForRole(ctx context.Context, identity *sts.RoleIdentity) (*sts.Credentials, error) {
 	return i.issue(identity)
 }
 
 func (i *stubCache) Expiring() chan *sts.CachedCredentials {
-	return make(chan *sts.CachedCredentials)
+	return i.expiring
 }
 
-func NewStubCredentialsCache(f func(identity *sts.CredentialsIdentity) (*sts.Credentials, error)) sts.CredentialsCache {
-	return &stubCache{f}
+func (i *stubCache) Expire(credentials *sts.CachedCredentials) {
+	i.expiring <- credentials
+}
+
+func NewStubCredentialsCache(issueFunc func(identity *sts.RoleIdentity) (*sts.Credentials, error)) *stubCache {
+	return &stubCache{issue: issueFunc, expiring: make(chan *sts.CachedCredentials)}
 }
