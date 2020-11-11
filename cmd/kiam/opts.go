@@ -96,8 +96,8 @@ type clientOptions struct {
 }
 
 func (o *clientOptions) bind(parser parser) {
-	parser.Flag("grpc-keepalive-time", "gRPC keepalive time").Default("10s").DurationVar(&o.keepaliveParams.Time)
-	parser.Flag("grpc-keepalive-timeout", "gRPC keepalive timeout").Default("2s").DurationVar(&o.keepaliveParams.Timeout)
+	parser.Flag("grpc-keepalive-time-duration", "gRPC keepalive time").Default("10s").DurationVar(&o.keepaliveParams.Time)
+	parser.Flag("grpc-keepalive-timeout-duration", "gRPC keepalive timeout").Default("2s").DurationVar(&o.keepaliveParams.Timeout)
 	parser.Flag("grpc-keepalive-permit-without-stream", "gRPC keepalive ping even with no RPC").BoolVar(&o.keepaliveParams.PermitWithoutStream)
 	parser.Flag("server-address", "gRPC address to Kiam server service").Default("localhost:9610").StringVar(&o.serverAddress)
 	parser.Flag("server-address-refresh", "Interval to refresh server service endpoints ( deprecated )").Default("0s").DurationVar(&o.serverAddressRefresh)
