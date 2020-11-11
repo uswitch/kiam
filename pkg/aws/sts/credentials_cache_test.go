@@ -15,20 +15,26 @@ package sts
 
 import (
 	"context"
-	"github.com/prometheus/client_golang/prometheus/testutil"
 	"testing"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
 type stubGateway struct {
-	c             *Credentials
-	issueCount    int
-	requestedRole string
+	c                    *Credentials
+	issueCount           int
+	requestedRole        string
+	requestedSessionName string
+	requestedExternalID  string
 }
 
-func (s *stubGateway) Issue(ctx context.Context, roleARN, sessionName string, expiry time.Duration) (*Credentials, error) {
+func (s *stubGateway) Issue(ctx context.Context, request *STSIssueRequest) (*Credentials, error) {
 	s.issueCount = s.issueCount + 1
-	s.requestedRole = roleARN
+	s.requestedRole = request.RoleARN
+	s.requestedSessionName = request.SessionName
+	s.requestedExternalID = request.ExternalID
+
 	return s.c, nil
 }
 
@@ -37,7 +43,7 @@ func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
 	cache := DefaultCache(stubGateway, "session", 15*time.Minute, 5*time.Minute)
 	ctx := context.Background()
 
-	credentialsIdentity := &RoleIdentity{Role: "role", ARN: "arn:account:role"}
+	credentialsIdentity := &RoleIdentity{Role: ResolvedRole{Name: "role", ARN: "arn:account:role"}}
 	creds, _ := cache.CredentialsForRole(ctx, credentialsIdentity)
 	if creds.Code != "foo" {
 		t.Error("didnt return expected credentials code, was", creds.Code)
@@ -53,5 +59,53 @@ func TestRequestsCredentialsFromGatewayWithEmptyCache(t *testing.T) {
 
 	if stubGateway.requestedRole != "arn:account:role" {
 		t.Error("unexpected role, was:", stubGateway.requestedRole)
+	}
+}
+
+func TestRequestsCredentialsWithSessionName(t *testing.T) {
+	var tests = []struct {
+		name                string
+		sessionName         string
+		expectedSessionName string
+	}{
+		{"Default", "testing", "kiam-testing"},
+		{"InvalidCharsReplacedWithHyphen", "testing@#&-test%", "kiam-testing@---test-"},
+		{"LongNameLimitedTo64Chars", "Unsplvku4rP9A71Zb5DUQtKviVKSENh0GlKxVRPXGvfDyXXXy8OGqTVfc05DCAhKT9oHXU", "kiam-Unsplvku4rP9A71Zb5DUQtKviVKSENh0GlKxVRPXGvfDyXXXy8OGqTVfc0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stubGateway := &stubGateway{c: &Credentials{Code: "foo"}}
+			cache := DefaultCache(stubGateway, "session", 15*time.Minute, 5*time.Minute)
+			ctx := context.Background()
+
+			credentialsIdentity := &RoleIdentity{
+				Role:        ResolvedRole{Name: "role", ARN: "arn:account:role"},
+				SessionName: tt.sessionName,
+			}
+
+			_, _ = cache.CredentialsForRole(ctx, credentialsIdentity)
+
+			if stubGateway.requestedSessionName != tt.expectedSessionName {
+				t.Error("unexpected session-name, was:", stubGateway.requestedSessionName)
+			}
+		})
+	}
+}
+
+func TestRequestsCredentialsWithExternalID(t *testing.T) {
+	stubGateway := &stubGateway{c: &Credentials{Code: "foo"}}
+	cache := DefaultCache(stubGateway, "session", 15*time.Minute, 5*time.Minute)
+	ctx := context.Background()
+
+	credentialsIdentity := &RoleIdentity{
+		Role:       ResolvedRole{Name: "role", ARN: "arn:account:role"},
+		ExternalID: "123456",
+	}
+
+	_, _ = cache.CredentialsForRole(ctx, credentialsIdentity)
+
+	if stubGateway.requestedExternalID != "123456" {
+		t.Error("unexpected external-id, was:", stubGateway.requestedExternalID)
 	}
 }

@@ -16,11 +16,13 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"github.com/fortytw2/leaktest"
-	"github.com/uswitch/kiam/pkg/testutil"
-	kt "k8s.io/client-go/tools/cache/testing"
 	"testing"
 	"time"
+
+	"github.com/fortytw2/leaktest"
+	"github.com/uswitch/kiam/pkg/aws/sts"
+	"github.com/uswitch/kiam/pkg/testutil"
+	kt "k8s.io/client-go/tools/cache/testing"
 )
 
 const bufferSize = 10
@@ -32,7 +34,8 @@ func TestFindsRunningPod(t *testing.T) {
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
-	c := NewPodCache(source, time.Second, bufferSize)
+	arnResolver := sts.DefaultResolver("arn:account:")
+	c := NewPodCache(arnResolver, source, time.Second, bufferSize)
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role"))
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 	c.Run(ctx)
@@ -54,21 +57,78 @@ func TestFindRoleActive(t *testing.T) {
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
-	c := NewPodCache(source, time.Second, bufferSize)
+	arnResolver := sts.DefaultResolver("arn:account:")
+	c := NewPodCache(arnResolver, source, time.Second, bufferSize)
 	source.Add(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "failed_role"))
 	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Failed", "running_role"))
 	source.Modify(testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", "running_role"))
 	c.Run(ctx)
 	defer source.Shutdown()
 
-	active, _ := c.IsActivePodsForRole("failed_role")
+	identity, _ := sts.NewRoleIdentity(arnResolver, "failed_role", "", "")
+	active, _ := c.IsActivePodsForRole(identity)
 	if active {
 		t.Error("expected no active pods in failed_role")
 	}
 
-	active, _ = c.IsActivePodsForRole("running_role")
+	identity, _ = sts.NewRoleIdentity(arnResolver, "running_role", "", "")
+	active, _ = c.IsActivePodsForRole(identity)
 	if !active {
 		t.Error("expected running pod")
+	}
+}
+
+func TestFindRoleActiveWithSessionName(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	source := kt.NewFakeControllerSource()
+	arnResolver := sts.DefaultResolver("arn:account:")
+	c := NewPodCache(arnResolver, source, time.Second, bufferSize)
+	source.Add(testutil.NewPodWithSessionName("ns", "active-reader", "192.168.0.1", "Running", "reader", "active-reader"))
+	source.Add(testutil.NewPodWithSessionName("ns", "stopped-reader", "192.168.0.2", "Succeeded", "reader", "stopped-reader"))
+	c.Run(ctx)
+	defer source.Shutdown()
+
+	identity, _ := sts.NewRoleIdentity(arnResolver, "reader", "active-reader", "")
+	active, _ := c.IsActivePodsForRole(identity)
+	if !active {
+		t.Error("expected running pod for active-reader")
+	}
+
+	identity, _ = sts.NewRoleIdentity(arnResolver, "reader", "stopped-reader", "")
+	active, _ = c.IsActivePodsForRole(identity)
+	if active {
+		t.Error("expected no active pods for stopped-reader")
+	}
+}
+
+func TestFindRoleActiveWithExternalID(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	source := kt.NewFakeControllerSource()
+	arnResolver := sts.DefaultResolver("arn:account:")
+	c := NewPodCache(arnResolver, source, time.Second, bufferSize)
+	source.Add(testutil.NewPodWithExternalID("ns", "active-reader", "192.168.0.1", "Running", "reader", "1234"))
+	source.Add(testutil.NewPodWithExternalID("ns", "stopped-reader", "192.168.0.2", "Succeeded", "reader", "4321"))
+	c.Run(ctx)
+	defer source.Shutdown()
+
+	identity, _ := sts.NewRoleIdentity(arnResolver, "reader", "", "1234")
+	active, _ := c.IsActivePodsForRole(identity)
+	if !active {
+		t.Error("expected running pod for active-reader")
+	}
+
+	identity, _ = sts.NewRoleIdentity(arnResolver, "reader", "", "4321")
+	active, _ = c.IsActivePodsForRole(identity)
+	if active {
+		t.Error("expected no active pods for stopped-reader")
 	}
 }
 
@@ -79,7 +139,8 @@ func BenchmarkFindPodsByIP(b *testing.B) {
 	defer cancel()
 
 	source := kt.NewFakeControllerSource()
-	c := NewPodCache(source, time.Second, bufferSize)
+	arnResolver := sts.DefaultResolver("arn:account:")
+	c := NewPodCache(arnResolver, source, time.Second, bufferSize)
 	for i := 0; i < 1000; i++ {
 		source.Add(testutil.NewPodWithRole("ns", fmt.Sprintf("name-%d", i), fmt.Sprintf("ip-%d", i), "Running", "foo_role"))
 	}
@@ -106,12 +167,14 @@ func BenchmarkIsActiveRole(b *testing.B) {
 		role := i % 100
 		source.Add(testutil.NewPodWithRole("ns", fmt.Sprintf("name-%d", i), fmt.Sprintf("ip-%d", i), "Running", fmt.Sprintf("role-%d", role)))
 	}
-	c := NewPodCache(source, time.Second, bufferSize)
+	arnResolver := sts.DefaultResolver("arn:account:")
+	c := NewPodCache(arnResolver, source, time.Second, bufferSize)
 	c.Run(ctx)
 
 	b.StartTimer()
 
 	for n := 0; n < b.N; n++ {
-		c.IsActivePodsForRole("role-0")
+		identity, _ := sts.NewRoleIdentity(arnResolver, "role-0", "", "")
+		c.IsActivePodsForRole(identity)
 	}
 }

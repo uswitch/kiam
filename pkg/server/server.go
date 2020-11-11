@@ -105,10 +105,14 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 		return nil, ErrPolicyForbidden
 	}
 
-	identity, err := k.arnResolver.Resolve(req.Role)
+	sessionName := k8s.PodSessionName(pod)
+	externalID := k8s.PodExternalID(pod)
+
+	identity, err := sts.NewRoleIdentity(k.arnResolver, req.Role, sessionName, externalID)
 	if err != nil {
 		return nil, err
 	}
+
 	creds, err := k.credentialsProvider.CredentialsForRole(ctx, identity)
 	if err != nil {
 		logger.Errorf("error retrieving credentials: %s", err.Error())

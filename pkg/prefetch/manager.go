@@ -43,10 +43,15 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	}
 
 	role := k8s.PodRole(pod)
-	identity, err := m.arnResolver.Resolve(role)
+	sessionName := k8s.PodSessionName(pod)
+	externalID := k8s.PodExternalID(pod)
+
+	identity, err := sts.NewRoleIdentity(m.arnResolver, role, sessionName, externalID)
 	if err != nil {
+		logger.Errorf("error creating role identity: %s", err.Error())
 		return
 	}
+
 	issued, err := m.fetchCredentialsFromCache(ctx, identity)
 	if err != nil {
 		logger.Errorf("error warming credentials: %s", err.Error())
@@ -81,7 +86,7 @@ func (m *CredentialManager) Run(ctx context.Context, parallelRoutines int) {
 func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts.CachedCredentials) {
 	logger := log.WithFields(sts.CredentialsFields(credentials.Identity, credentials.Credentials))
 
-	active, err := m.IsRoleActive(credentials.Identity.Role)
+	active, err := m.IsRoleActive(credentials.Identity)
 	if err != nil {
 		logger.Errorf("error checking whether role active: %s", err.Error())
 		return
@@ -99,6 +104,6 @@ func (m *CredentialManager) handleExpiring(ctx context.Context, credentials *sts
 	}
 }
 
-func (m *CredentialManager) IsRoleActive(role string) (bool, error) {
-	return m.announcer.IsActivePodsForRole(role)
+func (m *CredentialManager) IsRoleActive(identity *sts.RoleIdentity) (bool, error) {
+	return m.announcer.IsActivePodsForRole(identity)
 }

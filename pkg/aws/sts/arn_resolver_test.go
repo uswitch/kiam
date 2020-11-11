@@ -17,7 +17,7 @@ import (
 	"testing"
 )
 
-func TestRoleIdentityEquality(t *testing.T) {
+func TestResolvedRoleEquality(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
 	i1, _ := resolver.Resolve("foo")
 	i2, _ := resolver.Resolve("foo")
@@ -34,10 +34,10 @@ func TestRoleIdentityEquality(t *testing.T) {
 
 func TestAddsPrefix(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	identity, _ := resolver.Resolve("myrole")
+	resolvedRole, _ := resolver.Resolve("myrole")
 
-	if identity.ARN != "arn:aws:iam::account-id:role/myrole" {
-		t.Error("unexpected role, was:", identity.ARN)
+	if resolvedRole.ARN != "arn:aws:iam::account-id:role/myrole" {
+		t.Error("unexpected role, was:", resolvedRole.ARN)
 	}
 }
 
@@ -52,47 +52,47 @@ func TestReturnsErrorForEmptyRole(t *testing.T) {
 
 func TestAddsPrefixWithRoleBeginningWithSlash(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	identity, _ := resolver.Resolve("/myrole")
+	resolvedRole, _ := resolver.Resolve("/myrole")
 
-	if identity.ARN != "arn:aws:iam::account-id:role/myrole" {
-		t.Error("unexpected role, was:", identity.ARN)
+	if resolvedRole.ARN != "arn:aws:iam::account-id:role/myrole" {
+		t.Error("unexpected role, was:", resolvedRole.ARN)
 	}
 
-	if identity.Role != "myrole" {
-		t.Error("unexpected role, was", identity.Role)
+	if resolvedRole.Name != "myrole" {
+		t.Error("unexpected role, was", resolvedRole.Name)
 	}
 }
 func TestAddsPrefixWithRoleBeginningWithPathWithoutSlash(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	identity, _ := resolver.Resolve("kiam/myrole")
+	resolvedRole, _ := resolver.Resolve("kiam/myrole")
 
-	if identity.ARN != "arn:aws:iam::account-id:role/kiam/myrole" {
-		t.Error("unexpected role, was:", identity.ARN)
+	if resolvedRole.ARN != "arn:aws:iam::account-id:role/kiam/myrole" {
+		t.Error("unexpected role, was:", resolvedRole.ARN)
 	}
 
-	if identity.Role != "kiam/myrole" {
-		t.Error("unexpected role", identity.Role)
+	if resolvedRole.Name != "kiam/myrole" {
+		t.Error("unexpected role", resolvedRole.Name)
 	}
 }
 func TestAddsPrefixWithRoleBeginningWithSlashPath(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	identity, _ := resolver.Resolve("/kiam/myrole")
+	resolvedRole, _ := resolver.Resolve("/kiam/myrole")
 
-	if identity.ARN != "arn:aws:iam::account-id:role/kiam/myrole" {
-		t.Error("unexpected role, was:", identity.ARN)
+	if resolvedRole.ARN != "arn:aws:iam::account-id:role/kiam/myrole" {
+		t.Error("unexpected role, was:", resolvedRole.ARN)
 	}
 }
 
 func TestUsesAbsoluteARN(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
-	identity, _ := resolver.Resolve("arn:aws:iam::some-other-account:role/path-prefix/another-role")
+	resolvedRole, _ := resolver.Resolve("arn:aws:iam::some-other-account:role/path-prefix/another-role")
 
-	if identity.ARN != "arn:aws:iam::some-other-account:role/path-prefix/another-role" {
-		t.Error("unexpected role, was:", identity.ARN)
+	if resolvedRole.ARN != "arn:aws:iam::some-other-account:role/path-prefix/another-role" {
+		t.Error("unexpected role, was:", resolvedRole.ARN)
 	}
 
-	if identity.Role != "path-prefix/another-role" {
-		t.Error("expected role to be set, was", identity.Role)
+	if resolvedRole.Name != "path-prefix/another-role" {
+		t.Error("expected role to be set, was", resolvedRole.Name)
 	}
 }
 
