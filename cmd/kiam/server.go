@@ -15,6 +15,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
@@ -46,6 +48,8 @@ type serverOptions struct {
 }
 
 func (o *serverOptions) bind(parser parser) {
+	infiniteDuration := fmt.Sprintf("%ds", math.MaxInt64/1000000000)
+
 	parser.Flag("fetchers", "Number of parallel fetcher go routines").Default("8").IntVar(&o.ParallelFetcherProcesses)
 	parser.Flag("prefetch-buffer-size", "How many Pod events to hold in memory between the Pod watcher and Prefetch manager.").Default("1000").IntVar(&o.PrefetchBufferSize)
 	parser.Flag("bind", "gRPC bind address").Default("localhost:9610").StringVar(&o.BindAddress)
@@ -59,6 +63,9 @@ func (o *serverOptions) bind(parser parser) {
 	parser.Flag("session-refresh", "How soon STS Tokens should be refreshed before their expiration.").Default("5m").DurationVar(&o.SessionRefresh)
 	parser.Flag("assume-role-arn", "IAM Role to assume before processing requests").Default("").StringVar(&o.AssumeRoleArn)
 	parser.Flag("region", "AWS Region to use for regional STS calls (e.g. us-west-2). Defaults to the global endpoint.").Default("").StringVar(&o.Region)
+	parser.Flag("grpc-max-connection-idle-duration", "gRPC max connection idle").Default(infiniteDuration).DurationVar(&o.KeepaliveParams.MaxConnectionIdle)
+	parser.Flag("grpc-max-connection-age-duration", "gRPC max connection age").Default(infiniteDuration).DurationVar(&o.KeepaliveParams.MaxConnectionAge)
+	parser.Flag("grpc-max-connection-age-grace-duration", "gRPC max connection age grace").Default(infiniteDuration).DurationVar(&o.KeepaliveParams.MaxConnectionAgeGrace)
 }
 
 func (cmd *serverCommand) Run() {
