@@ -85,13 +85,16 @@ func (p *RequestingAnnotatedRolePolicy) IsAllowedAssumeRole(ctx context.Context,
 	return &forbidden{requested: role, annotated: annotatedIdentiy.Name}, nil
 }
 
+// NamespacePermittedRoleNamePolicy ensures the pod is requesting a role that
+// the namespace permits in its regexp annotation.
 type NamespacePermittedRoleNamePolicy struct {
 	namespaces k8s.NamespaceFinder
 	resolver   sts.ARNResolver
+	strict     bool
 }
 
-func NewNamespacePermittedRoleNamePolicy(n k8s.NamespaceFinder, resolver sts.ARNResolver) *NamespacePermittedRoleNamePolicy {
-	return &NamespacePermittedRoleNamePolicy{namespaces: n, resolver: resolver}
+func NewNamespacePermittedRoleNamePolicy(strictRegexp bool, n k8s.NamespaceFinder, resolver sts.ARNResolver) *NamespacePermittedRoleNamePolicy {
+	return &NamespacePermittedRoleNamePolicy{namespaces: n, resolver: resolver, strict: strictRegexp}
 }
 
 func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Context, role string, pod *v1.Pod) (Decision, error) {
@@ -110,9 +113,17 @@ func (p *NamespacePermittedRoleNamePolicy) IsAllowedAssumeRole(ctx context.Conte
 		return &namespacePolicyForbidden{expression: "(empty)", role: role}, nil
 	}
 
-	re, err := regexp.Compile(expression)
-	if err != nil {
-		return nil, err
+	var re *regexp.Regexp
+	if p.strict {
+		re, err = regexp.Compile("^" + expression + "$")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		re, err = regexp.Compile(expression)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if !re.MatchString(requestedIdentity.ARN) {

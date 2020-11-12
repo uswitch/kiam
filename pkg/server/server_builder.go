@@ -209,7 +209,7 @@ func (b *KiamServerBuilder) Build() (*KiamServer, error) {
 		credentialsProvider: credentialsCache,
 		assumePolicy: Policies(
 			NewRequestingAnnotatedRolePolicy(b.podCache, arnResolver),
-			NewNamespacePermittedRoleNamePolicy(b.namespaceCache, arnResolver),
+			NewNamespacePermittedRoleNamePolicy(!b.config.DisableStrictNamespaceRegexp, b.namespaceCache, arnResolver),
 		),
 		parallelFetchers: b.config.ParallelFetcherProcesses,
 	}

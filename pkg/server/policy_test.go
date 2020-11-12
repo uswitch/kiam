@@ -15,12 +15,12 @@ package server
 
 import (
 	"context"
-	"k8s.io/api/core/v1"
 	"testing"
 
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	kt "github.com/uswitch/kiam/pkg/k8s/testing"
 	"github.com/uswitch/kiam/pkg/testutil"
+	v1 "k8s.io/api/core/v1"
 )
 
 type fakePolicy struct {
@@ -114,7 +114,7 @@ func TestNamespacePolicy(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
 	arnResolver := sts.DefaultResolver("")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, err := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -124,7 +124,7 @@ func TestNamespacePolicy(t *testing.T) {
 		t.Errorf("expected to be allowed- pod in correct namespace")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, err = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -155,7 +155,7 @@ func TestNamespacePolicyWithSlash(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	arnResolver := sts.DefaultResolver("")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, err := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -165,7 +165,7 @@ func TestNamespacePolicyWithSlash(t *testing.T) {
 		t.Errorf("expected to be allowed- pod in correct namespace: %s", decision.Explanation())
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, err = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -192,14 +192,14 @@ func TestNotAllowedWithoutNamespaceAnnotation(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
 	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 
 	if decision.IsAllowed() {
 		t.Error("expected failure, empty namespace policy annotation")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 
 	if decision.IsAllowed() {
@@ -213,18 +213,136 @@ func TestNotAllowedWithoutNamespaceAnnotationWithSlash(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 
 	if decision.IsAllowed() {
 		t.Error("expected failure, empty namespace policy annotation")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 
 	if decision.IsAllowed() {
 		t.Error("expected failure, empty namespace policy annotation")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
+
+	if decision.IsAllowed() {
+		t.Error("expected failure, empty namespace policy annotation")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
+
+	if decision.IsAllowed() {
+		t.Error("expected failure, empty namespace policy annotation")
+	}
+}
+
+func TestVagueNamespaceAnnotationRegex(t *testing.T) {
+	n := testutil.NewNamespace("red", "o")
+	nf := kt.NewNamespaceFinder(n)
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
+	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
+
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
+	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace regex doesn't match role")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace regex doesn't match role")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- strict namespace regex is disabled")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- strict namespace regex is disabled")
+	}
+}
+
+func TestNotAllowedWithoutWildcardNamespaceAnnotationRegex(t *testing.T) {
+	n := testutil.NewNamespace("red", "role")
+	nf := kt.NewNamespaceFinder(n)
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
+	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
+
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
+	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace regex doesn't match role")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
+
+	if decision.IsAllowed() {
+		t.Error("expected to be forbidden- namespace regex doesn't match role")
+	}
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- strict namespace regex is disabled")
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- strict namespace regex is disabled")
+	}
+}
+
+func TestAllowedWithWildcardNamespaceAnnotationRegex(t *testing.T) {
+	n := testutil.NewNamespace("red", ".*role")
+	nf := kt.NewNamespaceFinder(n)
+	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
+	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
+
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
+	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace regex matches role:", decision.Explanation())
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace regex matches role:", decision.Explanation())
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace regex matches role:", decision.Explanation())
+	}
+
+	policy = NewNamespacePermittedRoleNamePolicy(false, nf, arnResolver)
+	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
+
+	if !decision.IsAllowed() {
+		t.Error("expected to be allowed- namespace regex matches role:", decision.Explanation())
 	}
 }
 
@@ -234,14 +352,14 @@ func TestAllowedWithARNResolverBaseRole(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	arnResolver := sts.DefaultResolver("arn:aws:iam::123456789012:role/")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 
 	if !decision.IsAllowed() {
 		t.Errorf("expected to be allowed- namespace base role regex match resolver base role: %s", decision.Explanation())
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 
 	if !decision.IsAllowed() {
@@ -255,14 +373,14 @@ func TestNotAllowedWithoutARNResolverBaseRole(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "/red_role")
 	arnResolver := sts.DefaultResolver("")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 
 	if decision.IsAllowed() {
 		t.Error("expected to be forbidden- requesting role that fails base role regexp")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 
 	if decision.IsAllowed() {
@@ -276,14 +394,14 @@ func TestAllowedWithSubPathRegexInNamespace(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
 	arnResolver := sts.DefaultResolver("arn:aws:iam::account-id:role/subpath/")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 
 	if !decision.IsAllowed() {
 		t.Error("expected to be allowed- namespace regex matches role subpath", decision.Explanation())
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 
 	if !decision.IsAllowed() {
@@ -297,14 +415,14 @@ func TestNotAllowedWithoutSubPathRegexInNamespace(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
 	arnResolver := sts.DefaultResolver("arn:aws:iam::account-id:role/subpath/")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 
 	if decision.IsAllowed() {
 		t.Error("expected to be forbidden- namespace regex DOES NOT match role subpath")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 
 	if decision.IsAllowed() {
@@ -318,14 +436,14 @@ func TestAllowedWithExactSubPathInNamespace(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
 	arnResolver := sts.DefaultResolver("arn:aws:iam::account-id:role/subpath/")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 
 	if !decision.IsAllowed() {
 		t.Error("expected to be allowed- namespace matches role subpath", decision.Explanation())
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 
 	if !decision.IsAllowed() {
@@ -339,14 +457,14 @@ func TestNotAllowedWithoutExactSubPathInNamespace(t *testing.T) {
 	p := testutil.NewPodWithRole("red", "foo", "192.168.0.1", testutil.PhaseRunning, "red_role")
 	arnResolver := sts.DefaultResolver("arn:aws:iam::account-id:role/subpath/")
 
-	policy := NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy := NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ := policy.IsAllowedAssumeRole(context.Background(), "red_role", p)
 
 	if decision.IsAllowed() {
 		t.Error("expected to be forbidden- namespace role DOES NOT match role subpath")
 	}
 
-	policy = NewNamespacePermittedRoleNamePolicy(nf, arnResolver)
+	policy = NewNamespacePermittedRoleNamePolicy(true, nf, arnResolver)
 	decision, _ = policy.IsAllowedAssumeRole(context.Background(), "/red_role", p)
 
 	if decision.IsAllowed() {

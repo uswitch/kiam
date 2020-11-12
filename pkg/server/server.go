@@ -34,19 +34,20 @@ import (
 
 // Config controls the setup of the gRPC server
 type Config struct {
-	BindAddress              string
-	KubeConfig               string
-	PodSyncInterval          time.Duration
-	SessionName              string
-	SessionDuration          time.Duration
-	SessionRefresh           time.Duration
-	RoleBaseARN              string
-	AutoDetectBaseARN        bool
-	TLS                      TLSConfig
-	ParallelFetcherProcesses int
-	PrefetchBufferSize       int
-	AssumeRoleArn            string
-	Region                   string
+	BindAddress                  string
+	KubeConfig                   string
+	PodSyncInterval              time.Duration
+	SessionName                  string
+	SessionDuration              time.Duration
+	SessionRefresh               time.Duration
+	RoleBaseARN                  string
+	AutoDetectBaseARN            bool
+	DisableStrictNamespaceRegexp bool
+	TLS                          TLSConfig
+	ParallelFetcherProcesses     int
+	PrefetchBufferSize           int
+	AssumeRoleArn                string
+	Region                       string
 }
 
 // TLSConfig controls TLS
