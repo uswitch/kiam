@@ -46,6 +46,7 @@ type KiamGatewayBuilder struct {
 	dialOptions     []grpc.DialOption
 	retryInterval   time.Duration
 	maxRetries      uint
+	dnsResolver     string
 }
 
 func NewKiamGatewayBuilder() *KiamGatewayBuilder {
@@ -54,6 +55,11 @@ func NewKiamGatewayBuilder() *KiamGatewayBuilder {
 
 func (b *KiamGatewayBuilder) WithAddress(address string) *KiamGatewayBuilder {
 	b.address = address
+	return b
+}
+
+func (b *KiamGatewayBuilder) WithDNSResolver(resolver string) *KiamGatewayBuilder {
+	b.dnsResolver = resolver
 	return b
 }
 
@@ -130,7 +136,8 @@ func (b *KiamGatewayBuilder) Build(ctx context.Context) (*KiamGateway, error) {
 		dialOpts = append(dialOpts, b.dialOptions...)
 	}
 
-	conn, err := grpc.DialContext(ctx, "dns:///"+b.address, dialOpts...)
+	dialTarget := fmt.Sprintf("dns://%s/%s", b.dnsResolver, b.address)
+	conn, err := grpc.DialContext(ctx, dialTarget, dialOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing grpc server: %v", err)
 	}

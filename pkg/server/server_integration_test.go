@@ -16,10 +16,12 @@ package server
 
 import (
 	"context"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/fortytw2/leaktest"
+	"github.com/miekg/dns"
 	"github.com/uswitch/kiam/pkg/aws/sts"
 	"github.com/uswitch/kiam/pkg/k8s"
 	"google.golang.org/grpc"
@@ -27,8 +29,45 @@ import (
 )
 
 const (
-	kServerAddress = "localhost:8899"
+	kServerAddress = "127.0.0.1:8899"
 )
+
+func TestManagesResolutionFailures(t *testing.T) {
+	defer leaktest.Check(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, _, err := newServerAndListen(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dnsServer := dns.Server{Addr: "127.0.0.1:5351", Net: "udp"}
+	go dnsServer.ListenAndServe()
+	defer dnsServer.ShutdownContext(ctx)
+	dns.HandleFunc("kiam-server.localdomain.", func(w dns.ResponseWriter, r *dns.Msg) {
+		a := &dns.A{
+			Hdr: dns.RR_Header{Name: "kiam-server.localdomain.", Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 10},
+			A:   net.ParseIP("127.0.0.1"),
+		}
+		m := new(dns.Msg)
+		m.Answer = []dns.RR{a}
+		m.SetReply(r)
+		w.WriteMsg(m)
+	})
+
+	b := newClientBuilder().WithAddress("kiam-server:8899").WithDNSResolver("127.0.0.1:5351")
+	client, err := b.Build(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = client.Health(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+}
 
 func TestHealthReturnsOk(t *testing.T) {
 	defer leaktest.Check(t)
@@ -87,11 +126,10 @@ func TestRetriesUntilServerAvailable(t *testing.T) {
 	}
 }
 
-// newSystemAndListen creates a server and starts it listening, returning a gateway to connect to it
-func newSystemAndListen(ctx context.Context) (*KiamServer, *kt.FakeControllerSource, *KiamGateway, error) {
+func newServerAndListen(ctx context.Context) (*KiamServer, *kt.FakeControllerSource, error) {
 	server, source, err := newTestServer(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	go func() { server.Serve(ctx) }()
 	go func() {
@@ -99,14 +137,29 @@ func newSystemAndListen(ctx context.Context) (*KiamServer, *kt.FakeControllerSou
 		server.Stop()
 	}()
 
+	return server, source, nil
+}
+
+// newSystemAndListen creates a server and starts it listening, returning a gateway to connect to it
+func newSystemAndListen(ctx context.Context) (*KiamServer, *kt.FakeControllerSource, *KiamGateway, error) {
+	server, source, err := newServerAndListen(ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	gateway, err := newClient(ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	return server, source, gateway, err
 }
 
+func newClientBuilder() *KiamGatewayBuilder {
+	return NewKiamGatewayBuilder().WithAddress(kServerAddress).WithDialOption(grpc.WithInsecure(), grpc.WithBlock()).WithMaxRetries(20).WithRetryInterval(time.Second)
+}
+
 func newClient(ctx context.Context) (*KiamGateway, error) {
-	cb := NewKiamGatewayBuilder().WithAddress(kServerAddress).WithDialOption(grpc.WithInsecure(), grpc.WithBlock()).WithMaxRetries(20).WithRetryInterval(time.Second)
-	return cb.Build(ctx)
+	return newClientBuilder().Build(ctx)
 }
 
 // creates the server, returns the server and a source allowing objects to be added
