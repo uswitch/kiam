@@ -138,8 +138,7 @@ spec:
             - mountPath: /etc/kiam/tls
               name: tls
             - mountPath: /var/run/xtables.lock
-              nparallelism: 10
-ame: xtables
+              name: xtables
           {{- range .Values.agent.extraHostPathMounts }}
             - name: {{ .name }}
               mountPath: {{ .mountPath }}
