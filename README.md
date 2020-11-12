@@ -99,9 +99,9 @@ We maintain and host Helm charts for Kiam, which are automatically packaged upon
 The charts can easily be installed by adding the Kiam Helm repository and running a `helm install`:
 
 ```console
-$ helm repo add uswitch https://uswitch.github.io/kiam-helm-charts/charts/
-$ helm repo update
-$ helm install uswitch/kiam
+helm repo add uswitch https://uswitch.github.io/kiam-helm-charts/charts/
+helm repo update
+helm install uswitch/kiam
 ```
 
 More detailed Helm usage can be found on the Helm Hub:
@@ -134,10 +134,10 @@ If you want to build and run locally:
 - `go version` >= 1.9
 - run the following
 ```
-$ mkdir -p $GOPATH/src/github.com/uswitch
-$ git clone git@github.com:uswitch/kiam.git $GOPATH/src/github.com/uswitch/kiam
-$ cd $GOPATH/src/github.com/uswitch/kiam
-$ make
+mkdir -p $GOPATH/src/github.com/uswitch
+git clone git@github.com:uswitch/kiam.git $GOPATH/src/github.com/uswitch/kiam
+cd $GOPATH/src/github.com/uswitch/kiam
+make
 ```
 
 ## License
