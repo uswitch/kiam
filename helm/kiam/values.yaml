@@ -313,6 +313,15 @@ server:
   ##
   gatewayTimeoutCreation: 1s
 
+  ## gRPC keepalive variables
+  ##
+  keepaliveParams:
+    time:
+    timeout:
+    maxConnectionIdle:
+    maxConnectionAge:
+    maxConnectionAgeGrace:
+
   ## Server probe configuration
   probes:
     serverAddress: 127.0.0.1
