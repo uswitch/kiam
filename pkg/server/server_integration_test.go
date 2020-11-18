@@ -44,7 +44,12 @@ func TestManagesResolutionFailures(t *testing.T) {
 	}
 
 	dnsServer := dns.Server{Addr: "127.0.0.1:5351", Net: "udp"}
-	go dnsServer.ListenAndServe()
+	go func(t *testing.T) {
+		err = dnsServer.ListenAndServe()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(t)
 	defer dnsServer.ShutdownContext(ctx)
 	dns.HandleFunc("kiam-server.localdomain.", func(w dns.ResponseWriter, r *dns.Msg) {
 		a := &dns.A{
@@ -54,11 +59,15 @@ func TestManagesResolutionFailures(t *testing.T) {
 		m := new(dns.Msg)
 		m.Answer = []dns.RR{a}
 		m.SetReply(r)
-		w.WriteMsg(m)
+		e := w.WriteMsg(m)
+		if e != nil {
+			t.Fatal(e)
+		}
 	})
 
 	b := newClientBuilder().WithAddress("kiam-server:8899").WithDNSResolver("127.0.0.1:5351")
-	client, err := b.Build(ctx)
+	ctxClient, _ := context.WithTimeout(ctx, time.Second*5)
+	client, err := b.Build(ctxClient)
 	if err != nil {
 		t.Fatal(err)
 	}
