@@ -27,6 +27,7 @@ import (
 	"github.com/uswitch/kiam/pkg/prefetch"
 	pb "github.com/uswitch/kiam/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -48,6 +49,7 @@ type Config struct {
 	PrefetchBufferSize           int
 	AssumeRoleArn                string
 	Region                       string
+	KeepaliveParams              keepalive.ServerParameters
 }
 
 // TLSConfig controls TLS

@@ -169,6 +169,7 @@ func (b *KiamServerBuilder) WithTLS() (*KiamServerBuilder, error) {
 		grpc.Creds(b.transportCredentials),
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
+		grpc.KeepaliveParams(b.config.KeepaliveParams),
 	)
 
 	return b, nil

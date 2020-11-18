@@ -59,6 +59,11 @@ func (o *serverOptions) bind(parser parser) {
 	parser.Flag("session-refresh", "How soon STS Tokens should be refreshed before their expiration.").Default("5m").DurationVar(&o.SessionRefresh)
 	parser.Flag("assume-role-arn", "IAM Role to assume before processing requests").Default("").StringVar(&o.AssumeRoleArn)
 	parser.Flag("region", "AWS Region to use for regional STS calls (e.g. us-west-2). Defaults to the global endpoint.").Default("").StringVar(&o.Region)
+	parser.Flag("grpc-keepalive-time-duration", "gRPC keepalive time").Default("10s").DurationVar(&o.KeepaliveParams.Time)
+	parser.Flag("grpc-keepalive-timeout-duration", "gRPC keepalive timeout").Default("2s").DurationVar(&o.KeepaliveParams.Timeout)
+	parser.Flag("grpc-max-connection-idle-duration", "gRPC max connection idle").Default("15m").DurationVar(&o.KeepaliveParams.MaxConnectionIdle)
+	parser.Flag("grpc-max-connection-age-duration", "gRPC max connection age").Default("15m").DurationVar(&o.KeepaliveParams.MaxConnectionAge)
+	parser.Flag("grpc-max-connection-age-grace-duration", "gRPC max connection age grace").Default("15m").DurationVar(&o.KeepaliveParams.MaxConnectionAgeGrace)
 }
 
 func (cmd *serverCommand) Run() {
