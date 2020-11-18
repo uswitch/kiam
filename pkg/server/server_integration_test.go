@@ -51,9 +51,9 @@ func TestManagesResolutionFailures(t *testing.T) {
 		}
 	}(t)
 	defer dnsServer.ShutdownContext(ctx)
-	dns.HandleFunc("kiam-server.localdomain.", func(w dns.ResponseWriter, r *dns.Msg) {
+	dns.HandleFunc("kiam-server.local.", func(w dns.ResponseWriter, r *dns.Msg) {
 		a := &dns.A{
-			Hdr: dns.RR_Header{Name: "kiam-server.localdomain.", Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 10},
+			Hdr: dns.RR_Header{Name: "kiam-server.local.", Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 10},
 			A:   net.ParseIP("127.0.0.1"),
 		}
 		m := new(dns.Msg)
@@ -65,7 +65,7 @@ func TestManagesResolutionFailures(t *testing.T) {
 		}
 	})
 
-	b := newClientBuilder().WithAddress("kiam-server:8899").WithDNSResolver("127.0.0.1:5351")
+	b := newClientBuilder().WithAddress("kiam-server.local:8899").WithDNSResolver("127.0.0.1:5351")
 	ctxClient, _ := context.WithTimeout(ctx, time.Second*5)
 	client, err := b.Build(ctxClient)
 	if err != nil {
