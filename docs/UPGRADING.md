@@ -1,5 +1,44 @@
 # Upgrading
 
+## v3 to v4
+
+Kiam changed significantly between v3.X and v4.0. Breaking changes are:
+
+- The role policy is now applied after the role ARN has been resolved, this may cause compatibility issues with existing `iam.amazonaws.com/permitted` restrictions.
+- StatsD metrics have been removed.
+- A number of agent flags have changed.
+
+When upgrading you will want to ensure that you check the following:
+
+1. Ensure your `iam.amazonaws.com/permitted` annotations take into account that the regex will now be evaluated on the resolved role ARN, it is now possible that v3.X rules become more permissive in some scenarios, and less permissive in others.
+    * Given you previously had a restriction like `iam.amazonaws.com/permitted=^test-role$` and a Pod using the role `iam.amazonaws.com/role=test-role` the role would now not be permitted as the regex would not match when evaluated against the full role ARN `arn:aws:iam::1234567890:role/test-role`.
+    * Given you previously had a restriction like `iam.amazonaws.com/permitted=.*test-role` and a Pod using the role `arn:aws:iam::1234567890:role/test-role` the role would now be permitted as the regex matches when evaluated against the full role ARN.
+2. If you still require StatsD metrics you may need to look at something like [veneur-prometheus](https://github.com/stripe/veneur/tree/master/cmd/veneur-prometheus) to scrape the /metrics endpoint and push them to StatsD.
+3. Ensure you use the new agent flags.
+
+    | Old flag | New flag |
+    |-|-|
+    |`--grpc-keepalive-time-ms`|`-grpc-keepalive-time-duration`|
+    |`--grpc-keepalive-timeout-ms`|`--grpc-keepalive-timeout-duration`|
+    |`--whitelist-route-regexp`|`--allow-route-regexp`|
+
+### New server flags
+
+A number of new flags have been added to the server:
+
+| Flag | Purpose | Default |
+|-|-|-|
+|`--grpc-keepalive-time-duration`|gRPC keepalive time|10s|
+|`--grpc-keepalive-timeout-duration`|gRPC keepalive timeout|2s|
+|`--grpc-max-connection-idle-duration`|gRPC max connection idle|15m|
+|`--grpc-max-connection-age-duration`|gRPC max connection age|15m|
+|`--grpc-max-connection-age-grace-duration`|gRPC max connection age grace|15m|
+|`--disable-strict-namespace-regexp`|Disable default strict namespace regexp when matching roles|False|
+
+### Helm
+
+If you are using Helm to install Kiam, be sure to use the latest 4.x chart when upgrading.
+
 ## v2 to v3
 
 Kiam changed significantly between v2.X and v3.0. Breaking changes are:
