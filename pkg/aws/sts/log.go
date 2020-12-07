@@ -23,7 +23,7 @@ func CredentialsFields(identity *RoleIdentity, creds *Credentials) log.Fields {
 	fields := log.Fields{
 		"credentials.access.key": creds.AccessKeyId,
 		"credentials.expiration": creds.Expiration,
-		"credentials.role":       identity.Role,
+		"credentials.role":       identity.Role.ARN,
 	}
 
 	if identity.SessionName != "" {
