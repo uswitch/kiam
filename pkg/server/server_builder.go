@@ -213,6 +213,7 @@ func (b *KiamServerBuilder) Build() (*KiamServer, error) {
 			NewNamespacePermittedRoleNamePolicy(!b.config.DisableStrictNamespaceRegexp, b.namespaceCache, arnResolver),
 		),
 		parallelFetchers: b.config.ParallelFetcherProcesses,
+		arnResolver:      arnResolver,
 	}
 	pb.RegisterKiamServiceServer(b.grpcServer, srv)
 	return srv, nil
