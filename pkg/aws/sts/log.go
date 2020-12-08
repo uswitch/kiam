@@ -14,13 +14,25 @@
 package sts
 
 import (
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 )
 
 func CredentialsFields(identity *RoleIdentity, creds *Credentials) log.Fields {
-	return log.Fields{
+	fields := log.Fields{
 		"credentials.access.key": creds.AccessKeyId,
 		"credentials.expiration": creds.Expiration,
-		"credentials.role":       identity.Role,
+		"credentials.role":       identity.Role.ARN,
 	}
+
+	if identity.SessionName != "" {
+		fields["credentials.session-name"] = identity.SessionName
+	}
+
+	if identity.ExternalID != "" {
+		fields["credentials.external-id"] = strings.Repeat("*", len(identity.ExternalID))
+	}
+
+	return fields
 }
