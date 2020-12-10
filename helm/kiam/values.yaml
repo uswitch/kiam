@@ -18,9 +18,9 @@ agent:
     tag: v4.0
     pullPolicy: IfNotPresent
 
-  ## agent whitelist of proxy routes matching this reg-ex
+  ## agent permits only request paths matching this reg-ex
   ##
-  # whiteListRouteRegexp:
+  # allowRouteRegexp:
 
 
   ## Logging settings
