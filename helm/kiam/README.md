@@ -163,7 +163,7 @@ The following table lists the configurable parameters of the kiam chart and thei
 | `agent.image.tag`                           | Agent image tag                                                                              | `v3.6`                       |
 | `agent.image.pullPolicy`                    | Agent image pull policy                                                                      | `IfNotPresent`               |
 | `agent.dnsPolicy`                           | Agent pod DNS policy                                                                         | `ClusterFirstWithHostNet`    |
-| `agent.allowRouteRegexp`                    | Agent metadata proxy server only allows accesses to paths matching this regexp               | `{}`                         |
+| `agent.whiteListRouteRegexp`                | Agent pod whitelist metadata API path argument regex                                         | `{}`                         |
 | `agent.extraArgs`                           | Additional agent container arguments                                                         | `{}`                         |
 | `agent.extraEnv`                            | Additional agent container environment variables                                             | `{}`                         |
 | `agent.extraHostPathMounts`                 | Additional agent container hostPath mounts                                                   | `[]`                         |
