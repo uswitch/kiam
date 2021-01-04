@@ -115,6 +115,21 @@ spec:
             - --prometheus-listen-addr=0.0.0.0:{{ .Values.server.prometheus.port }}
             - --prometheus-sync-interval={{ .Values.server.prometheus.syncInterval }}
             {{- end }}
+            {{- if .Values.server.keepaliveParams.time }}
+            - --grpc-keepalive-time-duration={{ .Values.server.keepaliveParams.time }}
+            {{- end }}
+            {{- if .Values.server.keepaliveParams.timeout }}
+            - --grpc-keepalive-timeout-duration={{ .Values.server.keepaliveParams.timeout }}
+            {{- end }}
+            {{- if .Values.server.keepaliveParams.maxConnectionIdle }}
+            - --grpc-max-connection-idle-duration={{ .Values.server.keepaliveParams.maxConnectionIdle }}
+            {{- end }}
+            {{- if .Values.server.keepaliveParams.maxConnectionAge }}
+            - --grpc-max-connection-age-duration={{ .Values.server.keepaliveParams.maxConnectionAge }}
+            {{- end }}
+            {{- if .Values.server.keepaliveParams.maxConnectionAgeGrace }}
+            - --grpc-max-connection-age-grace-duration={{ .Values.server.keepaliveParams.maxConnectionAgeGrace }}
+            {{- end }}
           {{- range $key, $value := .Values.server.extraArgs }}
             {{- if $value }}
             - --{{ $key }}={{ $value }}

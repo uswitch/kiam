@@ -15,12 +15,12 @@ agent:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.6
+    tag: v4.0
     pullPolicy: IfNotPresent
 
-  ## agent whitelist of proxy routes matching this reg-ex
+  ## agent permits only request paths matching this reg-ex
   ##
-  # whiteListRouteRegexp:
+  # allowRouteRegexp:
 
 
   ## Logging settings
@@ -201,7 +201,7 @@ server:
 
   image:
     repository: quay.io/uswitch/kiam
-    tag: v3.6
+    tag: v4.0
     pullPolicy: IfNotPresent
 
   ## Run as Deployment instead of Daemonset
@@ -312,6 +312,15 @@ server:
   ## Timeout when creating the kiam gateway
   ##
   gatewayTimeoutCreation: 1s
+
+  ## gRPC keepalive variables
+  ##
+  keepaliveParams:
+    time:
+    timeout:
+    maxConnectionIdle:
+    maxConnectionAge:
+    maxConnectionAgeGrace:
 
   ## Server probe configuration
   probes:
