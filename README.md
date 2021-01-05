@@ -61,7 +61,7 @@ metadata:
 ```
 
 You can also control the external id used when assuming the role via an annotation added to the `Pod`, which
-maybe used to avoid [confused deputy scenarios in cross-organisation role assumption](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html). For example:
+may be used to avoid [confused deputy scenarios in cross-organization role assumption](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html). For example:
 
 ```yaml
 kind: Pod
