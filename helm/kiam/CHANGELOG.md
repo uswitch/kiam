@@ -1,4 +1,12 @@
 # Helm Chart Changelog
+# 5.10.0
+18 August 2020
+
+Notable changes:
+* [#415](https://github.com/uswitch/kiam/pull/415) Allow disabling of mounting SSL certs from host
+
+Many thanks to the following contributor for this release:
+* [@velothump](https://github.com/velothump)
 
 ## 5.9.0
 17 August 2020
