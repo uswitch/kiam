@@ -12,7 +12,7 @@ then
   exit 0
 else
   # package helm chart
-  helm init --client-only
+  helm init --stable-repo-url https://charts.helm.sh/stable --client-only
   mkdir ${DRONE_WORKSPACE}/output/
   helm package ${DRONE_WORKSPACE}/helm/${APP}/ -d ${DRONE_WORKSPACE}/output/
 
