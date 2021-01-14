@@ -61,7 +61,15 @@ func (b *KiamServerBuilder) WithAWSSTSGateway() (*KiamServerBuilder, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg.WithCredentialsFromAssumedRole(sts.NewSTSCredentialsProvider(), b.config.AssumeRoleArn)
+	arnResolver, err := newRoleARNResolver(b.config)
+	if err != nil {
+		return nil, err
+	}
+	assumeRoleARN, err := arnResolver.Resolve(b.config.AssumeRoleArn)
+	if err != nil {
+		return nil, err
+	}
+	cfg.WithCredentialsFromAssumedRole(sts.NewSTSCredentialsProvider(), assumeRoleARN.ARN)
 	stsGateway, err := sts.DefaultGateway(cfg.Config())
 	if err != nil {
 		return nil, err

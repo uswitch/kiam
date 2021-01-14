@@ -89,7 +89,7 @@ func (opts *agentCommand) run() error {
 	b := kiamserver.NewKiamGatewayBuilder().WithAddress(opts.serverAddress).WithKeepAlive(opts.keepaliveParams)
 	_, err := b.WithTLS(opts.certificatePath, opts.keyPath, opts.caPath)
 	if err != nil {
-		log.Errorf("error configuring TLS: ", err.Error())
+		log.Errorf("error configuring TLS: %s", err.Error())
 		return err
 	}
 
