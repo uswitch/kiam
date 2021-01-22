@@ -1,4 +1,4 @@
-FROM golang:1.15.7-buster as build
+FROM golang:1.15.7 as build
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
