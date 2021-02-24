@@ -407,3 +407,16 @@ serviceAccounts:
     create: true
     name:
     annotations: {}
+
+## Custom PrometheusRule to be defined
+## The value is evaluated as a template, so, for example, the value can depend on .Release or .Chart
+## ref: https://github.com/coreos/prometheus-operator#customresourcedefinitions
+prometheusRule:
+  # prometheusRule.enabled -- If true, creates a Prometheus Operator PrometheusRule.
+  enabled: false
+  # prometheusRule.additionalLabels -- Additional labels to be set in metadata.
+  additionalLabels: {}
+  # prometheusRule.namespace -- Namespace to create the PrometheusRule resource in.
+  namespace: ''
+  # prometheusRule.rules -- Rules spec template.
+  rules: []

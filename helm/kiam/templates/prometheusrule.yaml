@@ -1,0 +1,19 @@
+{{- if .Values.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "kiam.name" . }}
+  {{- if .Values.prometheusRule.namespace }}
+  namespace: {{ .Values.prometheusRule.namespace }}
+  {{- else }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    app: {{ template "kiam.name" . }}
+    release: {{ .Release.Name }}
+    {{- toYaml .Values.prometheusRule.additionalLabels | nindent 4 }}
+spec:
+  groups:
+    - name: {{ template "kiam.name" $ }}
+      rules: {{- tpl (toYaml .Values.prometheusRule.rules) . | nindent 8 }}
+{{- end }}
