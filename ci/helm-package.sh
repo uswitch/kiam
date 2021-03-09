@@ -20,7 +20,7 @@ else
   mkdir ${DRONE_WORKSPACE}/new-repo/ && cd ${DRONE_WORKSPACE}/new-repo/
   git init
   git config --global user.email ${CI_EMAIL}
-  git remote add origin https://${CI_USER}:${CI_TOKEN}@${REPO}
+  git remote add origin https://${DRONE_NETRC_USERNAME}:${DRONE_NETRC_PASSWORD}@${REPO}
   git fetch
   git checkout --track origin/gh-pages
   git pull
