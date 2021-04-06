@@ -179,7 +179,7 @@ Cross-account access to resources in AWS with Kiam can be configured in multiple
 
 If you need to provide cross-account access to multiple AWS accounts at once to single pod you will need to have additional IAM role in source AWS account with permissions to assume target IAM roles.
 
-Imagine next case scenario - service in the source account `AWS-source` requires access to S3 buckets in target accounts `AWS-target1` and `AWS-target2`. You are not allowed to assing multiple roles to single Pod with Kiam so you have to create service IAM role in the `AWS-source` account and assing it to the pod, this role must have permissions to assume roles in other accounts, for example with such inline policy:
+Imagine next case scenario - service in the source account `AWS-source` requires access to S3 buckets in target accounts `AWS-target1` and `AWS-target2`. You are not allowed to pass multiple roles to single Pod with Kiam so you have to create service IAM role in the `AWS-source` account and passing it to the pod, this role must have permissions to assume roles in other accounts, for example with such inline policy:
 
 ```
 {
