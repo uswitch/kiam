@@ -64,6 +64,12 @@ spec:
             - --sync=1m
             - --prometheus-listen-addr=0.0.0.0:9620
             - --prometheus-sync-interval=5s
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
           volumeMounts:
             - mountPath: /etc/ssl/certs
               name: ssl-certs
