@@ -13,6 +13,7 @@ $ helm install uswitch/kiam
 ## Introduction
 
 This chart bootstraps a [kiam](https://github.com/uswitch/kiam) deployment on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+
 ## Prerequisites
   - Kubernetes 1.8+ with Beta APIs enabled
 
