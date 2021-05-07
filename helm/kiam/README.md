@@ -13,7 +13,6 @@ $ helm install uswitch/kiam
 ## Introduction
 
 This chart bootstraps a [kiam](https://github.com/uswitch/kiam) deployment on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
-
 ## Prerequisites
   - Kubernetes 1.8+ with Beta APIs enabled
 
@@ -259,6 +258,7 @@ The following table lists the configurable parameters of the kiam chart and thei
 | `server.readinessProbe.timeoutSeconds`      | When the probe times out                                                                     | 10                           |
 | `server.readinessProbe.successThreshold`    | Minimum consecutive successes for the probe to be considered successful after having failed. | 1                            |
 | `server.readinessProbe.failureThreshold`    | Minimum consecutive failures for the probe to be considered failed after having succeeded.   | 3                            |
+| `server.disableStrictNamespaceRegexp`       | Disable default strict namespace regexp when matching roles.                                 | `false`
 | `rbac.create`                               | If `true`, create & use RBAC resources                                                       | `true`                       |
 | `psp.create`                                | If `true`, create Pod Security Policies for the agent and server when enabled                | `false`                      |
 | `imagePullSecrets`                          | The name of the secret to use if pulling from a private registry                             | `nil`                        |

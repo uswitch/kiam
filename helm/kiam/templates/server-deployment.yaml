@@ -26,8 +26,7 @@ spec:
       {{- if .Values.server.podAnnotations }}
       annotations:
 {{ toYaml .Values.server.podAnnotations | indent 8 }}
-      {{- end }}
-      labels:
+      {{- end }} labels:
         app: {{ template "kiam.name" . }}
         component: "{{ .Values.server.name }}"
         release: {{ .Release.Name }}
@@ -129,6 +128,9 @@ spec:
             {{- end }}
             {{- if .Values.server.keepaliveParams.maxConnectionAgeGrace }}
             - --grpc-max-connection-age-grace-duration={{ .Values.server.keepaliveParams.maxConnectionAgeGrace }}
+            {{- end }}
+            {{- if .Values.server.disableStrictNamespaceRegexp }}
+            - --disable-strict-namespace-regexp
             {{- end }}
           {{- range $key, $value := .Values.server.extraArgs }}
             {{- if $value }}
