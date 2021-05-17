@@ -111,6 +111,9 @@ spec:
             {{- if .Values.server.keepaliveParams.maxConnectionAgeGrace }}
             - --grpc-max-connection-age-grace-duration={{ .Values.server.keepaliveParams.maxConnectionAgeGrace }}
             {{- end }}
+            {{- if .Values.server.disableStrictNamespaceRegexp }}
+            - --disable-strict-namespace-regexp
+            {{- end }}
           {{- range $key, $value := .Values.server.extraArgs }}
             {{- if $value }}
             - --{{ $key }}={{ $value }}

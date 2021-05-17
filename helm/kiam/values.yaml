@@ -390,6 +390,10 @@ server:
   #  type: spc_t
   #  level: s0
 
+  ## Disable default strict namespace regexp when matching roles
+  ## Ref: https://github.com/uswitch/kiam/blob/master/docs/UPGRADING.md
+  disableStrictNamespaceRegexp: false
+
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
