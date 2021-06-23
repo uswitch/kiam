@@ -1,4 +1,22 @@
 # Helm Chart Changelog
+# 6.1.0
+17 May 2021
+
+Notable changes:
+* [#474](https://github.com/uswitch/kiam/pull/474) Add option to disable strict namespace regexp mode
+
+Many thanks to the following contributor for this release:
+* [@wcarlsen](https://github.com/wcarlsen)
+
+# 6.0.0
+4 January 2021
+
+Notable changes:
+* [#439](https://github.com/uswitch/kiam/pull/439) Kiam v4 release compatibility
+
+Many thanks to the following contributor for this release:
+* [@stefansedich](https://github.com/stefansedich)
+
 # 5.10.0
 18 August 2020
 
