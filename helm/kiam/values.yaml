@@ -209,6 +209,8 @@ server:
   deployment:
     enabled: false
     replicas: 3
+    podDisruptionBudget: {}
+      # maxUnavailable: 1
 
   ## Logging settings
   ##

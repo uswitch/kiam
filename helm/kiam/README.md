@@ -259,7 +259,10 @@ The following table lists the configurable parameters of the kiam chart and thei
 | `server.readinessProbe.timeoutSeconds`      | When the probe times out                                                                     | 10                           |
 | `server.readinessProbe.successThreshold`    | Minimum consecutive successes for the probe to be considered successful after having failed. | 1                            |
 | `server.readinessProbe.failureThreshold`    | Minimum consecutive failures for the probe to be considered failed after having succeeded.   | 3                            |
-| `server.disableStrictNamespaceRegexp`       | Disable default strict namespace regexp when matching roles.                                 | `false`
+| `server.disableStrictNamespaceRegexp`       | Disable default strict namespace regexp when matching roles.                                 | `false`                      |
+| `server.deployment.enabled`                 | Run the kiam-server as a deployment instead of a daemonset.                                  | `false`                      |
+| `server.deployment.replicas`                | Number of replicas while running the kiam-server as a deployment.                            | `3`                          |
+| `server.deployment.podDisruptionBudget`     | The PodDisruptionBudget configuration for the kiam-server deployment.                        | `{}`                         |
 | `rbac.create`                               | If `true`, create & use RBAC resources                                                       | `true`                       |
 | `psp.create`                                | If `true`, create Pod Security Policies for the agent and server when enabled                | `false`                      |
 | `imagePullSecrets`                          | The name of the secret to use if pulling from a private registry                             | `nil`                        |

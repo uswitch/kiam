@@ -1,0 +1,21 @@
+{{- if and .Values.server.deployment.enabled (gt (int .Values.server.deployment.replicas) 1) }}
+{{- if .Values.server.deployment.podDisruptionBudget }}
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    app: {{ template "kiam.name" . }}
+    chart: {{ template "kiam.chart" . }}
+    component: "{{ .Values.server.name }}"
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  name: {{ template "kiam.fullname" . }}-server
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "kiam.name" . }}
+      component: "{{ .Values.server.name }}"
+      release: {{ .Release.Name }}
+  {{- toYaml .Values.server.deployment.podDisruptionBudget | nindent 2 }}
+{{- end }}
+{{- end }}
