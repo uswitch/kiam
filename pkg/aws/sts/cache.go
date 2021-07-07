@@ -25,8 +25,6 @@ import (
 )
 
 type credentialsCache struct {
-	arnResolver     ARNResolver
-	baseARN         string
 	cache           *cache.Cache
 	expiring        chan *CachedCredentials
 	sessionName     string
