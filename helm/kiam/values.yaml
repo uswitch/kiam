@@ -80,6 +80,10 @@ agent:
   ## Ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy
   ##
   dnsPolicy: ClusterFirstWithHostNet
+  ## Pod DNS config
+  ## Ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config
+  ##
+  dnsConfig: {}
   ## Node labels for pod assignment
   ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
   ##

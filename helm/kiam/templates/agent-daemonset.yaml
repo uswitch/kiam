@@ -34,6 +34,7 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: {{ .Values.agent.dnsPolicy }}
+      dnsConfig: {{ .Values.agent.dnsConfig }}
       serviceAccountName: {{ template "kiam.serviceAccountName.agent" . }}
     {{- if .Values.agent.nodeSelector }}
       nodeSelector:
