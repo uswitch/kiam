@@ -14,23 +14,6 @@ import (
 	"time"
 )
 
-func TestRedirectsToCanonicalPath(t *testing.T) {
-	defer leaktest.Check(t)()
-
-	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials", nil)
-	rr := httptest.NewRecorder()
-
-	handler := newRoleHandler(nil, nil)
-	router := mux.NewRouter()
-	handler.Install(router)
-
-	router.ServeHTTP(rr, r)
-
-	if rr.Code != http.StatusMovedPermanently {
-		t.Error("expected redirect, was", rr.Code)
-	}
-}
-
 func readPrometheusCounterValue(name, labelName, labelValue string) float64 {
 	metrics, err := prometheus.DefaultGatherer.Gather()
 	if err != nil {
@@ -73,9 +56,17 @@ func TestIncrementsPrometheusCounter(t *testing.T) {
 }
 
 func TestReturnRoleWhenClientResponds(t *testing.T) {
+	returnRoleWhenClientResponds(t, "/latest/meta-data/iam/security-credentials/")
+}
+
+func TestReturnRoleWhenClientRespondsNoTrailingSlash(t *testing.T) {
+	returnRoleWhenClientResponds(t, "/latest/meta-data/iam/security-credentials")
+}
+
+func returnRoleWhenClientResponds(t *testing.T, url string) {
 	defer leaktest.Check(t)()
 
-	r, _ := http.NewRequest("GET", "/latest/meta-data/iam/security-credentials/", nil)
+	r, _ := http.NewRequest("GET", url, nil)
 	rr := httptest.NewRecorder()
 	handler := newRoleHandler(st.NewStubClient().WithRoles(st.GetRoleResult{"foo_role", nil}), getBlankClientIP)
 	router := mux.NewRouter()
