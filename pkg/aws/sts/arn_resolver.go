@@ -40,6 +40,9 @@ func (r *Resolver) Resolve(role string) (*ResolvedRole, error) {
 	}
 
 	if strings.HasPrefix(role, "arn:") {
+		if len(strings.Split(role, ":")) < 6 {
+			return nil, fmt.Errorf("arn format invalid")
+		}
 		return &ResolvedRole{ARN: role, Name: roleFromArn(role)}, nil
 	}
 

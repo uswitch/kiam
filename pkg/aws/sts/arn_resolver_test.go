@@ -50,6 +50,15 @@ func TestReturnsErrorForEmptyRole(t *testing.T) {
 	}
 }
 
+func TestReturnsErrorForInvalidARN(t *testing.T) {
+	resolver := DefaultResolver("arn:test:not:valid")
+  _, err := resolver.Resolve("arn:test:not:valid")
+
+	if err == nil {
+		t.Error("should've returned an error for invalid arn format")
+	}
+}
+
 func TestAddsPrefixWithRoleBeginningWithSlash(t *testing.T) {
 	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
 	resolvedRole, _ := resolver.Resolve("/myrole")
