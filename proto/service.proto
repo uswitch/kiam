@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package kiam;
 
+option go_package = "github.com/uswitch/kiam/proto";
+
 service KiamService {
   rpc GetPodRole(GetPodRoleRequest) returns (Role) {}
   rpc GetPodCredentials(GetPodCredentialsRequest) returns (Credentials) {}

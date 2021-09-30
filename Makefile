@@ -22,7 +22,7 @@ $(BIN_LINUX): $(SOURCES)
 
 proto/service.pb.go: proto/service.proto
 	go get -u -v github.com/golang/protobuf/protoc-gen-go
-	protoc -I proto/ proto/service.proto --go_out=plugins=grpc:proto
+	protoc -I proto/ proto/service.proto --go_out=plugins=grpc:proto --go_opt=paths=source_relative
 
 test: $(SOURCES)
 	go test github.com/uswitch/kiam/pkg/... -race
