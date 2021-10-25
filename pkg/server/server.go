@@ -110,8 +110,9 @@ func (k *KiamServer) GetPodCredentials(ctx context.Context, req *pb.GetPodCreden
 
 	sessionName := k8s.PodSessionName(pod)
 	externalID := k8s.PodExternalID(pod)
+	sessionTags := k8s.PodSessionTags(pod)
 
-	identity, err := sts.NewRoleIdentity(k.arnResolver, req.Role, sessionName, externalID)
+	identity, err := sts.NewRoleIdentity(k.arnResolver, req.Role, sessionName, externalID, sessionTags)
 	if err != nil {
 		return nil, err
 	}

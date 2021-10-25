@@ -73,6 +73,31 @@ metadata:
     iam.amazonaws.com/external-id: dac7ad46-acab-4ec3-a78e-f3962ecf45d7
 ```
 
+You can also set [session tags](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html) for each pod that then can be referenced in your IAM policies. The following example sets the key as `user` with the value of `example-user`
+```yaml
+kind: Pod
+metadata:
+  name: foo
+  namespace: external-id-example
+  annotations:
+    iam.amazonaws.com/role: reportingdb-reader
+    iam.amazonaws.com/session-tag.user: example-user
+```
+
+In your IAM policy you can then reference these key/value pairs, like so:
+```
+{
+  "Sid": "AllowAllS3OperationsForACertainPrefix",
+  "Effect": "Allow",
+  "Action": ["s3:*"],
+  "Resource": ["arn:aws:s3:::example-bucket/${aws:PrincipalTag/user}/*"]
+}
+```
+
+This allows you to use a single generic IAM policy, but still maintain the granularity as if you were to have multiple roles (in this example one per user).
+
+**Note:** You must add the `sts:TagSession` permission to your trust policy if you plan to use this feature.
+
 Further, all namespaces must also have an annotation with a regular expression expressing which roles are permitted to be assumed within that namespace. **Without the namespace annotation the pod will be unable to assume any roles.**
 
 ```yaml

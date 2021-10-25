@@ -16,6 +16,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -163,7 +164,8 @@ func podRoleIdentityIndex(arnResolver sts.ARNResolver) func(obj interface{}) ([]
 
 		sessionName := PodSessionName(pod)
 		externalID := PodExternalID(pod)
-		identity, err := sts.NewRoleIdentity(arnResolver, role, sessionName, externalID)
+		sessionTags := PodSessionTags(pod)
+		identity, err := sts.NewRoleIdentity(arnResolver, role, sessionName, externalID, sessionTags)
 		if err != nil {
 			return nil, err
 		}
@@ -200,6 +202,37 @@ func PodExternalID(pod *v1.Pod) string {
 	return pod.ObjectMeta.Annotations[AnnotationIAMExternalIDKey]
 }
 
+// normalizeSessionTagKey will return the session Tag key without the prefix. If
+// s is not in the expected format an empty string will be returned.
+func normalizeSessionTagKey(s string, l *log.Entry) string {
+	if !strings.HasPrefix(s, AnnotationIAMSessionTagBase) {
+		return ""
+	}
+	tagKey := strings.Split(s, AnnotationIAMSessionTagBase)
+	if len(tagKey) != 2 {
+		l.Warnf("unexpected session tag format: %s", s)
+		return ""
+	}
+	return tagKey[1]
+}
+
+// PodSessionTags return the IAM role session tags specified in the annotation for the Pod
+func PodSessionTags(pod *v1.Pod) map[string]string {
+	logger := log.WithFields(PodFields(pod))
+	annotations := pod.GetAnnotations()
+	sessionTags := make(map[string]string)
+	for annotation := range annotations {
+		tagKey := normalizeSessionTagKey(annotation, logger)
+		if tagKey == "" {
+			continue
+		}
+		tagValue := annotations[annotation]
+		sessionTags[tagKey] = tagValue
+		logger.Debugf("adding session tag key=%s,value=%s", tagKey, tagValue)
+	}
+	return sessionTags
+}
+
 // AnnotationIAMRoleKey is the key for the annotation specifying the IAM Role
 const AnnotationIAMRoleKey = "iam.amazonaws.com/role"
 
@@ -208,6 +241,9 @@ const AnnotationIAMSessionNameKey = "iam.amazonaws.com/session-name"
 
 // AnnotationIAMExternalIDKey is the key for the annotation specifying the external-id
 const AnnotationIAMExternalIDKey = "iam.amazonaws.com/external-id"
+
+// AnnotationIAMSessionTagBase is the prefix key for the annotation specifying STS session tags
+const AnnotationIAMSessionTagBase = "iam.amazonaws.com/session-tag."
 
 type podHandler struct {
 	pods chan<- *v1.Pod

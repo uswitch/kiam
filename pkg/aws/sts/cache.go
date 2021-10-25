@@ -118,6 +118,7 @@ func (c *credentialsCache) CredentialsForRole(ctx context.Context, identity *Rol
 			SessionName:     sessionName,
 			ExternalID:      identity.ExternalID,
 			SessionDuration: c.sessionDuration,
+			SessionTags:     identity.SessionTags,
 		}
 
 		credentials, err := c.gateway.Issue(ctx, stsIssueRequest)

@@ -137,6 +137,24 @@ resource "aws_iam_policy_attachment" "server_policy_attach" {
 }
 ```
 
+### Session Tags
+IAM [Session Tags](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html) are key-value pair attributes that you can pass through as annotations for your pods. These are then passed along to the Assume Role request to AWS. When you pass through one or more session tags you can reference these within your IAM policies under `aws:PrincipalTag/<tag_name>`.
+
+However, in order to do this the Kiam server role _must_ also have the `sts:TagSession` permission, like so:
+
+```
+{
+  "Effect": "Allow",
+  "Principal": {
+    "AWS": "arn:aws:iam::123456789012:role/kiam-server"
+  },
+  "Action": [
+    "sts:AssumeRole",
+    "sts:TagSession"
+  ]
+}
+```
+
 ## Application Roles
 
 For any role which is to be assumed by a Pod you'll need to ensure it also has a

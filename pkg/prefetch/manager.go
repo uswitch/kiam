@@ -45,8 +45,9 @@ func (m *CredentialManager) fetchCredentials(ctx context.Context, pod *v1.Pod) {
 	role := k8s.PodRole(pod)
 	sessionName := k8s.PodSessionName(pod)
 	externalID := k8s.PodExternalID(pod)
+	sessionTags := k8s.PodSessionTags(pod)
 
-	identity, err := sts.NewRoleIdentity(m.arnResolver, role, sessionName, externalID)
+	identity, err := sts.NewRoleIdentity(m.arnResolver, role, sessionName, externalID, sessionTags)
 	if err != nil {
 		logger.Errorf("error creating role identity: %s", err.Error())
 		return

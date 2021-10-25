@@ -16,6 +16,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -65,13 +66,13 @@ func TestFindRoleActive(t *testing.T) {
 	c.Run(ctx)
 	defer source.Shutdown()
 
-	identity, _ := sts.NewRoleIdentity(arnResolver, "failed_role", "", "")
+	identity, _ := sts.NewRoleIdentity(arnResolver, "failed_role", "", "", make(map[string]string))
 	active, _ := c.IsActivePodsForRole(identity)
 	if active {
 		t.Error("expected no active pods in failed_role")
 	}
 
-	identity, _ = sts.NewRoleIdentity(arnResolver, "running_role", "", "")
+	identity, _ = sts.NewRoleIdentity(arnResolver, "running_role", "", "", make(map[string]string))
 	active, _ = c.IsActivePodsForRole(identity)
 	if !active {
 		t.Error("expected running pod")
@@ -92,13 +93,13 @@ func TestFindRoleActiveWithSessionName(t *testing.T) {
 	c.Run(ctx)
 	defer source.Shutdown()
 
-	identity, _ := sts.NewRoleIdentity(arnResolver, "reader", "active-reader", "")
+	identity, _ := sts.NewRoleIdentity(arnResolver, "reader", "active-reader", "", make(map[string]string))
 	active, _ := c.IsActivePodsForRole(identity)
 	if !active {
 		t.Error("expected running pod for active-reader")
 	}
 
-	identity, _ = sts.NewRoleIdentity(arnResolver, "reader", "stopped-reader", "")
+	identity, _ = sts.NewRoleIdentity(arnResolver, "reader", "stopped-reader", "", make(map[string]string))
 	active, _ = c.IsActivePodsForRole(identity)
 	if active {
 		t.Error("expected no active pods for stopped-reader")
@@ -119,16 +120,74 @@ func TestFindRoleActiveWithExternalID(t *testing.T) {
 	c.Run(ctx)
 	defer source.Shutdown()
 
-	identity, _ := sts.NewRoleIdentity(arnResolver, "reader", "", "1234")
+	identity, _ := sts.NewRoleIdentity(arnResolver, "reader", "", "1234", make(map[string]string))
 	active, _ := c.IsActivePodsForRole(identity)
 	if !active {
 		t.Error("expected running pod for active-reader")
 	}
 
-	identity, _ = sts.NewRoleIdentity(arnResolver, "reader", "", "4321")
+	identity, _ = sts.NewRoleIdentity(arnResolver, "reader", "", "4321", make(map[string]string))
 	active, _ = c.IsActivePodsForRole(identity)
 	if active {
 		t.Error("expected no active pods for stopped-reader")
+	}
+}
+
+func TestSessionTagParsing(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		annotations map[string]string
+		want        map[string]string
+	}{
+		{
+			desc: "test single tag",
+			annotations: map[string]string{
+				"iam.amazonaws.com/session-tag.foo": "bar",
+			},
+			want: map[string]string{"foo": "bar"},
+		},
+		{
+			desc: "test multiple tags",
+			annotations: map[string]string{
+				"iam.amazonaws.com/session-tag.foo":  "bar",
+				"iam.amazonaws.com/session-tag.fizz": "buzz",
+			},
+			want: map[string]string{
+				"foo":  "bar",
+				"fizz": "buzz",
+			},
+		},
+		{
+			desc: "test edge cases",
+			annotations: map[string]string{
+				"iam.amazonaws.com/session-tag.this.tag":                       "works",
+				"iam.amazonaws.com/session-tag.session-tag.also":               "works",
+				"iam.amazonaws.com/session-tag.iam.amazonaws.com/session-tag.": "this is ignored",
+				"this tag is also ignored":                                     "because it's invalid",
+			},
+			want: map[string]string{
+				"this.tag":         "works",
+				"session-tag.also": "works",
+			},
+		},
+		{
+			desc: "test incorrect tag by itself",
+			annotations: map[string]string{
+				"iam.amazonaws.com/thththsdfrg.foo": "bar",
+			},
+			want: make(map[string]string),
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			pod := testutil.NewPod("ns", "active-reader", "192.168.0.1", "Running")
+			pod.ObjectMeta.Annotations = tC.annotations
+
+			got := PodSessionTags(pod)
+			if !reflect.DeepEqual(tC.want, got) {
+				t.Errorf("PodSessionTags(%v) = %v, want = %v", pod, got, tC.want)
+			}
+		})
 	}
 }
 
@@ -174,7 +233,7 @@ func BenchmarkIsActiveRole(b *testing.B) {
 	b.StartTimer()
 
 	for n := 0; n < b.N; n++ {
-		identity, _ := sts.NewRoleIdentity(arnResolver, "role-0", "", "")
+		identity, _ := sts.NewRoleIdentity(arnResolver, "role-0", "", "", make(map[string]string))
 		c.IsActivePodsForRole(identity)
 	}
 }

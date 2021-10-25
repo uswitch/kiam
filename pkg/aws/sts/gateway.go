@@ -28,6 +28,7 @@ type STSIssueRequest struct {
 	SessionName     string
 	ExternalID      string
 	SessionDuration time.Duration
+	SessionTags     map[string]string
 }
 
 type STSGateway interface {
@@ -58,6 +59,17 @@ func (g *DefaultSTSGateway) Issue(ctx context.Context, request *STSIssueRequest)
 
 	if request.ExternalID != "" {
 		in.ExternalId = aws.String(request.ExternalID)
+	}
+
+	if len(request.SessionTags) > 0 {
+		tags := []*sts.Tag{}
+		for k, v := range request.SessionTags {
+			tags = append(tags, &sts.Tag{
+				Key:   aws.String(k),
+				Value: aws.String(v),
+			})
+		}
+		in.SetTags(tags)
 	}
 
 	resp, err := svc.AssumeRoleWithContext(ctx, in)

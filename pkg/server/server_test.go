@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -199,6 +200,41 @@ func TestGetPodCredentialsWithExternalID(t *testing.T) {
 	identity := credentialsProvider.requestedIdentity
 	if identity.ExternalID != externalID {
 		t.Error("unexpected external-id", identity.ExternalID)
+	}
+}
+
+func TestGetPodCredentialsWithSessionTag(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	const roleName = "role"
+
+	source := kt.NewFakeControllerSource()
+	defer source.Shutdown()
+	pod := testutil.NewPodWithRole("ns", "name", "192.168.0.1", "Running", roleName)
+
+	sessionTags := map[string]string{"iam.amazonaws.com/session-tag.hello": "world"}
+	for key, value := range sessionTags {
+		pod.Annotations[key] = value
+	}
+	source.Add(pod)
+
+	credentialsProvider := stubCredentialsProvider{accessKey: "A1234"}
+	podCache := k8s.NewPodCache(sts.DefaultResolver("arn:account:"), source, time.Second, defaultBuffer)
+	podCache.Run(ctx)
+	server := &KiamServer{pods: podCache, assumePolicy: &allowPolicy{}, credentialsProvider: &credentialsProvider, arnResolver: sts.DefaultResolver("prefix")}
+
+	rqst := &pb.GetPodCredentialsRequest{Ip: "192.168.0.1", Role: roleName}
+	if _, err := server.GetPodCredentials(ctx, rqst); err != nil {
+		t.Errorf("GetPodCredentials(%v) = %v, want nil error", rqst, err)
+	}
+
+	got := credentialsProvider.requestedIdentity.SessionTags
+	want := k8s.PodSessionTags(pod)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("identity session tags = %v, want = %v", got, want)
 	}
 }
 

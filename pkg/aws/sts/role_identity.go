@@ -2,6 +2,8 @@ package sts
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -10,9 +12,10 @@ type RoleIdentity struct {
 	Role        ResolvedRole
 	SessionName string
 	ExternalID  string
+	SessionTags map[string]string
 }
 
-func NewRoleIdentity(arnResolver ARNResolver, role, sessionName, externalID string) (*RoleIdentity, error) {
+func NewRoleIdentity(arnResolver ARNResolver, role, sessionName, externalID string, sessionTags map[string]string) (*RoleIdentity, error) {
 	resolvedRole, err := arnResolver.Resolve(role)
 	if err != nil {
 		return nil, err
@@ -22,11 +25,22 @@ func NewRoleIdentity(arnResolver ARNResolver, role, sessionName, externalID stri
 		Role:        *resolvedRole,
 		SessionName: sessionName,
 		ExternalID:  externalID,
+		SessionTags: sessionTags,
 	}, nil
 }
 
 func (i *RoleIdentity) String() string {
-	return fmt.Sprintf("%s|%s|%s", i.Role.ARN, i.SessionName, i.ExternalID)
+	s := fmt.Sprintf("%s|%s|%s", i.Role.ARN, i.SessionName, i.ExternalID)
+	if len(i.SessionTags) > 0 {
+		var kvp []string
+		for k, v := range i.SessionTags {
+			kvp = append(kvp, fmt.Sprintf("%s:%s", k, v))
+		}
+		// Looping through maps has non-deterministic ordering.
+		sort.Strings(kvp)
+		s += fmt.Sprintf("|%s", strings.Join(kvp, ","))
+	}
+	return s
 }
 
 func (i *RoleIdentity) LogFields() log.Fields {
