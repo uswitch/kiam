@@ -187,6 +187,7 @@ The following table lists the configurable parameters of the kiam chart and thei
 | `agent.prometheus.servicemonitor.path`      | Agent prometheus scrape path                                                                 | `/metrics`                   |
 | `agent.prometheus.servicemonitor.interval`  | Agent prometheus scrape interval from servicemonitor                                         | `10s`                        |
 | `agent.prometheus.servicemonitor.labels`    | Custom labels for agent servicemonitor                                                       | `{}`                         |
+| `agent.annotations`                         | Annotations to be added to agent daemonset                                                   | `{}`                         |
 | `agent.podAnnotations`                      | Annotations to be added to agent pods                                                        | `{}`                         |
 | `agent.podLabels`                           | Labels to be added to agent pods                                                             | `{}`                         |
 | `agent.priorityClassName`                   | Agent pods priority class name                                                               | `""`                         |
@@ -229,6 +230,7 @@ The following table lists the configurable parameters of the kiam chart and thei
 | `server.prometheus.servicemonitor.path`     | Server prometheus scrape path                                                                | `/metrics`                   |
 | `server.prometheus.servicemonitor.interval` | Server prometheus scrape interval from servicemonitor                                        | `10s`                        |
 | `server.prometheus.servicemonitor.labels`   | Custom labels for server servicemonitor                                                      | `{}`                         |
+| `server.annotations`                        | Annotations to be added to server deployment/daemonset                                       | `{}`                         |
 | `server.podAnnotations`                     | Annotations to be added to server pods                                                       | `{}`                         |
 | `server.podLabels`                          | Labels to be added to server pods                                                            | `{}`                         |
 | `server.probes.serverAddress`               | Address that readyness and liveness probes will hit                                          | `127.0.0.1`                  |

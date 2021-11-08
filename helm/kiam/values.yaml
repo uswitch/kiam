@@ -56,6 +56,11 @@ agent:
       path: /metrics
       interval: 10s
       labels: {}
+
+  ## Annotations to be added to Daemonset
+  ##
+  annotations: {}
+
   ## Annotations to be added to pods
   ##
   podAnnotations: {}
@@ -226,6 +231,11 @@ server:
       path: /metrics
       interval: 10s
       labels: {}
+
+  ## Annotations to be added to daemonset/Deployment
+  ##
+  annotations: {}
+
   ## Annotations to be added to pods
   ##
   podAnnotations: {}
