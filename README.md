@@ -2,7 +2,7 @@
 
 [![Docker Repository on Quay](https://quay.io/repository/uswitch/kiam/status "Docker Repository on Quay")](https://quay.io/repository/uswitch/kiam)
 
-## THIS PROJECT IS IN MAINTENANCE MODE
+## 🚨 ⚠️THIS PROJECT IS IN MAINTENANCE MODE ⚠️ 🚨
 
 We developed Kiam years ago as it solved a very specific problem for us as we tried to run applications in AWS on Kubernetes. Since then there have been a lot of advances in this space, the most significant being AWS' official solution: [IAM roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html). We believe this solution is significantly superior to Kiam and we have been internally moving away from Kiam for some time. We would encourage others to do the same.
 We are only a small team and we don't have the capacity to maintain a tool we don't use, so from now on we will only be accepting patches/bug fixes.
