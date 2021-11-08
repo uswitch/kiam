@@ -161,6 +161,11 @@ func podRoleIdentityIndex(arnResolver sts.ARNResolver) func(obj interface{}) ([]
 			return []string{}, nil
 		}
 
+		_, err := arnResolver.Resolve(role)
+		if err != nil {
+			return []string{}, nil
+		}
+
 		sessionName := PodSessionName(pod)
 		externalID := PodExternalID(pod)
 		identity, err := sts.NewRoleIdentity(arnResolver, role, sessionName, externalID)
