@@ -1,4 +1,4 @@
-FROM golang:1.13.8 as build
+FROM golang:1.15.15 as build
 ENV GO111MODULE=on
 
 WORKDIR /workspace
@@ -14,6 +14,8 @@ COPY pkg/ pkg/
 COPY proto/ proto/
 COPY Makefile Makefile
 
+# As (generated) proto/service.pb.go is _also_ committed, void the need to install protoc / protoc-gen-go plugin
+RUN touch proto/service.pb.go
 RUN make bin/kiam-linux-amd64
 
 FROM alpine:3.11
