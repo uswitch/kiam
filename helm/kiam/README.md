@@ -201,6 +201,7 @@ The following table lists the configurable parameters of the kiam chart and thei
 | `agent.tolerations`                         | Tolerations to be applied to agent pods                                                      | `[]`                         |
 | `agent.affinity`                            | Node affinity for pod assignment                                                             | `{}`                         |
 | `agent.updateStrategy`                      | Strategy for agent DaemonSet updates (requires Kubernetes 1.6+)                              | `OnDelete`                   |
+| `agent.maxUnavailable`                      | DaemonSet maxUnavailable for rollingUpdate strategy for Daemonsets                           | `1`                          |
 | `agent.livenessProbe.initialDelaySeconds`   | Delay before liveness probe is initiated                                                     | 3                            |
 | `agent.livenessProbe.periodSeconds`         | How often to perform the probe                                                               | 3                            |
 | `agent.livenessProbe.timeoutSeconds`        | When the probe times out                                                                     | 1                            |
@@ -248,6 +249,7 @@ The following table lists the configurable parameters of the kiam chart and thei
 | `server.tolerations`                        | Tolerations to be applied to server pods                                                     | `[]`                         |
 | `server.affinity`                           | Node affinity for pod assignment                                                             | `{}`                         |
 | `server.updateStrategy`                     | Strategy for server DaemonSet updates (requires Kubernetes 1.6+)                             | `OnDelete`                   |
+| `server.maxUnavailable`                     | DaemonSet maxUnavailable for rollingUpdate strategy for Daemonsets                           | `1`                          |
 | `server.useHostNetwork`                     | If true, use hostNetwork on server to bypass agent iptable rules                             | `false`                      |
 | `server.livenessProbe.initialDelaySeconds`  | Delay before liveness probe is initiated                                                     | 10                           |
 | `server.livenessProbe.periodSeconds`        | How often to perform the probe                                                               | 10                           |

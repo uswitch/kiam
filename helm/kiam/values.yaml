@@ -76,6 +76,9 @@ agent:
   ## Ref: https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/
   ##
   updateStrategy: OnDelete
+  ## Fine tune rollingUpdate strategy for Daemonsets
+  maxUnavailable: 1
+
   ## Pod DNS policy
   ## Ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy
   ##
@@ -246,6 +249,8 @@ server:
   ## Ref: https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/
   ##
   updateStrategy: OnDelete
+  ## Fine tune rollingUpdate strategy for Daemonsets when updateStrategy=rollingUpdate
+  maxUnavailable: 1
 
   # Ref: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#affinity-v1-core
   # Expects input structure as per specification for example:

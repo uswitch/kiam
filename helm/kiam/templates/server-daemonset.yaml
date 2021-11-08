@@ -187,4 +187,8 @@ spec:
       {{- end }}
   updateStrategy:
     type: {{ .Values.server.updateStrategy }}
+{{- if eq .Values.server.updateStrategy "rollingUpdate" }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.server.maxUnavailable }}
+{{- end }}
 {{- end }}
