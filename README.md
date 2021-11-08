@@ -8,6 +8,8 @@ We developed Kiam years ago as it solved a very specific problem for us as we tr
 We are only a small team and we don't have the capacity to maintain a tool we don't use, so from now on we will only be accepting patches/bug fixes.
 Thank you to all the external contributors who have helped Kiam grow over the years.
 
+## About
+
 kiam runs as an agent on each node in your Kubernetes cluster and allows cluster users to associate IAM roles to Pods.
 
 Docker images are available at [https://quay.io/repository/uswitch/kiam](https://quay.io/repository/uswitch/kiam).
