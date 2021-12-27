@@ -3,7 +3,7 @@ name: Docker CI [multi-arch]
 on:
   push:
     branches:
-      - "**"
+      - main
 
 jobs:
   docker:
