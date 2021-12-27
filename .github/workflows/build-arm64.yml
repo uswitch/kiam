@@ -1,0 +1,22 @@
+name: Docker CI [arm64]
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  docker:
+    runs-on: [self-hosted, linux, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up GO
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.15"
+      - name: Build and push
+        run: |
+          docker build -t temp .
+          docker insepct temp
+          docker run temp
