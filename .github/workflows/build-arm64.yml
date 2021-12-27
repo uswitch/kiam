@@ -18,5 +18,5 @@ jobs:
       - name: Build and push
         run: |
           docker build -t temp .
-          docker insepct temp
+          docker inspect temp
           docker run temp
