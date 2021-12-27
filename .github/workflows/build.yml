@@ -11,16 +11,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Get the version
-        id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-      - uses: frabert/replace-string-action@master
-        id: formatted_version
-        with:
-          pattern: '[v]*(.*)$'
-          string: "${{ steps.get_version.outputs.VERSION }}"
-          replace-with: '$1'
-          flags: 'g'
+       - name: Compute Tag
+        id: compute_tag
+        run: |
+          SHA=`echo ${GITHUB_SHA} | cut -c1-7`
+          echo ::set-output name=IMAGE_TAG::$(echo ${GITHUB_REF#refs/heads/}-${SHA} | sed "s/[^[:alnum:]]/-/g")
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -43,7 +38,7 @@ jobs:
           file: Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: public.ecr.aws/k1t8c0v2/kiam:${{ steps.formatted_version.outputs.replaced }}
+          tags: public.ecr.aws/k1t8c0v2/kiam:${{ steps.compute_tag.outputs.IMAGE_TAG }}
       - name: Log out of Amazon ECR
         if: always()
         run: docker logout ${{ steps.login-ecr.outputs.registry }}
