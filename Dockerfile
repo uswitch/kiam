@@ -16,9 +16,9 @@ COPY Makefile Makefile
 
 # As (generated) proto/service.pb.go is _also_ committed, void the need to install protoc / protoc-gen-go plugin
 RUN touch proto/service.pb.go
-RUN make bin/kiam-linux
+RUN CGO_ENABLED=0 go build -o bin/kiam cmd/kiam/*.go
 
 FROM alpine:3.11
 RUN apk --no-cache add iptables
-COPY --from=build /workspace/bin/kiam-linux /kiam
+COPY --from=build /workspace/bin/kiam /kiam
 CMD []
