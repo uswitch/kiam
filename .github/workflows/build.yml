@@ -1,4 +1,6 @@
-build on:
+name: Docker CI [x64]
+
+on:
   push:
     branches:
       - "**"
