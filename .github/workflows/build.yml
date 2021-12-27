@@ -5,7 +5,6 @@ on:
     branches:
       - "**"
 
-name: Build release
 jobs:
   docker:
     runs-on: ubuntu-latest
