@@ -19,4 +19,3 @@ jobs:
         run: |
           docker build -t temp .
           docker inspect temp
-          docker run temp
