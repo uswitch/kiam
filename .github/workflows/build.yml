@@ -1,0 +1,27 @@
+build on:
+  push:
+    branches:
+      - "**"
+
+name: Build release
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      - uses: frabert/replace-string-action@master
+        id: formatted_version
+        with:
+          pattern: '[v]*(.*)$'
+          string: "${{ steps.get_version.outputs.VERSION }}"
+          replace-with: '$1'
+          flags: 'g'
+      - name: Build and push
+        run: |
+          docker build -t temp .
+          docker insepct temp
+          docker run temp
