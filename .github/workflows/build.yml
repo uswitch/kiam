@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-       - name: Compute Tag
+      - name: Compute Tag
         id: compute_tag
         run: |
           SHA=`echo ${GITHUB_SHA} | cut -c1-7`
