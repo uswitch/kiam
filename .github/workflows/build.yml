@@ -12,9 +12,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Compute Tag
+        id: compute_tag
         run: |
           SHA=`echo ${GITHUB_SHA} | cut -c1-7`
-          echo "VERSION=$(echo ${GITHUB_REF#refs/heads/}-${SHA} | sed "s/[^[:alnum:]]/-/g")" >> $GITHUB_ENV
+          echo ::set-output name=IMAGE_TAG::$(${GITHUB_REF#refs/heads/}-${SHA} | sed "s/[^[:alnum:]]/-/g")
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
         with:
@@ -28,4 +29,4 @@ jobs:
           file: Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: public.ecr.aws/k1t8c0v2/kiam:${VERSION}
+          tags: public.ecr.aws/k1t8c0v2/kiam:${{ steps.compute_tag.outputs.IMAGE_TAG }}
