@@ -42,7 +42,6 @@ func regionalHostname(region string) (string, error) {
 
 	// iso regions are airgapped, https://github.com/uswitch/kiam/issues/410 has more context
 	// but just follows a different pattern, iso, and isob follow different patterns as well
-
 	if strings.HasPrefix(region, "us-isob") {
 		hostname = fmt.Sprintf("sts.%s.sc2s.sgov.gov", region)
 	}
@@ -50,7 +49,6 @@ func regionalHostname(region string) (string, error) {
 	if strings.HasPrefix(region, "us-iso") {
 		hostname = fmt.Sprintf("sts.%s.c2s.ic.gov", region)
 	}
-
 
 	if _, err := net.LookupHost(hostname); err != nil {
 		return "", fmt.Errorf("Regional STS endpoint does not exist: %s", hostname)

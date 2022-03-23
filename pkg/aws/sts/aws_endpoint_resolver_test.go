@@ -130,3 +130,20 @@ func TestAirgappedRegion(t *testing.T) {
 		t.Error("unexpected", rd.URL)
 	}
 }
+
+https://github.com/uswitch/kiam/issues/410#issuecomment-1076587419
+func TestAirgappedRegionB(t *testing.T) {
+	r, e := newRegionalEndpointResolver("us-isob-east-1")
+	if e != nil {
+		t.Error(e)
+	}
+
+	rd, e := r.EndpointFor(endpoints.StsServiceID, "us-isob-east-1")
+	if e != nil {
+		t.Error(e)
+	}
+
+	if rd.URL != "https://sts.us-isob-east-1.sc2s.sgov.gov" {
+		t.Error("unexpected", rd.URL)
+	}
+}
