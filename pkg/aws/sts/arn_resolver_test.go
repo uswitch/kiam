@@ -107,3 +107,14 @@ func TestExtractsBaseFromInstanceArn(t *testing.T) {
 		t.Error("unexpected prefix, was: ", prefix)
 	}
 }
+
+func TestMalformedInstanceArn(t *testing.T) {
+	defer func() {
+		r := recover()
+		if (r != nil) {
+			t.Errorf("Unexpected panic from resolver.Resolve()")
+		}
+	}()
+	resolver := DefaultResolver("arn:aws:iam::account-id:role/")
+	_, _ = resolver.Resolve("arn:aws:iam:account-id:role/my-role")
+}

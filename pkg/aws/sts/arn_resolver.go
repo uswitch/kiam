@@ -16,6 +16,7 @@ package sts
 import (
 	"fmt"
 	"strings"
+	"github.com/aws/aws-sdk-go/aws/arn"
 )
 
 type Resolver struct {
@@ -39,8 +40,12 @@ func (r *Resolver) Resolve(role string) (*ResolvedRole, error) {
 		return nil, fmt.Errorf("role can't be empty")
 	}
 
-	if strings.HasPrefix(role, "arn:") {
-		return &ResolvedRole{ARN: role, Name: roleFromArn(role)}, nil
+	if arn.IsARN(role) {
+		name, err := roleFromArn(role)
+		if err != nil {
+			return nil, err
+		}
+		return &ResolvedRole{ARN: role, Name: name}, nil
 	}
 
 	if strings.HasPrefix(role, "/") {
@@ -51,9 +56,12 @@ func (r *Resolver) Resolve(role string) (*ResolvedRole, error) {
 }
 
 // arn:aws:iam::account-id:role/role-name-with-path
-func roleFromArn(arn string) string {
-	splits := strings.SplitAfterN(arn, ":", 6)
-	return strings.TrimPrefix(splits[5], "role/")
+func roleFromArn(arn_string string) (string, error) {
+	a, err := arn.Parse(arn_string)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimPrefix(a.Resource, "role/"), nil
 }
 
 func (i *ResolvedRole) Equals(other *ResolvedRole) bool {
