@@ -18,7 +18,7 @@ COPY Makefile Makefile
 RUN touch proto/service.pb.go
 RUN make bin/kiam-linux-amd64
 
-FROM alpine:3.11
+FROM alpine:3.18.3
 RUN apk --no-cache add iptables
 COPY --from=build /workspace/bin/kiam-linux-amd64 /kiam
 CMD []
