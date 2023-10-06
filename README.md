@@ -5,7 +5,7 @@
 ## 🚨 ⚠️THIS PROJECT IS NOW BEING ABANDONED ⚠️ 🚨
 
 Following our announcement on Nov 8, 2021 we are now moving this project from "Maintenance Mode" to **Abandoned**. 
-We developed Kiam years ago as it solved a very specific problem for us as we tried to run applications in AWS on Kubernetes. Since then there have been a lot of advances in this space, the most significant being AWS' official solution: [IAM roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html). We believe this solution is significantly superior to Kiam and we have been internally have stopped using Kiam for more than two years now. We would encourage others to do the same.
+We developed Kiam years ago as it solved a very specific problem for us as we tried to run applications in AWS on Kubernetes. Since then there have been a lot of advances in this space, the most significant being AWS' official solution: [IAM roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html). We believe this solution is significantly superior to Kiam and we have internally stopped using Kiam for more than two years now. We would encourage others to do the same.
 We are only a small team and we don't have the capacity to maintain a tool we don't use, so from now we have taken the painful decision to abandon this project. 
 Thank you to all the external contributors who have helped Kiam grow over the years.
 
