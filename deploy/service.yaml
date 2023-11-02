@@ -9,7 +9,7 @@ spec:
     app: kiam
     role: server
   ports:
-  - name: grpclb
+  - name: https-grpclb
     port: 443
     targetPort: 443
     protocol: TCP

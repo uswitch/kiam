@@ -35,7 +35,7 @@ spec:
       targetPort: {{ .Values.server.prometheus.port }}
       protocol: TCP
     {{- end }}
-    - name: grpclb
+    - name: {{ .Values.server.service.name }}
       port: {{ .Values.server.service.port }}
       targetPort: {{ .Values.server.service.targetPort }}
       protocol: TCP

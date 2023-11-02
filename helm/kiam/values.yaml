@@ -306,6 +306,7 @@ server:
   initContainers: []
 
   service:
+    name: https-grpclb
     port: 443
     targetPort: 443
 
